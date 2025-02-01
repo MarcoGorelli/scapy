@@ -755,7 +755,9 @@ def _sr1_rtrequest(pkt: Packet) -> List[Packet]:
         sock.close()
 
 
-def _get_ips(af_family: socket.AddressFamily = socket.AF_UNSPEC) -> Dict[int, List[Dict[str, Any]]]:
+def _get_ips(
+        af_family: socket.AddressFamily = socket.AF_UNSPEC
+) -> Dict[int, List[Dict[str, Any]]]:
     """
     Return a mapping of all interfaces IP using a NETLINK socket.
     """

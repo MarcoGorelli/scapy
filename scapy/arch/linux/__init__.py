@@ -118,7 +118,9 @@ PACKET_FASTROUTE = 6  # Fastrouted frame
 
 # Utils
 
-def attach_filter(sock: socket.socket, bpf_filter: str, iface: _GlobInterfaceType) -> None:
+def attach_filter(
+        sock: socket.socket, bpf_filter: str, iface: _GlobInterfaceType
+) -> None:
     """
     Compile bpf filter and attach it to a socket
 
@@ -272,7 +274,9 @@ class L2Socket(SuperSocket):
             pass
         SuperSocket.close(self)
 
-    def recv_raw(self, x: int = MTU) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+    def recv_raw(
+            self, x: int = MTU
+    ) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
         # noqa: E501
         """Receives a packet, then returns a tuple containing (cls, pkt_data, time)"""  # noqa: E501
         pkt, sa_ll, ts = self._recv_raw(self.ins, x)
@@ -377,7 +381,9 @@ class L3PacketSocket(L2Socket):
                 raise
 
     @staticmethod
-    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
+    def select(
+        sockets: List[SuperSocket], remain: Optional[float] = None
+    ) -> List[SuperSocket]:
         socks: List[SuperSocket] = []
         for sock in sockets:
             if isinstance(sock, L3PacketSocket):

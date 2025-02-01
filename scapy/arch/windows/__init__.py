@@ -154,7 +154,9 @@ def _where(filename: str, dirs: Optional[Any] = None, env: str = "PATH") -> str:
         raise IOError("File not found: %s" % filename)
 
 
-def win_find_exe(filename: str, installsubdir: Optional[Any] = None, env: str = "ProgramFiles") -> str:
+def win_find_exe(
+        filename: str, installsubdir: Optional[Any] = None, env: str = "ProgramFiles"
+) -> str:
     """Find executable in current dir, system path or in the
     given ProgramFiles subdir, and retuen its absolute path.
     """
@@ -306,7 +308,9 @@ def _pcapname_to_guid(pcap_name: str) -> str:
 class NetworkInterface_Win(NetworkInterface):
     """A network interface of your local host"""
 
-    def __init__(self, provider: WindowsInterfacesProvider, data: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+            self, provider: WindowsInterfacesProvider, data: Optional[Dict[str, Any]] = None
+        ) -> None:
         self.cache_mode: Optional[bool] = None
         self.ipv4_metric: Optional[int] = None
         self.ipv6_metric: Optional[int] = None
@@ -564,7 +568,9 @@ class WindowsInterfacesProvider(InterfaceProvider):
             "and access rights."
         )
 
-    def load(self, NetworkInterface_Win: type = NetworkInterface_Win) -> Dict[str, NetworkInterface]:
+    def load(
+        self, NetworkInterface_Win: type = NetworkInterface_Win
+    ) -> Dict[str, NetworkInterface]:
         results = {}
         if not conf.cache_pcapiflist:
             # Try a restart
@@ -776,17 +782,25 @@ def _read_routes_c_v1() -> List[Tuple[int, int, str, str, str, int]]:
 
 
 @overload
-def _read_routes_c(ipv6: Literal[True]) -> List[Tuple[str, int, str, str, List[str], int]]:  # noqa: F811
+def _read_routes_c(
+    ipv6: Literal[True]
+) -> List[Tuple[str, int, str, str, List[str], int]]:  # noqa: F811
     pass
 
 
 @overload
-def _read_routes_c(ipv6: Literal[False] = False) -> List[Tuple[int, int, str, str, str, int]]:  # noqa: F811
+def _read_routes_c(
+    ipv6: Literal[False] = False
+) -> List[Tuple[int, int, str, str, str, int]]:  # noqa: F811
     pass
 
 
-def _read_routes_c(ipv6: bool = False) -> Union[List[Tuple[int, int, str, str, str, int]], List[Tuple[str, int, str, str, List[str], int]]]:  # noqa: F811
-    # noqa: E501
+def _read_routes_c(
+        ipv6: bool = False
+) -> Union[
+    List[Tuple[int, int, str, str, str, int]],
+    List[Tuple[str, int, str, str, List[str], int]]
+]:  # noqa: F811
     """Retrieve Windows routes through a GetIpForwardTable2 call.
 
     This is not available on Windows XP !"""
