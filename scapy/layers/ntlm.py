@@ -130,7 +130,9 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
             ],
         )
 
-    def _on_payload(self, pkt: Optional[Packet], x: bytes, func: str) -> List[Tuple[str, Any]]:
+    def _on_payload(
+            self, pkt: Optional[Packet], x: bytes, func: str
+    ) -> List[Tuple[str, Any]]:
         if not pkt or not x:
             return []
         results = []
@@ -158,7 +160,9 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
             return self.offset(pkt)
         return self.offset
 
-    def addfield(self, pkt: Optional[Packet], s: bytes, val: Optional[List[Tuple[str, str]]]) -> bytes:
+    def addfield(
+            self, pkt: Optional[Packet], s: bytes, val: Optional[List[Tuple[str, str]]]
+    ) -> bytes:
         # Create string buffer
         buf = StringBuffer()
         buf.append(s, 1)

@@ -222,8 +222,18 @@ class SignalField(ScalingField):
     """
     __slots__ = ["start", "size"]
 
-    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3, fmt: str = "B") -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            size: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3,
+            fmt: str = "B"
+    ) -> None:
         # noqa: E501
         ScalingField.__init__(self, name, default, scaling, unit, offset,
                               ndigits, fmt)
@@ -282,7 +292,12 @@ class SignalField(ScalingField):
     def _is_float_number(self) -> bool:
         return self.fmt[-1] == "f"
 
-    def addfield(self, pkt: Packet, s: bytes, val: Optional[Union[int, float]]) -> bytes:
+    def addfield(
+            self,
+            pkt: Packet,
+            s: bytes,
+            val: Optional[Union[int, float]]
+    ) -> bytes:
         if not isinstance(pkt, SignalPacket):
             raise Scapy_Exception("Only use SignalFields in a SignalPacket")
 
@@ -305,7 +320,7 @@ class SignalField(ScalingField):
 
         if self._is_float_number():
             int_val: int = struct.unpack(self.fmt[0] + "I",
-                                    struct.pack(self.fmt, val))[0]
+                                         struct.pack(self.fmt, val))[0]
         elif self._is_signed_number():
             int_val = self._convert_to_unsigned(int(val), self.size)
         else:
@@ -373,48 +388,100 @@ class SignalField(ScalingField):
 
 
 class LEUnsignedSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            size: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, "<B")
 
 
 class LESignedSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            size: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, "<b")
 
 
 class BEUnsignedSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            size: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3,
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, ">B")
 
 
 class BESignedSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            size: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, ">b")
 
 
 class LEFloatSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3,
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, 32,
                              scaling, unit, offset, ndigits, "<f")
 
 
 class BEFloatSignalField(SignalField):
-    def __init__(self, name: str, default: Union[int, float], start: int, scaling: Union[int, float] = 1, unit: str = "",
-                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Union[int, float],
+            start: int,
+            scaling: Union[int, float] = 1,
+            unit: str = "",
+            offset: Union[int, float] = 0,
+            ndigits: int = 3
+    ) -> None:
         # noqa: E501
         SignalField.__init__(self, name, default, start, 32,
                              scaling, unit, offset, ndigits, ">f")
@@ -495,7 +562,9 @@ class SignalHeader(CAN):
         return s, None
 
 
-def rdcandump(filename: str, count: int = -1, interface: Optional[str] = None) -> PacketList:
+def rdcandump(
+        filename: str, count: int = -1, interface: Optional[str] = None
+) -> PacketList:
     """ Read a candump log file and return a packet list.
 
     :param filename: Filename of the file to read from.
@@ -522,7 +591,9 @@ class CandumpReader:
 
     nonblocking_socket = True
 
-    def __init__(self, filename: str, interface: Optional[Union[List[str], str]] = None) -> None:
+    def __init__(
+            self, filename: str, interface: Optional[Union[List[str], str]] = None
+    ) -> None:
         self.filename, self.f = self.open(filename)
         self.ifilter: Optional[List[str]] = None
         if interface is not None:
@@ -688,12 +759,19 @@ class CandumpReader:
     def __enter__(self) -> CandumpReader:
         return self
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], tracback: Optional[Any]) -> None:
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            tracback: Optional[Any]
+    ) -> None:
         # noqa: E501
         self.close()
 
     @staticmethod
-    def select(sockets: List[SuperSocket], remain: Optional[int] = None) -> List[SuperSocket]:
+    def select(
+        sockets: List[SuperSocket], remain: Optional[int] = None
+    ) -> List[SuperSocket]:
         """Emulation of SuperSocket"""
         return [s for s in sockets if isinstance(s, CandumpReader) and
                 not s.closed]

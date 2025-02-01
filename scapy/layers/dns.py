@@ -44,7 +44,7 @@ from scapy.fields import (
     FieldLenField,
     FieldListField,
     FlagsField,
-    I,
+    InternalStorageT,
     IP6Field,
     IntField,
     MACField,
@@ -456,7 +456,9 @@ class EDNS0TLV(_EDNS0Dummy):
                                length_from=lambda pkt: pkt.optlen)]
 
     @classmethod
-    def dispatch_hook(cls, _pkt: Optional[bytes] = None, *args: Any, **kargs: Any) -> Type[Packet]:
+    def dispatch_hook(
+        cls, _pkt: Optional[bytes] = None, *args: Any, **kargs: Any
+    ) -> Type[Packet]:
         if _pkt is None:
             return EDNS0TLV
         if len(_pkt) < 2:
@@ -541,7 +543,7 @@ class ClientSubnetv4(StrLenField):
     af_length = 32
     af_default = b"\xc0"  # 192.0.0.0
 
-    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, I]:
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, InternalStorageT]:
         sz = operator.floordiv(self.length_from(pkt), 8)
         sz = min(sz, operator.floordiv(self.af_length, 8))
         return s[sz:], self.m2i(pkt, s[:sz])

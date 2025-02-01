@@ -130,11 +130,11 @@ class ObservableDict(Dict[int, str]):
 #  Fields  #
 ############
 
-I = TypeVar('I')  # Internal storage  # noqa: E741
-M = TypeVar('M')  # Machine storage
+InternalStorageT = TypeVar('InternalStorageT')  # Internal storage
+MachineStorageT = TypeVar('MachineStorageT')  # Machine storage
 
 
-class Field(Generic[I, M], metaclass=Field_metaclass):
+class Field(Generic[InternalStorageT, MachineStorageT], metaclass=Field_metaclass):
     """
     For more information on how this works, please refer to the
     'Adding new protocols' chapter in the online documentation:
@@ -178,40 +178,44 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
             return len(x)
         return self.sz
 
-    def i2count(self, pkt: Optional[Packet], x: I) -> int:  # noqa: E741
+    def i2count(self, pkt: Optional[Packet], x: InternalStorageT) -> int:  # noqa: E741
         """Convert internal value to a number of elements usable by a FieldLenField.
         Always 1 except for list fields"""
         return 1
 
-    def h2i(self, pkt: Optional[Packet], x: Any) -> I:  # noqa: E741
+    def h2i(self, pkt: Optional[Packet], x: Any) -> InternalStorageT:  # noqa: E741
         """Convert human value to internal value"""
-        return cast(I, x)
+        return cast(InternalStorageT, x)
 
-    def i2h(self, pkt: Optional[Packet], x: I) -> Any:  # noqa: E741
+    def i2h(self, pkt: Optional[Packet], x: InternalStorageT) -> Any:  # noqa: E741
         """Convert internal value to human value"""
         return x
 
-    def m2i(self, pkt: Optional[Packet], x: M) -> I:  # noqa: E741
+    def m2i(
+            self, pkt: Optional[Packet], x: MachineStorageT
+    ) -> InternalStorageT:  # noqa: E741
         """Convert machine value to internal value"""
-        return cast(I, x)
+        return cast(InternalStorageT, x)
 
-    def i2m(self, pkt: Optional[Packet], x: Optional[I]) -> M:  # noqa: E741
+    def i2m(
+            self, pkt: Optional[Packet], x: Optional[InternalStorageT]
+    ) -> MachineStorageT:  # noqa: E741
         """Convert internal value to machine value"""
         if x is None:
-            return cast(M, 0)
+            return cast(MachineStorageT, 0)
         elif isinstance(x, str):
-            return cast(M, bytes_encode(x))
-        return cast(M, x)
+            return cast(MachineStorageT, bytes_encode(x))
+        return cast(MachineStorageT, x)
 
-    def any2i(self, pkt: Optional[Packet], x: Any) -> Optional[I]:  # noqa: E741
+    def any2i(self, pkt: Optional[Packet], x: Any) -> Optional[InternalStorageT]:  # noqa: E741
         """Try to understand the most input values possible and make an internal value from them"""  # noqa: E501
         return self.h2i(pkt, x)
 
-    def i2repr(self, pkt: Optional[Packet], x: I) -> str:  # noqa: E741
+    def i2repr(self, pkt: Optional[Packet], x: InternalStorageT) -> str:  # noqa: E741
         """Convert internal value to a nice representation"""
         return repr(self.i2h(pkt, x))
 
-    def addfield(self, pkt: Packet, s: bytes, val: Optional[I]) -> bytes:
+    def addfield(self, pkt: Packet, s: bytes, val: Optional[InternalStorageT]) -> bytes:
         """Add an internal value to a string
 
         Copy the network representation of field `val` (belonging to layer
@@ -227,7 +231,7 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
                 "use RawVal. See help(RawVal)"
             )
 
-    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, I]:
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, InternalStorageT]:
         """Extract an internal value from a string
 
         Extract from the raw packet `s` the field value belonging to layer
@@ -239,7 +243,7 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
         """
         return s[self.sz:], self.m2i(pkt, self.struct.unpack(s[:self.sz])[0])
 
-    def do_copy(self, x: I) -> I:
+    def do_copy(self, x: InternalStorageT) -> InternalStorageT:
         if isinstance(x, list):
             x = x[:]  # type: ignore
             for i in range(len(x)):
@@ -257,7 +261,7 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
             self.name
         )
 
-    def copy(self) -> Field[I, M]:
+    def copy(self) -> Field[InternalStorageT, MachineStorageT]:
         return copy.copy(self)
 
     def randval(self) -> VolatileValue[Any]:
@@ -1283,12 +1287,12 @@ class IEEEDoubleField(Field[int, int]):
         Field.__init__(self, name, default, "d")
 
 
-class _StrField(Field[I, bytes]):
+class _StrField(Field[InternalStorageT, bytes]):
     __slots__ = ["remain"]
 
     def __init__(
             self, name: str,
-            default: Optional[I],
+            default: Optional[InternalStorageT],
             fmt: str = "H",
             remain: int = 0,
     ) -> None:
@@ -1300,27 +1304,27 @@ class _StrField(Field[I, bytes]):
             return 0
         return len(x)
 
-    def any2i(self, pkt: Optional[Packet], x: Any) -> I:
+    def any2i(self, pkt: Optional[Packet], x: Any) -> InternalStorageT:
         if isinstance(x, str):
             x = bytes_encode(x)
         return super(_StrField, self).any2i(pkt, x)  # type: ignore
 
-    def i2repr(self, pkt: Optional[Packet], x: I) -> str:
+    def i2repr(self, pkt: Optional[Packet], x: InternalStorageT) -> str:
         if x and isinstance(x, bytes):
             return repr(x)
         return super(_StrField, self).i2repr(pkt, x)
 
-    def i2m(self, pkt: Optional[Packet], x: Optional[I]) -> bytes:
+    def i2m(self, pkt: Optional[Packet], x: Optional[InternalStorageT]) -> bytes:
         if x is None:
             return b""
         if not isinstance(x, bytes):
             return bytes_encode(x)
         return x
 
-    def addfield(self, pkt: Packet, s: bytes, val: Optional[I]) -> bytes:
+    def addfield(self, pkt: Packet, s: bytes, val: Optional[InternalStorageT]) -> bytes:
         return s + self.i2m(pkt, val)
 
-    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, I]:
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, InternalStorageT]:
         if self.remain == 0:
             return b"", self.m2i(pkt, s)
         else:
@@ -2116,7 +2120,7 @@ class BCDFloatField(Field[float, int]):
         return x / 256.0
 
 
-class _BitField(Field[I, int]):
+class _BitField(Field[InternalStorageT, int]):
     """
     Field to handle bits.
 
@@ -2164,7 +2168,7 @@ class _BitField(Field[I, int]):
     """
     __slots__ = ["rev", "size", "tot_size", "end_tot_size"]
 
-    def __init__(self, name: str, default: Optional[I], size: int,
+    def __init__(self, name: str, default: Optional[InternalStorageT], size: int,
                  tot_size: int = 0, end_tot_size: int = 0) -> None:
         Field.__init__(self, name, default)
         if callable(size):
@@ -2186,7 +2190,7 @@ class _BitField(Field[I, int]):
     def addfield(self,  # type: ignore
                  pkt: Packet,
                  s: Union[Tuple[bytes, int, int], bytes],
-                 ival: I,
+                 ival: InternalStorageT,
                  ) -> Union[Tuple[bytes, int, int], bytes]:
         val = self.i2m(pkt, ival)
         if isinstance(s, tuple):
@@ -2212,7 +2216,7 @@ class _BitField(Field[I, int]):
     def getfield(self,  # type: ignore
                  pkt: Packet,
                  s: Union[Tuple[bytes, int], bytes],
-                 ) -> Union[Tuple[Tuple[bytes, int], I], Tuple[bytes, I]]:
+                 ) -> Union[Tuple[Tuple[bytes, int], InternalStorageT], Tuple[bytes, InternalStorageT]]:
         # noqa: E501
         if isinstance(s, tuple):
             s, bn = s
@@ -2315,11 +2319,11 @@ class XBitField(BitField):
         return lhex(self.i2h(pkt, x))
 
 
-class _EnumField(Field[Union[List[I], I], I]):
+class _EnumField(Field[Union[List[InternalStorageT], InternalStorageT], InternalStorageT]):
     def __init__(self,
                  name: str,
-                 default: Optional[I],
-                 enum: Union[Dict[I, str], Dict[str, I], List[str], DADict[I, str], Type[Enum], Tuple[Callable[[I], str], Callable[[str], I]]],  # noqa: E501
+                 default: Optional[InternalStorageT],
+                 enum: Union[Dict[InternalStorageT, str], Dict[str, InternalStorageT], List[str], DADict[InternalStorageT, str], Type[Enum], Tuple[Callable[[InternalStorageT], str], Callable[[str], InternalStorageT]]],  # noqa: E501
                  fmt: str = "H",
                  ) -> None:
         """ Initializes enum fields.
@@ -2341,10 +2345,10 @@ class _EnumField(Field[Union[List[I], I], I]):
             cast(ObservableDict, enum).observe(self)
 
         if isinstance(enum, tuple):
-            self.i2s_cb: Optional[Callable[[I], str]] = enum[0]
-            self.s2i_cb: Optional[Callable[[str], I]] = enum[1]
-            self.i2s: Optional[Dict[I, str]] = None
-            self.s2i: Optional[Dict[str, I]] = None
+            self.i2s_cb: Optional[Callable[[InternalStorageT], str]] = enum[0]
+            self.s2i_cb: Optional[Callable[[str], InternalStorageT]] = enum[1]
+            self.i2s: Optional[Dict[InternalStorageT, str]] = None
+            self.s2i: Optional[Dict[str, InternalStorageT]] = None
         elif isinstance(enum, type) and issubclass(enum, Enum):
             # Python's Enum
             i2s = self.i2s = {}
@@ -2361,7 +2365,7 @@ class _EnumField(Field[Union[List[I], I], I]):
             s2i = self.s2i = {}
             self.i2s_cb = None
             self.s2i_cb = None
-            keys: List[I] = []
+            keys: List[InternalStorageT] = []
             if isinstance(enum, list):
                 keys = list(range(len(enum)))  # type: ignore
             elif isinstance(enum, DADict):
@@ -2376,20 +2380,20 @@ class _EnumField(Field[Union[List[I], I], I]):
                 s2i[value] = k
         Field.__init__(self, name, default, fmt)
 
-    def any2i_one(self, pkt: Optional[Packet], x: Any) -> I:
+    def any2i_one(self, pkt: Optional[Packet], x: Any) -> InternalStorageT:
         if isinstance(x, Enum):
-            return cast(I, x.value)
+            return cast(InternalStorageT, x.value)
         elif isinstance(x, str):
             if self.s2i:
                 x = self.s2i[x]
             elif self.s2i_cb:
                 x = self.s2i_cb(x)
-        return cast(I, x)
+        return cast(InternalStorageT, x)
 
-    def _i2repr(self, pkt: Optional[Packet], x: I) -> str:
+    def _i2repr(self, pkt: Optional[Packet], x: InternalStorageT) -> str:
         return repr(x)
 
-    def i2repr_one(self, pkt: Optional[Packet], x: I) -> str:
+    def i2repr_one(self, pkt: Optional[Packet], x: InternalStorageT) -> str:
         if self not in conf.noenum and not isinstance(x, VolatileValue):
             if self.i2s:
                 try:
@@ -2402,7 +2406,7 @@ class _EnumField(Field[Union[List[I], I], I]):
                     return ret
         return self._i2repr(pkt, x)
 
-    def any2i(self, pkt: Optional[Packet], x: Any) -> Union[I, List[I]]:
+    def any2i(self, pkt: Optional[Packet], x: Any) -> Union[InternalStorageT, List[InternalStorageT]]:
         if isinstance(x, list):
             return [self.any2i_one(pkt, z) for z in x]
         else:
@@ -2417,7 +2421,7 @@ class _EnumField(Field[Union[List[I], I], I]):
         else:
             return self.i2repr_one(pkt, x)
 
-    def notify_set(self, enum: ObservableDict, key: I, value: str) -> None:
+    def notify_set(self, enum: ObservableDict, key: InternalStorageT, value: str) -> None:
         ks = "0x%x" if isinstance(key, int) else "%s"
         log_runtime.debug(
             "At %s: Change to %s at " + ks, self, value, key
@@ -2426,7 +2430,7 @@ class _EnumField(Field[Union[List[I], I], I]):
             self.i2s[key] = value
             self.s2i[value] = key
 
-    def notify_del(self, enum: ObservableDict, key: I) -> None:
+    def notify_del(self, enum: ObservableDict, key: InternalStorageT) -> None:
         ks = "0x%x" if isinstance(key, int) else "%s"
         log_runtime.debug("At %s: Delete value at " + ks, self, key)
         if self.i2s is not None and self.s2i is not None:
@@ -2435,7 +2439,7 @@ class _EnumField(Field[Union[List[I], I], I]):
             del self.s2i[value]
 
 
-class EnumField(_EnumField[I]):
+class EnumField(_EnumField[InternalStorageT]):
     __slots__ = ["i2s", "s2i", "s2i_cb", "i2s_cb"]
 
 
@@ -2611,28 +2615,28 @@ class XLE3BytesEnumField(LE3BytesEnumField):
         return lhex(x)
 
 
-class _MultiEnumField(_EnumField[I]):
+class _MultiEnumField(_EnumField[InternalStorageT]):
     def __init__(self,
                  name: str,
                  default: int,
-                 enum: Dict[I, Dict[I, str]],
-                 depends_on: Callable[[Optional[Packet]], I],
+                 enum: Dict[InternalStorageT, Dict[InternalStorageT, str]],
+                 depends_on: Callable[[Optional[Packet]], InternalStorageT],
                  fmt: str = "H"
                  ) -> None:
 
         self.depends_on = depends_on
         self.i2s_multi = enum
-        self.s2i_multi: Dict[I, Dict[str, I]] = {}
-        self.s2i_all: Dict[str, I] = {}
+        self.s2i_multi: Dict[InternalStorageT, Dict[str, InternalStorageT]] = {}
+        self.s2i_all: Dict[str, InternalStorageT] = {}
         for m in enum:
-            s2i: Dict[str, I] = {}
+            s2i: Dict[str, InternalStorageT] = {}
             self.s2i_multi[m] = s2i
             for k, v in enum[m].items():
                 s2i[v] = k
                 self.s2i_all[v] = k
         Field.__init__(self, name, default, fmt)
 
-    def any2i_one(self, pkt: Optional[Packet], x: Any) -> I:
+    def any2i_one(self, pkt: Optional[Packet], x: Any) -> InternalStorageT:
         if isinstance(x, str):
             v = self.depends_on(pkt)
             if v in self.s2i_multi:
@@ -2640,9 +2644,9 @@ class _MultiEnumField(_EnumField[I]):
                 if x in s2i:
                     return s2i[x]
             return self.s2i_all[x]
-        return cast(I, x)
+        return cast(InternalStorageT, x)
 
-    def i2repr_one(self, pkt: Optional[Packet], x: I) -> str:
+    def i2repr_one(self, pkt: Optional[Packet], x: InternalStorageT) -> str:
         v = self.depends_on(pkt)
         if isinstance(v, VolatileValue):
             return repr(v)

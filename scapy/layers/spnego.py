@@ -297,7 +297,12 @@ class NEGOEX_MESSAGE_HEADER(Packet):
         return pkt + pay
 
 
-def _NEGOEX_post_build(self: Packet, p: bytes, pay_offset: int, fields: Dict[str, Tuple[str, int]]) -> bytes:
+def _NEGOEX_post_build(
+        self: Packet,
+        p: bytes,
+        pay_offset: int,
+        fields: Dict[str, Tuple[str, int]]
+) -> bytes:
     """Util function to build the offset and populate the lengths"""
     for field_name, value in self.fields["Payload"]:
         length = self.get_field("Payload").fields_map[field_name].i2len(self, value)

@@ -111,9 +111,17 @@ _ResolverCallable = Callable[[Packet, Packet], Optional[str]]
 
 class Neighbor:
     def __init__(self) -> None:
-        self.resolvers: Dict[Tuple[Type[Packet], Type[Packet]], _ResolverCallable] = {} # noqa: E501
+        self.resolvers: Dict[
+            Tuple[Type[Packet], Type[Packet]],
+            _ResolverCallable
+        ] = {}  # noqa: E501
 
-    def register_l3(self, l2: Type[Packet], l3: Type[Packet], resolve_method: _ResolverCallable) -> None:
+    def register_l3(
+            self,
+            l2: Type[Packet],
+            l3: Type[Packet],
+            resolve_method: _ResolverCallable
+    ) -> None:
         self.resolvers[l2, l3] = resolve_method
 
     def resolve(self, l2inst: Packet, l3inst: Packet) -> Optional[str]:
@@ -289,7 +297,12 @@ class Ether(Packet):
         return self.sprintf("%src% > %dst% (%type%)")
 
     @classmethod
-    def dispatch_hook(cls, _pkt: Optional[bytes] = None, *args: Any, **kargs: Any) -> Type[Packet]:
+    def dispatch_hook(
+        cls,
+        _pkt: Optional[bytes] = None,
+        *args: Any,
+        **kargs: Any
+    ) -> Type[Packet]:
         if _pkt and len(_pkt) >= 14:
             if struct.unpack("!H", _pkt[12:14])[0] <= 1500:
                 return Dot3
@@ -315,7 +328,12 @@ class Dot3(Packet):
         return "802.3 %s > %s" % (self.src, self.dst)
 
     @classmethod
-    def dispatch_hook(cls, _pkt: Optional[Any] = None, *args: Any, **kargs: Any) -> Type[Packet]:
+    def dispatch_hook(
+        cls,
+        _pkt: Optional[Any] = None,
+        *args: Any,
+        **kargs: Any
+    ) -> Type[Packet]:
         if _pkt and len(_pkt) >= 14:
             if struct.unpack("!H", _pkt[12:14])[0] > 1500:
                 return Ether
@@ -627,7 +645,12 @@ class GRE(Packet):
                    ]
 
     @classmethod
-    def dispatch_hook(cls, _pkt: Optional[Any] = None, *args: Any, **kargs: Any) -> Type[Packet]:
+    def dispatch_hook(
+        cls,
+        _pkt: Optional[Any] = None,
+        *args: Any,
+        **kargs: Any
+    ) -> Type[Packet]:
         if _pkt and struct.unpack("!H", _pkt[2:4])[0] == 0x880b:
             return GRE_PPTP
         return cls
@@ -903,7 +926,10 @@ def arp_mitm(
     if not target_mac:
         target_mac = get_if_hwaddr(iface)
 
-    def _tups(ip: str, mac: Optional[Union[str, List[str]]]) -> Iterable[Tuple[str, str]]:
+    def _tups(
+            ip: str,
+            mac: Optional[Union[str, List[str]]]
+    ) -> Iterable[Tuple[str, str]]:
         if mac is None:
             if broadcast:
                 # ip can be a Net/list/etc and will be iterated upon while sending
@@ -1078,7 +1104,12 @@ def is_promisc(ip: str, fake_bcast: str = "ff:ff:00:00:00:00", **kargs: Any) -> 
 
 
 @conf.commands.register
-def promiscping(net: str, timeout: int = 2, fake_bcast: str = "ff:ff:ff:ff:ff:fe", **kargs: Any) -> Tuple[ARPingResult, PacketList]:
+def promiscping(
+    net: str,
+    timeout: int = 2,
+    fake_bcast: str = "ff:ff:ff:ff:ff:fe",
+    **kargs: Any
+) -> Tuple[ARPingResult, PacketList]:
     """Send ARP who-has requests to determine which hosts are in promiscuous mode
     promiscping(net, iface=conf.iface)"""
     ans, unans = srp(Ether(dst=fake_bcast) / ARP(pdst=net),
@@ -1120,7 +1151,12 @@ class ARP_am(AnsweringMachine[Packet]):
     filter = "arp"
     send_function = staticmethod(sendp)
 
-    def parse_options(self, IP_addr: Optional[str] = None, ARP_addr: Optional[str] = None, from_ip: Optional[str] = None) -> None:
+    def parse_options(
+            self,
+            IP_addr: Optional[str] = None,
+            ARP_addr: Optional[str] = None,
+            from_ip: Optional[str] = None
+    ) -> None:
         if isinstance(IP_addr, str):
             self.IP_addr: Optional[Net] = Net(IP_addr)
         else:
@@ -1184,7 +1220,12 @@ def etherleak(target: str, **kargs: Any) -> Tuple[SndRcvList, PacketList]:
 
 
 @conf.commands.register
-def arpleak(target: str, plen: int = 255, hwlen: int = 255, **kargs: Any) -> Tuple[SndRcvList, PacketList]:
+def arpleak(
+    target: str,
+    plen: int = 255,
+    hwlen: int = 255,
+    **kargs: Any
+) -> Tuple[SndRcvList, PacketList]:
     """Exploit ARP leak flaws, like NetBSD-SA2017-002.
 
 https://ftp.netbsd.org/pub/NetBSD/security/advisories/NetBSD-SA2017-002.txt.asc

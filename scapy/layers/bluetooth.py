@@ -2941,7 +2941,13 @@ class sockaddr_hci(ctypes.Structure):
 
 
 class _BluetoothLibcSocket(SuperSocket):
-    def __init__(self, socket_domain: int, socket_type: int, socket_protocol: int, sock_address: sockaddr_hci) -> None:
+    def __init__(
+            self,
+            socket_domain: int,
+            socket_type: int,
+            socket_protocol: int,
+            sock_address: sockaddr_hci
+    ) -> None:
         if WINDOWS:
             warning("Not available on Windows")
             return
