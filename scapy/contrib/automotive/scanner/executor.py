@@ -6,6 +6,8 @@
 # scapy.contrib.description = AutomotiveTestCaseExecutor base class
 # scapy.contrib.status = library
 
+from __future__ import annotations
+
 import abc
 import time
 
@@ -57,25 +59,24 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
     """
 
     @property
-    def _initial_ecu_state(self):
-        # type: () -> EcuState
+    def _initial_ecu_state(self) -> EcuState:
         return EcuState(session=1)
 
     def __init__(
             self,
-            socket,  # type: Optional[_SocketUnion]
-            reset_handler=None,  # type: Optional[Callable[[], None]]
-            reconnect_handler=None,  # type: Optional[Callable[[], _SocketUnion]]  # noqa: E501
-            test_cases=None,  # type: Optional[List[Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC]]]]  # noqa: E501
-            software_reset_handler=None,  # type: Optional[Callable[[_SocketUnion], None]]  # noqa: E501
-            **kwargs  # type: Optional[Dict[str, Any]]
-    ):  # type: (...) -> None
+            socket: Optional[_SocketUnion],
+            reset_handler: Optional[Callable[[], None]] = None,
+            reconnect_handler: Optional[Callable[[], _SocketUnion]] = None,  # noqa: E501
+            test_cases: Optional[List[Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC]]]] = None,  # noqa: E501
+            software_reset_handler: Optional[Callable[[_SocketUnion], None]] = None,  # noqa: E501
+            **kwargs: Optional[Dict[str, Any]]
+    ) -> None:
 
         # The TesterPresentSender can interfere with a test_case, since a
         # target may only allow one request at a time.
         # The SingleConversationSocket prevents interleaving requests.
         if socket and not isinstance(socket, SingleConversationSocket):
-            self.socket = SingleConversationSocket(socket)  # type: Optional[_SocketUnion]  # noqa: E501
+            self.socket: Optional[_SocketUnion] = SingleConversationSocket(socket)  # noqa: E501
         else:
             self.socket = socket
 
@@ -84,7 +85,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
         self.reconnect_handler = reconnect_handler
         self.software_reset_handler = software_reset_handler
 
-        self.cleanup_functions = list()  # type: List[_CleanupCallable]
+        self.cleanup_functions: List[_CleanupCallable] = list()
 
         self.configuration = AutomotiveTestCaseExecutorConfiguration(
             test_cases or self.default_test_case_clss, **kwargs)
@@ -108,18 +109,15 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def default_test_case_clss(self):
-        # type: () -> List[Type[AutomotiveTestCaseABC]]
+    def default_test_case_clss(self) -> List[Type[AutomotiveTestCaseABC]]:
         raise NotImplementedError()
 
     @property
-    def state_graph(self):
-        # type: () -> Graph
+    def state_graph(self) -> Graph:
         return self.configuration.state_graph
 
     @property
-    def state_paths(self):
-        # type: () -> List[List[EcuState]]
+    def state_paths(self) -> List[List[EcuState]]:
         """
         Returns all state paths. A path is represented by a list of EcuState
         objects.
@@ -133,8 +131,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
             key=lambda x: x[-1])
 
     @property
-    def final_states(self):
-        # type: () -> List[EcuState]
+    def final_states(self) -> List[EcuState]:
         """
         Returns a list with all final states. A final state is the last
         state of a path.
@@ -143,13 +140,11 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
         return [p[-1] for p in self.state_paths]
 
     @property
-    def scan_completed(self):
-        # type: () -> bool
+    def scan_completed(self) -> bool:
         return all(t.has_completed(s) for t, s in
                    product(self.configuration.test_cases, self.final_states))
 
-    def reset_target(self):
-        # type: () -> None
+    def reset_target(self) -> None:
         log_automotive.info("Target reset")
         if self.reset_handler:
             self.reset_handler()
@@ -160,8 +155,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
                 self.software_reset_handler(self.socket)
         self.target_state = self._initial_ecu_state
 
-    def reconnect(self):
-        # type: () -> None
+    def reconnect(self) -> None:
         if self.reconnect_handler:
             try:
                 if self.socket:
@@ -181,8 +175,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
             raise Scapy_Exception(
                 "Socket closed even after reconnect. Stop scan!")
 
-    def execute_test_case(self, test_case, kill_time=None):
-        # type: (AutomotiveTestCaseABC, Optional[float]) -> None
+    def execute_test_case(self, test_case: AutomotiveTestCaseABC, kill_time: Optional[float] = None) -> None:
         """
         This function ensures the correct execution of a testcase, including
         the pre_execute, execute and post_execute.
@@ -232,16 +225,14 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
                     test_case.__class__.__name__, estimation[0],
                     estimation[1], estimation[2])
 
-    def check_new_testcases(self, test_case):
-        # type: (AutomotiveTestCaseABC) -> None
+    def check_new_testcases(self, test_case: AutomotiveTestCaseABC) -> None:
         if isinstance(test_case, TestCaseGenerator):
             new_test_case = test_case.get_generated_test_case()
             if new_test_case:
                 log_automotive.debug("Testcase generated %s", new_test_case)
                 self.configuration.add_test_case(new_test_case)
 
-    def check_new_states(self, test_case):
-        # type: (AutomotiveTestCaseABC) -> None
+    def check_new_states(self, test_case: AutomotiveTestCaseABC) -> None:
         if not self.socket:
             log_automotive.warning("Socket is None! Leaving check_new_states")
             return
@@ -253,20 +244,17 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
                 tf = test_case.get_transition_function(self.socket, edge)
                 self.state_graph.add_edge(edge, tf)
 
-    def validate_test_case_kwargs(self):
-        # type: () -> None
+    def validate_test_case_kwargs(self) -> None:
         for test_case in self.configuration.test_cases:
             if isinstance(test_case, AutomotiveTestCase):
                 test_case_kwargs = self.configuration[test_case.__class__.__name__]
                 test_case.check_kwargs(test_case_kwargs)
 
-    def stop_scan(self):
-        # type: () -> None
+    def stop_scan(self) -> None:
         self.configuration.stop_event.set()
         log_automotive.debug("Internal stop event set!")
 
-    def progress(self):
-        # type: () -> float
+    def progress(self) -> float:
         progress = []
         for tc in self.configuration.test_cases:
             if not hasattr(tc, "runtime_estimation"):
@@ -278,8 +266,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
 
         return sum(progress) / len(progress) if len(progress) else 0.0
 
-    def scan(self, timeout=None):
-        # type: (Optional[int]) -> None
+    def scan(self, timeout: Optional[int] = None) -> None:
         """
         Executes all testcases for a given time.
         :param timeout: Time for execution.
@@ -344,8 +331,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
         self.cleanup_state()
         self.reset_target()
 
-    def enter_state_path(self, path):
-        # type: (List[EcuState]) -> bool
+    def enter_state_path(self, path: List[EcuState]) -> bool:
         """
         Resets and reconnects to a target and applies all transition functions
         to traversal a given path.
@@ -376,8 +362,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
                 return False
         return True
 
-    def enter_state(self, prev_state, next_state):
-        # type: (EcuState, EcuState) -> bool
+    def enter_state(self, prev_state: EcuState, next_state: EcuState) -> bool:
         """
         Obtains a transition function from the system state graph and executes
         it. On success, the cleanup function is added for a later cleanup of
@@ -410,8 +395,7 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
             log_automotive.info("Transition for edge %s failed", edge)
             return False
 
-    def cleanup_state(self):
-        # type: () -> None
+    def cleanup_state(self) -> None:
         """
         Executes all collected cleanup functions from a traversed path
         :return: None
@@ -432,26 +416,22 @@ class AutomotiveTestCaseExecutor(metaclass=abc.ABCMeta):
 
         self.cleanup_functions = list()
 
-    def show_testcases(self):
-        # type: () -> None
+    def show_testcases(self) -> None:
         for t in self.configuration.test_cases:
             t.show()
 
-    def show_testcases_status(self):
-        # type: () -> None
+    def show_testcases_status(self) -> None:
         data = list()
         for t in self.configuration.test_cases:
             for s in self.state_graph.nodes:
                 data += [(repr(s), t.__class__.__name__, t.has_completed(s))]
         make_lined_table(data, lambda *tup: (tup[0], tup[1], tup[2]))
 
-    def get_test_cases_by_class(self, cls):
-        # type: (Type[T]) -> List[T]
+    def get_test_cases_by_class(self, cls: Type[T]) -> List[T]:
         return [x for x in self.configuration.test_cases if isinstance(x, cls)]
 
     @property
-    def supported_responses(self):
-        # type: () -> List[EcuResponse]
+    def supported_responses(self) -> List[EcuResponse]:
         """
         Returns a sorted list of supported responses, gathered from all
         enumerators. The sort is done in a way

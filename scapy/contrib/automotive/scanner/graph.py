@@ -6,6 +6,7 @@
 # scapy.contrib.description = Graph library for AutomotiveTestCaseExecutor
 # scapy.contrib.status = library
 
+from __future__ import annotations
 from collections import defaultdict
 
 from scapy.contrib.automotive import log_automotive
@@ -41,14 +42,12 @@ class Graph(object):
     two nodes, with the two nodes as a tuple as the key
     e.g. {('X', 'A'): 7, ('X', 'B'): 2, ...}
     """
-    def __init__(self):
-        # type: () -> None
-        self.edges = defaultdict(list)  # type: Dict[EcuState, List[EcuState]]
-        self.__transition_functions = {}  # type: Dict[_Edge, Optional["_TransitionTuple"]]  # noqa: E501
-        self.weights = {}  # type: Dict[_Edge, int]
+    def __init__(self) -> None:
+        self.edges: Dict[EcuState, List[EcuState]] = defaultdict(list)
+        self.__transition_functions: Dict[_Edge, Optional["_TransitionTuple"]] = {}  # noqa: E501
+        self.weights: Dict[_Edge, int] = {}
 
-    def add_edge(self, edge, transition_function=None):
-        # type: (_Edge, Optional["_TransitionTuple"]) -> None
+    def add_edge(self, edge: _Edge, transition_function: Optional["_TransitionTuple"] = None) -> None:
         """
         Inserts new edge in directional graph
         :param edge: edge from node to node
@@ -58,8 +57,8 @@ class Graph(object):
         self.weights[edge] = 1
         self.__transition_functions[edge] = transition_function
 
-    def get_transition_tuple_for_edge(self, edge):
-        # type: (_Edge) -> Optional["_TransitionTuple"]  # noqa: E501
+    def get_transition_tuple_for_edge(self, edge: _Edge) -> Optional["_TransitionTuple"]:
+        # noqa: E501
         """
         Returns a TransitionTuple for an Edge, if available.
         :param edge: Tuple of EcuStates
@@ -67,8 +66,7 @@ class Graph(object):
         """
         return self.__transition_functions.get(edge, None)
 
-    def downrate_edge(self, edge):
-        # type: (_Edge) -> None
+    def downrate_edge(self, edge: _Edge) -> None:
         """
         Increases the weight of an Edge
         :param edge: Edge on which the weight has t obe increased
@@ -79,8 +77,7 @@ class Graph(object):
             pass
 
     @property
-    def transition_functions(self):
-        # type: () -> Dict[_Edge, Optional["_TransitionTuple"]]
+    def transition_functions(self) -> Dict[_Edge, Optional["_TransitionTuple"]]:
         """
         Get the dict of all TransistionTuples
         :return:
@@ -88,16 +85,14 @@ class Graph(object):
         return self.__transition_functions
 
     @property
-    def nodes(self):
-        # type: () -> Union[List[EcuState], Set[EcuState]]
+    def nodes(self) -> Union[List[EcuState], Set[EcuState]]:
         """
         Get a set of all nodes in this Graph
         :return:
         """
         return set([n for k, p in self.edges.items() for n in p + [k]])
 
-    def render(self, filename="SystemStateGraph.gv", view=True):
-        # type: (str, bool) -> None
+    def render(self, filename: str = "SystemStateGraph.gv", view: bool = True) -> None:
         """
         Renders this Graph as PDF, if `graphviz` is installed.
 
@@ -128,8 +123,7 @@ class Graph(object):
         ps.render(filename, view=view)
 
     @staticmethod
-    def dijkstra(graph, initial, end):
-        # type: (Graph, EcuState, EcuState) -> List[EcuState]
+    def dijkstra(graph: Graph, initial: EcuState, end: EcuState) -> List[EcuState]:
         """
         Compute shortest paths from initial to end in graph
         Partly from https://benalexkeen.com/implementing-djikstras-shortest-path-algorithm-with-python/  # noqa: E501
@@ -138,7 +132,7 @@ class Graph(object):
         :param end: End node
         :return: A path as list of nodes
         """
-        shortest_paths = {initial: (None, 0)}  # type: Dict[EcuState, Tuple[Optional[EcuState], int]]  # noqa: E501
+        shortest_paths: Dict[EcuState, Tuple[Optional[EcuState], int]] = {initial: (None, 0)}  # noqa: E501
         current_node = initial
         visited = set()
 

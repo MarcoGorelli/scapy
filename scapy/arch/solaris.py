@@ -7,6 +7,8 @@
 Customization for the Solaris operation system.
 """
 
+from __future__ import annotations
+
 import socket
 
 from scapy.config import conf
@@ -25,8 +27,7 @@ from scapy.arch.unix import *  # noqa: F401, F403, E402
 from scapy.interfaces import NetworkInterface  # noqa: E402
 
 
-def get_working_if():
-    # type: () -> NetworkInterface
+def get_working_if() -> NetworkInterface:
     """Return an interface that works"""
     try:
         # return the interface associated with the route with smallest

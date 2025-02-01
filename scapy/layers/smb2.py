@@ -11,6 +11,8 @@ SMB (Server Message Block), also known as CIFS - version 2
     `SMB <https://scapy.readthedocs.io/en/latest/layers/smb.html>`_
 """
 
+from __future__ import annotations
+
 import collections
 import functools
 import hashlib
@@ -707,8 +709,7 @@ class FileRenameInformation(Packet):
         StrLenFieldUtf16("FileName", b"", length_from=lambda pkt: pkt.FileNameLength),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         if len(pkt) < 24:
             # 'Length of this field MUST be the number of bytes required to make the
             # size of this structure at least 24.'
@@ -2003,8 +2004,7 @@ class SMB2_Error_Share_Redirect_Context_Response(_NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -2098,8 +2098,7 @@ class SMB2_Negotiate_Protocol_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,
@@ -2377,8 +2376,7 @@ class SMB2_Negotiate_Protocol_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         pkt = _NTLM_post_build(
             self,
             pkt,
@@ -2439,8 +2437,7 @@ class SMB2_Session_Setup_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -2507,8 +2504,7 @@ class SMB2_Session_Setup_Response(_SMB2_Payload, _NTLMPayloadPacket):
             )
         return super(SMB2_Session_Setup_Response, self).setfieldval(attr, val)
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -2593,8 +2589,7 @@ class SMB2_Tree_Connect_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -2945,8 +2940,7 @@ class SMB2_Create_Context(_NTLMPayloadPacket):
     def default_payload_class(self, _):
         return conf.padding_layer
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,
@@ -3073,8 +3067,7 @@ class SMB2_Create_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         if len(pkt) == 0x38:
             # 'In the request, the Buffer field MUST be at least one byte in length.'
             pkt += b"\x00"
@@ -3135,8 +3128,7 @@ class SMB2_Create_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3247,8 +3239,7 @@ class SMB2_Read_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         if len(pkt) == 0x30:
             # 'The first byte of the Buffer field MUST be set to 0.'
             pkt += b"\x00"
@@ -3299,8 +3290,7 @@ class SMB2_Read_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3372,8 +3362,7 @@ class SMB2_Write_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3552,8 +3541,7 @@ class SMB2_IOCTL_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3751,8 +3739,7 @@ class SMB2_IOCTL_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ]
     )
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3804,8 +3791,7 @@ class SMB2_Query_Directory_Request(_SMB2_Payload, _NTLMPayloadPacket):
         _NTLMPayloadField("Buffer", OFFSET, [StrFieldUtf16("FileName", b"")]),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3847,8 +3833,7 @@ class SMB2_Query_Directory_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -3943,8 +3928,7 @@ class SMB2_Change_Notify_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -4090,8 +4074,7 @@ class SMB2_Query_Info_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -4131,8 +4114,7 @@ class SMB2_Query_Info_Response(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -4214,8 +4196,7 @@ class SMB2_Set_Info_Request(_SMB2_Payload, _NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _SMB2_post_build(
                 self,
@@ -4361,8 +4342,7 @@ class DFS_REFERRAL_V3(DFS_REFERRAL):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         if self.Size is None:
             pkt = pkt[:2] + struct.pack("<H", len(pkt)) + pkt[4:]
         return pkt + pay
@@ -4461,8 +4441,7 @@ class SMB2_IOCTL_RESP_GET_DFS_Referral(Packet):
         _DFS_Referrals_BufferField("ReferralBuffer", []),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         # Note: Windows is smart and uses some sort of compression in the sense
         # that it reuses fields that are used several times across ReferralBuffer.
         # But we just do the dumb thing because it's 'easier', and do no compression.

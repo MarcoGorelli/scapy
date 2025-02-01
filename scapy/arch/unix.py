@@ -7,6 +7,8 @@
 Common customizations for all Unix-like operating systems other than Linux
 """
 
+from __future__ import annotations
+
 import os
 import socket
 import struct
@@ -31,8 +33,7 @@ from typing import (
 )
 
 
-def get_if(iff, cmd):
-    # type: (str, int) -> bytes
+def get_if(iff: str, cmd: int) -> bytes:
     """Ease SIOCGIF* ioctl calls"""
 
     sck = socket.socket()
@@ -42,10 +43,9 @@ def get_if(iff, cmd):
         sck.close()
 
 
-def get_if_raw_hwaddr(iff,  # type: str
-                      siocgifhwaddr=None,  # type: Optional[int]
-                      ):
-    # type: (...) -> Tuple[int, bytes]
+def get_if_raw_hwaddr(iff: str,
+                      siocgifhwaddr: Optional[int] = None,
+                      ) -> Tuple[int, bytes]:
     """Get the raw MAC address of a local interface.
 
     This function uses SIOCGIFHWADDR calls, therefore only works
@@ -71,8 +71,7 @@ def get_if_raw_hwaddr(iff,  # type: str
 #  Routes stuff  #
 ##################
 
-def _guess_iface_name(netif):
-    # type: (str) -> Optional[str]
+def _guess_iface_name(netif: str) -> Optional[str]:
     """
     We attempt to guess the name of interfaces that are truncated from the
     output of ifconfig -l.
@@ -88,8 +87,7 @@ def _guess_iface_name(netif):
     return None
 
 
-def read_routes():
-    # type: () -> List[Tuple[int, int, str, str, str, int]]
+def read_routes() -> List[Tuple[int, int, str, str, str, int]]:
     """Return a list of IPv4 routes than can be used by Scapy.
 
     This function parses netstat.
@@ -105,8 +103,8 @@ def read_routes():
     prio_present = False
     refs_present = False
     use_present = False
-    routes = []  # type: List[Tuple[int, int, str, str, str, int]]
-    pending_if = []  # type: List[Tuple[int, int, str]]
+    routes: List[Tuple[int, int, str, str, str, int]] = []
+    pending_if: List[Tuple[int, int, str]] = []
     for line in f.readlines():
         if not line:
             break
@@ -203,8 +201,7 @@ def read_routes():
 ############
 
 
-def _in6_getifaddr(ifname):
-    # type: (str) -> List[Tuple[str, int, str]]
+def _in6_getifaddr(ifname: str) -> List[Tuple[str, int, str]]:
     """
     Returns a list of IPv6 addresses configured on the interface ifname.
     """
@@ -240,8 +237,7 @@ def _in6_getifaddr(ifname):
     return ret
 
 
-def in6_getifaddr():
-    # type: () -> List[Tuple[str, int, str]]
+def in6_getifaddr() -> List[Tuple[str, int, str]]:
     """
     Returns a list of 3-tuples of the form (addr, scope, iface) where
     'addr' is the address of scope 'scope' associated to the interface
@@ -287,8 +283,7 @@ def in6_getifaddr():
     return ret
 
 
-def read_routes6():
-    # type: () -> List[Tuple[str, int, str, str, List[str], int]]
+def read_routes6() -> List[Tuple[str, int, str, str, List[str], int]]:
     """Return a list of IPv6 routes than can be used by Scapy.
 
     This function parses netstat.
@@ -353,7 +348,7 @@ def read_routes6():
             next_hop = "::"
 
         # Default prefix length
-        destination_plen = 128  # type: Union[int, str]
+        destination_plen: Union[int, str] = 128
 
         # Extract network interface from the zone id
         if '%' in destination:

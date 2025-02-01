@@ -5,6 +5,8 @@
 
 # scapy.contrib.description = XCPScanner
 # scapy.contrib.status = loads
+from __future__ import annotations
+
 import logging
 from collections import namedtuple
 
@@ -33,9 +35,9 @@ class XCPOnCANScanner:
     Scans for XCP Slave on CAN
     """
 
-    def __init__(self, can_socket, id_range=None,
-                 sniff_time=0.1, add_padding=False, verbose=False):
-        # type: (CANSocket, Optional[Iterator[int]], Optional[float], Optional[bool], Optional[bool]) -> None # noqa: E501
+    def __init__(self, can_socket: CANSocket, id_range: Optional[Iterator[int]] = None,
+                 sniff_time: Optional[float] = 0.1, add_padding: Optional[bool] = False, verbose: Optional[bool] = False) -> None:
+        # noqa: E501
 
         """
         Constructor
@@ -52,8 +54,8 @@ class XCPOnCANScanner:
         if verbose:
             log_automotive.setLevel(logging.DEBUG)
 
-    def _scan(self, identifier, body, pid, answer_type):
-        # type: (int, CTORequest, int, Type) -> List # noqa: E501
+    def _scan(self, identifier: int, body: CTORequest, pid: int, answer_type: Type) -> List:
+        # noqa: E501
 
         log_automotive.info("Scan for id: " + str(identifier))
         flags = 'extended' if identifier >= 0x800 else 0
@@ -75,8 +77,7 @@ class XCPOnCANScanner:
             req_and_res_list)
         return list(valid_req_and_res_list)
 
-    def _send_connect(self, identifier):
-        # type: (int) -> List[XCPScannerResult]
+    def _send_connect(self, identifier: int) -> List[XCPScannerResult]:
         """
         Sends CONNECT Message on the Control Area Network
         """
@@ -98,8 +99,7 @@ class XCPOnCANScanner:
                 "No XCP slave detected for identifier: " + str(identifier))
         return all_slaves
 
-    def _send_get_slave_id(self, identifier):
-        # type: (int) -> List[XCPScannerResult]
+    def _send_get_slave_id(self, identifier: int) -> List[XCPScannerResult]:
         """
         Sends GET_SLAVE_ID message on the Control Area Network
         """
@@ -132,8 +132,7 @@ class XCPOnCANScanner:
 
         return all_slaves
 
-    def scan_with_get_slave_id(self):
-        # type: () -> List[XCPScannerResult]
+    def scan_with_get_slave_id(self) -> List[XCPScannerResult]:
         """Starts the scan for XCP devices on CAN with the transport specific
         GetSlaveId Message"""
         log_automotive.info("Start scan with GetSlaveId id in range: " + str(
@@ -146,8 +145,7 @@ class XCPOnCANScanner:
 
         return []
 
-    def scan_with_connect(self):
-        # type: () -> List[XCPScannerResult]
+    def scan_with_connect(self) -> List[XCPScannerResult]:
         log_automotive.info("Start scan with CONNECT id in range: " + str(
             self.id_range))
         results = []

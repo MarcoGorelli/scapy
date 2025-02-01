@@ -7,6 +7,8 @@
 DCE/RPC client as per [MS-RPCE]
 """
 
+from __future__ import annotations
+
 import uuid
 import socket
 
@@ -78,7 +80,7 @@ class DCERPC_Client(object):
         self.verb = verb
         self.auth_level = kwargs.pop("auth_level", DCE_C_AUTHN_LEVEL.NONE)
         self.auth_context_id = kwargs.pop("auth_context_id", 0)
-        self.ssp = kwargs.pop("ssp", None)  # type: SSP
+        self.ssp: SSP = kwargs.pop("ssp", None)
         self.sspcontext = None
         self.dcesockargs = kwargs
 

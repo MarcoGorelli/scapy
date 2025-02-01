@@ -10,6 +10,8 @@ Usable either from an interactive console or as a Python library.
 https://scapy.net
 """
 
+from __future__ import annotations
+
 import datetime
 import os
 import re
@@ -23,8 +25,7 @@ __all__ = [
 _SCAPY_PKG_DIR = os.path.dirname(__file__)
 
 
-def _parse_tag(tag):
-    # type: (str) -> str
+def _parse_tag(tag: str) -> str:
     """
     Parse a tag from ``git describe`` into a version.
 
@@ -45,8 +46,7 @@ def _parse_tag(tag):
             raise ValueError('tag has invalid format')
 
 
-def _version_from_git_archive():
-    # type: () -> str
+def _version_from_git_archive() -> str:
     """
     Rely on git archive "export-subst" git attribute.
     See 'man gitattributes' for more details.
@@ -79,8 +79,7 @@ def _version_from_git_archive():
     raise ValueError("invalid git archive format")
 
 
-def _version_from_git_describe():
-    # type: () -> str
+def _version_from_git_describe() -> str:
     """
     Read the version from ``git describe``. It returns the latest tag with an
     optional suffix if the current directory is not exactly on the tag.
@@ -107,8 +106,7 @@ def _version_from_git_describe():
     if not os.path.isdir(os.path.join(os.path.dirname(_SCAPY_PKG_DIR), '.git')):  # noqa: E501
         raise ValueError('not in scapy git repo')
 
-    def _git(cmd):
-        # type: (str) -> str
+    def _git(cmd: str) -> str:
         process = subprocess.Popen(
             cmd.split(),
             cwd=_SCAPY_PKG_DIR,
@@ -129,8 +127,7 @@ def _version_from_git_describe():
     return _parse_tag(tag)
 
 
-def _version():
-    # type: () -> str
+def _version() -> str:
     """Returns the Scapy version from multiple methods
 
     :return: the Scapy version

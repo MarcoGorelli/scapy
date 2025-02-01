@@ -7,6 +7,8 @@
 Classes and functions for layer 2 protocols.
 """
 
+from __future__ import annotations
+
 import itertools
 import socket
 import struct
@@ -108,23 +110,19 @@ _ResolverCallable = Callable[[Packet, Packet], Optional[str]]
 
 
 class Neighbor:
-    def __init__(self):
-        # type: () -> None
-        self.resolvers = {}  # type: Dict[Tuple[Type[Packet], Type[Packet]], _ResolverCallable] # noqa: E501
+    def __init__(self) -> None:
+        self.resolvers: Dict[Tuple[Type[Packet], Type[Packet]], _ResolverCallable] = {} # noqa: E501
 
-    def register_l3(self, l2, l3, resolve_method):
-        # type: (Type[Packet], Type[Packet], _ResolverCallable) -> None
+    def register_l3(self, l2: Type[Packet], l3: Type[Packet], resolve_method: _ResolverCallable) -> None:
         self.resolvers[l2, l3] = resolve_method
 
-    def resolve(self, l2inst, l3inst):
-        # type: (Packet, Packet) -> Optional[str]
+    def resolve(self, l2inst: Packet, l3inst: Packet) -> Optional[str]:
         k = l2inst.__class__, l3inst.__class__
         if k in self.resolvers:
             return self.resolvers[k](l2inst, l3inst)
         return None
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "\n".join("%-15s -> %-15s" % (l2.__name__, l3.__name__) for l2, l3 in self.resolvers)  # noqa: E501
 
 
@@ -135,8 +133,7 @@ _arp_cache = conf.netcache.new_cache("arp_cache", 120)
 
 
 @conf.commands.register
-def getmacbyip(ip, chainCC=0):
-    # type: (str, int) -> Optional[str]
+def getmacbyip(ip: str, chainCC: int = 0) -> Optional[str]:
     """
     Returns the destination MAC address used to reach a given IP address.
 
@@ -196,18 +193,15 @@ def getmacbyip(ip, chainCC=0):
 # Fields
 
 class DestMACField(MACField):
-    def __init__(self, name):
-        # type: (str) -> None
+    def __init__(self, name: str) -> None:
         MACField.__init__(self, name, None)
 
-    def i2h(self, pkt, x):
-        # type: (Optional[Packet], Optional[str]) -> str
+    def i2h(self, pkt: Optional[Packet], x: Optional[str]) -> str:
         if x is None and pkt is not None:
             x = None
         return super(DestMACField, self).i2h(pkt, x)
 
-    def i2m(self, pkt, x):
-        # type: (Optional[Packet], Optional[str]) -> bytes
+    def i2m(self, pkt: Optional[Packet], x: Optional[str]) -> bytes:
         if x is None and pkt is not None:
             try:
                 x = conf.neighbor.resolve(pkt, pkt.payload)
@@ -227,13 +221,11 @@ class DestMACField(MACField):
 class SourceMACField(MACField):
     __slots__ = ["getif"]
 
-    def __init__(self, name, getif=None):
-        # type: (str, Optional[Any]) -> None
+    def __init__(self, name: str, getif: Optional[Any] = None) -> None:
         MACField.__init__(self, name, None)
         self.getif = (lambda pkt: pkt.route()[0]) if getif is None else getif
 
-    def i2h(self, pkt, x):
-        # type: (Optional[Packet], Optional[str]) -> str
+    def i2h(self, pkt: Optional[Packet], x: Optional[str]) -> str:
         if x is None:
             iff = self.getif(pkt)
             if iff:
@@ -242,8 +234,7 @@ class SourceMACField(MACField):
                 x = "00:00:00:00:00:00"
         return super(SourceMACField, self).i2h(pkt, x)
 
-    def i2m(self, pkt, x):
-        # type: (Optional[Packet], Optional[Any]) -> bytes
+    def i2m(self, pkt: Optional[Packet], x: Optional[Any]) -> bytes:
         return super(SourceMACField, self).i2m(pkt, self.i2h(pkt, x))
 
 
@@ -285,24 +276,20 @@ class Ether(Packet):
                    XShortEnumField("type", 0x9000, ETHER_TYPES)]
     __slots__ = ["_defrag_pos"]
 
-    def hashret(self):
-        # type: () -> bytes
+    def hashret(self) -> bytes:
         return struct.pack("H", self.type) + self.payload.hashret()
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         if isinstance(other, Ether):
             if self.type == other.type:
                 return self.payload.answers(other.payload)
         return 0
 
-    def mysummary(self):
-        # type: () -> str
+    def mysummary(self) -> str:
         return self.sprintf("%src% > %dst% (%type%)")
 
     @classmethod
-    def dispatch_hook(cls, _pkt=None, *args, **kargs):
-        # type: (Optional[bytes], *Any, **Any) -> Type[Packet]
+    def dispatch_hook(cls, _pkt: Optional[bytes] = None, *args: Any, **kargs: Any) -> Type[Packet]:
         if _pkt and len(_pkt) >= 14:
             if struct.unpack("!H", _pkt[12:14])[0] <= 1500:
                 return Dot3
@@ -315,24 +302,20 @@ class Dot3(Packet):
                    SourceMACField("src"),
                    LenField("len", None, "H")]
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, bytes]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, bytes]:
         tmp_len = self.len
         return s[:tmp_len], s[tmp_len:]
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         if isinstance(other, Dot3):
             return self.payload.answers(other.payload)
         return 0
 
-    def mysummary(self):
-        # type: () -> str
+    def mysummary(self) -> str:
         return "802.3 %s > %s" % (self.src, self.dst)
 
     @classmethod
-    def dispatch_hook(cls, _pkt=None, *args, **kargs):
-        # type: (Optional[Any], *Any, **Any) -> Type[Packet]
+    def dispatch_hook(cls, _pkt: Optional[Any] = None, *args: Any, **kargs: Any) -> Type[Packet]:
         if _pkt and len(_pkt) >= 14:
             if struct.unpack("!H", _pkt[12:14])[0] > 1500:
                 return Ether
@@ -350,7 +333,7 @@ def l2_register_l3(l2: Packet, l3: Packet) -> Optional[str]:
     """
     Delegates resolving the default L2 destination address to the payload of L3.
     """
-    neighbor = conf.neighbor  # type: Neighbor
+    neighbor: Neighbor = conf.neighbor
     return neighbor.resolve(l2, l3.payload)
 
 
@@ -417,8 +400,7 @@ class Dot1Q(Packet):
         "id": ("dei", "2.5.0"),
     }
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         if isinstance(other, Dot1Q):
             if ((self.type == other.type) and
                     (self.vlan == other.vlan)):
@@ -427,20 +409,17 @@ class Dot1Q(Packet):
             return self.payload.answers(other)
         return 0
 
-    def default_payload_class(self, pay):
-        # type: (bytes) -> Type[Packet]
+    def default_payload_class(self, pay: bytes) -> Type[Packet]:
         if self.type <= 1500:
             return LLC
         return conf.raw_layer
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, Optional[bytes]]:
         if self.type <= 1500:
             return s[:self.type], s[self.type:]
         return s, None
 
-    def mysummary(self):
-        # type: () -> str
+    def mysummary(self) -> str:
         if isinstance(self.underlayer, Ether):
             return self.underlayer.sprintf("802.1q %Ether.src% > %Ether.dst% (%Dot1Q.type%) vlan %Dot1Q.vlan%")  # noqa: E501
         else:
@@ -546,26 +525,22 @@ class ARP(Packet):
         ),
     ]
 
-    def hashret(self):
-        # type: () -> bytes
+    def hashret(self) -> bytes:
         return struct.pack(">HHH", self.hwtype, self.ptype,
                            ((self.op + 1) // 2)) + self.payload.hashret()
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         if not isinstance(other, ARP):
             return False
         if self.op != other.op + 1:
             return False
         # We use a loose comparison on psrc vs pdst to catch answers
         # with ARP leaks
-        self_psrc = self.get_field('psrc').i2m(self, self.psrc)  # type: bytes
-        other_pdst = other.get_field('pdst').i2m(other, other.pdst) \
-            # type: bytes
+        self_psrc: bytes = self.get_field('psrc').i2m(self, self.psrc)
+        other_pdst: bytes = other.get_field('pdst').i2m(other, other.pdst)
         return self_psrc[:len(other_pdst)] == other_pdst[:len(self_psrc)]
 
-    def route(self):
-        # type: () -> Tuple[Optional[str], Optional[str], Optional[str]]
+    def route(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         fld, dst = cast(Tuple[MultipleTypeField, str],
                         self.getfield_and_val("pdst"))
         fld_inner, dst = fld._find_fld_pkt_val(self, dst)
@@ -581,12 +556,10 @@ class ARP(Packet):
         else:
             return None, None, None
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, bytes]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, bytes]:
         return b"", s
 
-    def mysummary(self):
-        # type: () -> str
+    def mysummary(self) -> str:
         if self.op == 1:
             return self.sprintf("ARP who has %pdst% says %psrc%")
         if self.op == 2:
@@ -654,14 +627,12 @@ class GRE(Packet):
                    ]
 
     @classmethod
-    def dispatch_hook(cls, _pkt=None, *args, **kargs):
-        # type: (Optional[Any], *Any, **Any) -> Type[Packet]
+    def dispatch_hook(cls, _pkt: Optional[Any] = None, *args: Any, **kargs: Any) -> Type[Packet]:
         if _pkt and struct.unpack("!H", _pkt[2:4])[0] == 0x880b:
             return GRE_PPTP
         return cls
 
-    def post_build(self, p, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, p: bytes, pay: bytes) -> bytes:
         p += pay
         if self.chksum_present and self.chksum is None:
             c = checksum(p)
@@ -695,8 +666,7 @@ class GRE_PPTP(GRE):
                    ConditionalField(XIntField("sequence_number", None), lambda pkt: pkt.seqnum_present == 1),  # noqa: E501
                    ConditionalField(XIntField("ack_number", None), lambda pkt: pkt.acknum_present == 1)]  # noqa: E501
 
-    def post_build(self, p, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, p: bytes, pay: bytes) -> bytes:
         p += pay
         if self.payload_len is None:
             pay_len = len(pay)
@@ -708,12 +678,10 @@ class GRE_PPTP(GRE):
 
 class LoIntEnumField(IntEnumField):
 
-    def m2i(self, pkt, x):
-        # type: (Optional[Packet], int) -> int
+    def m2i(self, pkt: Optional[Packet], x: int) -> int:
         return x >> 24
 
-    def i2m(self, pkt, x):
-        # type: (Optional[Packet], Union[List[int], int, None]) -> int
+    def i2m(self, pkt: Optional[Packet], x: Union[List[int], int, None]) -> int:
         return cast(int, x) << 24
 
 
@@ -762,15 +730,13 @@ class Dot1AH(Packet):
                    BitField("res2", 0, 2),
                    ThreeBytesField("isid", 0)]
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         if isinstance(other, Dot1AH):
             if self.isid == other.isid:
                 return self.payload.answers(other.payload)
         return 0
 
-    def mysummary(self):
-        # type: () -> str
+    def mysummary(self) -> str:
         return self.sprintf("802.1ah (isid=%Dot1AH.isid%")
 
 
@@ -835,14 +801,13 @@ conf.l3types.register(ETH_P_ARP, ARP)
 
 @conf.commands.register
 def arpcachepoison(
-    target,  # type: Union[str, List[str]]
-    addresses,  # type: Union[str, Tuple[str, str], List[Tuple[str, str]]]
-    broadcast=False,  # type: bool
-    count=None,  # type: Optional[int]
-    interval=15,  # type: int
-    **kwargs,  # type: Any
-):
-    # type: (...) -> None
+    target: Union[str, List[str]],
+    addresses: Union[str, Tuple[str, str], List[Tuple[str, str]]],
+    broadcast: bool = False,
+    count: Optional[int] = None,
+    interval: int = 15,
+    **kwargs: Any,
+) -> None:
     """Poison targets' ARP cache
 
     :param target: Can be an IP, subnet (string) or a list of IPs. This lists the IPs
@@ -865,7 +830,7 @@ def arpcachepoison(
 
     """
     if isinstance(target, str):
-        targets = Net(target)  # type: Union[Net, List[str]]
+        targets: Union[Net, List[str]] = Net(target)
         str_target = target
     else:
         targets = target
@@ -895,16 +860,15 @@ def arpcachepoison(
 
 @conf.commands.register
 def arp_mitm(
-    ip1,  # type: str
-    ip2,  # type: str
-    mac1=None,  # type: Optional[Union[str, List[str]]]
-    mac2=None,  # type: Optional[Union[str, List[str]]]
-    broadcast=False,  # type: bool
-    target_mac=None,  # type: Optional[str]
-    iface=None,  # type: Optional[_GlobInterfaceType]
-    inter=3,  # type: int
-):
-    # type: (...) -> None
+    ip1: str,
+    ip2: str,
+    mac1: Optional[Union[str, List[str]]] = None,
+    mac2: Optional[Union[str, List[str]]] = None,
+    broadcast: bool = False,
+    target_mac: Optional[str] = None,
+    iface: Optional[_GlobInterfaceType] = None,
+    inter: int = 3,
+) -> None:
     r"""ARP MitM: poison 2 target's ARP cache
 
     :param ip1: IPv4 of the first machine
@@ -939,8 +903,7 @@ def arp_mitm(
     if not target_mac:
         target_mac = get_if_hwaddr(iface)
 
-    def _tups(ip, mac):
-        # type: (str, Optional[Union[str, List[str]]]) -> Iterable[Tuple[str, str]]
+    def _tups(ip: str, mac: Optional[Union[str, List[str]]]) -> Iterable[Tuple[str, str]]:
         if mac is None:
             if broadcast:
                 # ip can be a Net/list/etc and will be iterated upon while sending
@@ -1019,18 +982,17 @@ def arp_mitm(
 
 class ARPingResult(SndRcvList):
     def __init__(self,
-                 res=None,  # type: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]]  # noqa: E501
-                 name="ARPing",  # type: str
-                 stats=None  # type: Optional[List[Type[Packet]]]
+                 res: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]] = None,  # noqa: E501
+                 name: str = "ARPing",
+                 stats: Optional[List[Type[Packet]]] = None
                  ):
         SndRcvList.__init__(self, res, name, stats)
 
-    def show(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
+    def show(self, *args: Any, **kwargs: Any) -> None:
         """
         Print the list of discovered MAC addresses.
         """
-        data = list()  # type: List[Tuple[str | List[str], ...]]
+        data: List[Tuple[str | List[str], ...]] = list()
 
         for s, r in self.res:
             manuf = conf.manufdb._get_short_manuf(r.src)
@@ -1107,8 +1069,7 @@ def arping(net: str,
 
 
 @conf.commands.register
-def is_promisc(ip, fake_bcast="ff:ff:00:00:00:00", **kargs):
-    # type: (str, str, **Any) -> bool
+def is_promisc(ip: str, fake_bcast: str = "ff:ff:00:00:00:00", **kargs: Any) -> bool:
     """Try to guess if target is in Promisc mode. The target is provided by its ip."""  # noqa: E501
 
     responses = srp1(Ether(dst=fake_bcast) / ARP(op="who-has", pdst=ip), type=ETH_P_ARP, iface_hint=ip, timeout=1, verbose=0, **kargs)  # noqa: E501
@@ -1117,8 +1078,7 @@ def is_promisc(ip, fake_bcast="ff:ff:00:00:00:00", **kargs):
 
 
 @conf.commands.register
-def promiscping(net, timeout=2, fake_bcast="ff:ff:ff:ff:ff:fe", **kargs):
-    # type: (str, int, str, **Any) -> Tuple[ARPingResult, PacketList]
+def promiscping(net: str, timeout: int = 2, fake_bcast: str = "ff:ff:ff:ff:ff:fe", **kargs: Any) -> Tuple[ARPingResult, PacketList]:
     """Send ARP who-has requests to determine which hosts are in promiscuous mode
     promiscping(net, iface=conf.iface)"""
     ans, unans = srp(Ether(dst=fake_bcast) / ARP(pdst=net),
@@ -1160,20 +1120,18 @@ class ARP_am(AnsweringMachine[Packet]):
     filter = "arp"
     send_function = staticmethod(sendp)
 
-    def parse_options(self, IP_addr=None, ARP_addr=None, from_ip=None):
-        # type: (Optional[str], Optional[str], Optional[str]) -> None
+    def parse_options(self, IP_addr: Optional[str] = None, ARP_addr: Optional[str] = None, from_ip: Optional[str] = None) -> None:
         if isinstance(IP_addr, str):
-            self.IP_addr = Net(IP_addr)  # type: Optional[Net]
+            self.IP_addr: Optional[Net] = Net(IP_addr)
         else:
             self.IP_addr = IP_addr
         if isinstance(from_ip, str):
-            self.from_ip = Net(from_ip)  # type: Optional[Net]
+            self.from_ip: Optional[Net] = Net(from_ip)
         else:
             self.from_ip = from_ip
         self.ARP_addr = ARP_addr
 
-    def is_request(self, req):
-        # type: (Packet) -> bool
+    def is_request(self, req: Packet) -> bool:
         if not req.haslayer(ARP):
             return False
         arp = req[ARP]
@@ -1183,8 +1141,7 @@ class ARP_am(AnsweringMachine[Packet]):
             (self.from_ip is None or arp.psrc in self.from_ip)
         )
 
-    def make_reply(self, req):
-        # type: (Packet) -> Packet
+    def make_reply(self, req: Packet) -> Packet:
         ether = req[Ether]
         arp = req[ARP]
 
@@ -1208,21 +1165,18 @@ class ARP_am(AnsweringMachine[Packet]):
                                          pdst=arp.psrc)
         return resp
 
-    def send_reply(self, reply, send_function=None):
-        # type: (Packet, Any) -> None
+    def send_reply(self, reply: Packet, send_function: Any = None) -> None:
         if 'iface' in self.optsend:
             self.send_function(reply, **self.optsend)
         else:
             self.send_function(reply, iface=self.iff, **self.optsend)
 
-    def print_reply(self, req, reply):
-        # type: (Packet, Packet) -> None
+    def print_reply(self, req: Packet, reply: Packet) -> None:
         print("%s ==> %s on %s" % (req.summary(), reply.summary(), self.iff))
 
 
 @conf.commands.register
-def etherleak(target, **kargs):
-    # type: (str, **Any) -> Tuple[SndRcvList, PacketList]
+def etherleak(target: str, **kargs: Any) -> Tuple[SndRcvList, PacketList]:
     """Exploit Etherleak flaw"""
     return srp(Ether() / ARP(pdst=target),
                prn=lambda s_r: conf.padding_layer in s_r[1] and hexstr(s_r[1][conf.padding_layer].load),  # noqa: E501
@@ -1230,15 +1184,14 @@ def etherleak(target, **kargs):
 
 
 @conf.commands.register
-def arpleak(target, plen=255, hwlen=255, **kargs):
-    # type: (str, int, int, **Any) -> Tuple[SndRcvList, PacketList]
+def arpleak(target: str, plen: int = 255, hwlen: int = 255, **kargs: Any) -> Tuple[SndRcvList, PacketList]:
     """Exploit ARP leak flaws, like NetBSD-SA2017-002.
 
 https://ftp.netbsd.org/pub/NetBSD/security/advisories/NetBSD-SA2017-002.txt.asc
 
     """
     # We want explicit packets
-    pkts_iface = {}  # type: Dict[str, List[Packet]]
+    pkts_iface: Dict[str, List[Packet]] = {}
     for pkt in ARP(pdst=target):
         # We have to do some of Scapy's work since we mess with
         # important values

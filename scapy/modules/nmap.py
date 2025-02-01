@@ -16,6 +16,8 @@ database, you can fetch it from
 
 """
 
+from __future__ import annotations
+
 import os
 import re
 
@@ -60,8 +62,7 @@ None.
 
     """
 
-    def lazy_init(self):
-        # type: () -> None
+    def lazy_init(self) -> None:
         try:
             fdesc = open(conf.nmap_base
                          if self.filename is None else
@@ -74,7 +75,7 @@ None.
         self.base = []
         self.base = cast(List[Tuple[str, Dict[str, Dict[str, str]]]], self.base)
         name = None
-        sig = {}  # type: Dict[str,Dict[str,str]]
+        sig: Dict[str,Dict[str,str]] = {}
         for line in fdesc:
             str_line = plain_str(line)
             str_line = str_line.split('#', 1)[0].strip()
@@ -98,8 +99,7 @@ None.
             self.base.append((name, sig))
         fdesc.close()
 
-    def get_base(self):
-        # type: () -> List[Tuple[str, Dict]]
+    def get_base(self) -> List[Tuple[str, Dict]]:
         return cast(List[Tuple[str, Dict]], super(NmapKnowledgeBase, self).get_base())
 
 
@@ -107,8 +107,7 @@ conf.nmap_kdb = NmapKnowledgeBase(None)
 conf.nmap_kdb = cast(NmapKnowledgeBase, conf.nmap_kdb)
 
 
-def nmap_tcppacket_sig(pkt):
-    # type: (Optional[Packet]) -> Dict
+def nmap_tcppacket_sig(pkt: Optional[Packet]) -> Dict:
     res = {}
     if pkt is not None:
         res["DF"] = "Y" if pkt.flags.DF else "N"
@@ -121,8 +120,7 @@ def nmap_tcppacket_sig(pkt):
     return res
 
 
-def nmap_udppacket_sig(snd, rcv):
-    # type: (SndRcvList, PacketList) -> Dict
+def nmap_udppacket_sig(snd: SndRcvList, rcv: PacketList) -> Dict:
     res = {}
     if rcv is None:
         res["Resp"] = "N"
@@ -146,16 +144,14 @@ def nmap_udppacket_sig(snd, rcv):
     return res
 
 
-def nmap_match_one_sig(seen, ref):
-    # type: (Dict, Dict) -> float
+def nmap_match_one_sig(seen: Dict, ref: Dict) -> float:
     cnt = sum(val in ref.get(key, "").split("|") for key, val in seen.items())
     if cnt == 0 and seen.get("Resp") == "N":
         return 0.7
     return float(cnt) / len(seen)
 
 
-def nmap_sig(target, oport=80, cport=81, ucport=1):
-    # type: (str, int, int, int) -> Dict
+def nmap_sig(target: str, oport: int = 80, cport: int = 81, ucport: int = 1) -> Dict:
     res = {}
 
     tcpopt = [("WScale", 10),
@@ -186,8 +182,7 @@ def nmap_sig(target, oport=80, cport=81, ucport=1):
     return nmap_probes2sig(res)
 
 
-def nmap_probes2sig(tests):
-    # type: (Dict) -> Dict
+def nmap_probes2sig(tests: Dict) -> Dict:
     tests = tests.copy()
     res = {}
     if "PU" in tests:
@@ -198,9 +193,8 @@ def nmap_probes2sig(tests):
     return res
 
 
-def nmap_search(sigs):
-    # type: (Dict) -> Tuple[Union[int, float], List]
-    guess = 0, []  # type: Tuple[Union[int, float], List]
+def nmap_search(sigs: Dict) -> Tuple[Union[int, float], List]:
+    guess: Tuple[Union[int, float], List] = (0, [])
     conf.nmap_kdb = cast(NmapKnowledgeBase, conf.nmap_kdb)
     for osval, fprint in conf.nmap_kdb.get_base():
         score = 0.0
@@ -216,8 +210,7 @@ def nmap_search(sigs):
 
 
 @conf.commands.register
-def nmap_fp(target, oport=80, cport=81):
-    # type: (str, int, int) -> Tuple[Union[int, float], List]
+def nmap_fp(target: str, oport: int = 80, cport: int = 81) -> Tuple[Union[int, float], List]:
     """nmap fingerprinting
 nmap_fp(target, [oport=80,] [cport=81,]) -> list of best guesses with accuracy
 """
@@ -226,8 +219,7 @@ nmap_fp(target, [oport=80,] [cport=81,]) -> list of best guesses with accuracy
 
 
 @conf.commands.register
-def nmap_sig2txt(sig):
-    # type: (Dict) -> str
+def nmap_sig2txt(sig: Dict) -> str:
     torder = ["TSeq", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "PU"]
     korder = ["Class", "gcd", "SI", "IPID", "TS",
               "Resp", "DF", "W", "ACK", "Flags", "Ops",

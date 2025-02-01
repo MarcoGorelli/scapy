@@ -7,6 +7,8 @@
 Functions common to different architectures
 """
 
+from __future__ import annotations
+
 import ctypes
 import re
 import socket
@@ -51,8 +53,7 @@ _iff_flags = [
 ]
 
 
-def get_if_raw_addr(iff):
-    # type: (Union[NetworkInterface, str]) -> bytes
+def get_if_raw_addr(iff: Union[NetworkInterface, str]) -> bytes:
     """Return the raw IPv4 address of interface"""
     iff = resolve_iface(iff)
     if not iff.ip:
@@ -63,12 +64,11 @@ def get_if_raw_addr(iff):
 # BPF HANDLERS
 
 
-def compile_filter(filter_exp,  # type: str
-                   iface=None,  # type: Optional[Union[str, 'scapy.interfaces.NetworkInterface']]  # noqa: E501
-                   linktype=None,  # type: Optional[int]
-                   promisc=False  # type: bool
-                   ):
-    # type: (...) -> bpf_program
+def compile_filter(filter_exp: str,
+                   iface: Optional[Union[str, 'scapy.interfaces.NetworkInterface']] = None,  # noqa: E501
+                   linktype: Optional[int] = None,
+                   promisc: bool = False
+                   ) -> bpf_program:
     """Asks libpcap to parse the filter, then build the matching
     BPF bytecode.
 

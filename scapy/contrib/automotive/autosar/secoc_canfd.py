@@ -9,6 +9,8 @@
 """
 SecOC PDU
 """
+from __future__ import annotations
+
 import struct
 
 from scapy.config import conf
@@ -59,8 +61,7 @@ class SecOC_CANFD(CANFD, SecOCMixin):
         return bytes(self.pdu_payload)
 
     @classmethod
-    def dispatch_hook(cls, s=None, *_args, **_kwds):
-        # type: (Optional[bytes], Any, Any) -> Packet_metaclass
+    def dispatch_hook(cls, s: Optional[bytes] = None, *_args: Any, **_kwds: Any) -> Packet_metaclass:
         """dispatch_hook determines if PDU is protected by SecOC.
         If PDU is protected, SecOC_PDU will be returned, otherwise AutoSAR PDU
         will be returned.
@@ -86,6 +87,5 @@ class SecOC_CANFD(CANFD, SecOCMixin):
             klass = conf.raw_layer
         return klass(data, _parent=pkt)
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, Optional[bytes]]:
         return b"", s

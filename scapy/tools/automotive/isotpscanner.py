@@ -5,6 +5,8 @@
 # Copyright (C) Alexander Schroeder <alexander1.schroeder@st.othr.de>
 
 
+from __future__ import annotations
+
 import getopt
 import sys
 import signal
@@ -30,8 +32,7 @@ from scapy.contrib.cansocket import CANSocket, PYTHON_CAN   # noqa: E402
 from scapy.contrib.isotp import isotp_scan  # noqa: E402
 
 
-def usage(is_error):
-    # type: (bool) -> None
+def usage(is_error: bool) -> None:
     print('''usage:\tisotpscanner [-i interface] [-c channel]
                 [-a python-can_args] [-n NOISE_LISTEN_TIME] [-t SNIFF_TIME]
                 [-x|--extended] [-C|--piso] [-v|--verbose] [-h|--help]
@@ -73,8 +74,7 @@ def usage(is_error):
           file=sys.stderr if is_error else sys.stdout)
 
 
-def create_socket(python_can_args, interface, channel):
-    # type: (Optional[str], Optional[str], str) -> Tuple[CANSocket, str]
+def create_socket(python_can_args: Optional[str], interface: Optional[str], channel: str) -> Tuple[CANSocket, str]:
 
     if PYTHON_CAN:
         if python_can_args:
@@ -98,8 +98,7 @@ def create_socket(python_can_args, interface, channel):
     return sock, interface_string
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     extended = False
     piso = False
     verbose = False
@@ -185,8 +184,7 @@ def main():
 
         stop_event = threading.Event()
 
-        def signal_handler(*args):
-            # type: (Any) -> None
+        def signal_handler(*args: Any) -> None:
             print('Interrupting scan!')
             stop_event.set()
 

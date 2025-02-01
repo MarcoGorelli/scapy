@@ -5,6 +5,8 @@
 # scapy.contrib.description = Postgres PSQL Binary Protocol
 # scapy.contrib.status = loads
 
+from __future__ import annotations
+
 import struct
 
 from typing import (
@@ -78,8 +80,7 @@ class _DictStrField(StrField):
         else:
             return super(_DictStrField, self).i2m(pkt, x)
 
-    def i2len(self, pkt, x):
-        # type: (Optional[Packet], Any) -> int
+    def i2len(self, pkt: Optional[Packet], x: Any) -> int:
         if x is None:
             return 0
         return len(self.i2m(pkt, x))
@@ -104,19 +105,17 @@ class _FieldsLenField(Field[int, int]):
 
     def __init__(
         self,
-        name,  # type: str
-        default,  # type: Optional[Any]
-        length_of=None,  # type: Optional[Tuple[str]]
-        fmt="H",  # type: str
-        adjust=lambda pkt, x: x,  # type: Callable[[Packet, int], int]
-    ):
-        # type: (...) -> None
+        name: str,
+        default: Optional[Any],
+        length_of: Optional[Tuple[str]] = None,
+        fmt: str = "H",
+        adjust: Callable[[Packet, int], int] = lambda pkt, x: x,
+    ) -> None:
         super(_FieldsLenField, self).__init__(name, default, fmt)
         self.length_of = length_of
         self.adjust = adjust
 
-    def i2m(self, pkt, x):
-        # type: (Optional[Packet], Optional[int]) -> int
+    def i2m(self, pkt: Optional[Packet], x: Optional[int]) -> int:
         if x is None and pkt is not None:
             if self.length_of is not None:
                 f = 0
@@ -151,7 +150,7 @@ def determine_pg_field(pkt, lst, cur, remain):
 
 class ByteTagField(ByteField):
     def __init__(
-        self, default  # type: bytes
+        self, default: bytes
     ):
         super(ByteTagField, self).__init__("tag", ord(default))
 

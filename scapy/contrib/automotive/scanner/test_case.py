@@ -7,6 +7,8 @@
 # scapy.contrib.status = library
 
 
+from __future__ import annotations
+
 import abc
 from collections import defaultdict
 
@@ -51,12 +53,11 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
     state, the TestCase object gets executed.
     """
 
-    _supported_kwargs = {}  # type: Dict[str, Tuple[Any, Optional[Callable[[Any], bool]]]]  # noqa: E501
+    _supported_kwargs: Dict[str, Tuple[Any, Optional[Callable[[Any], bool]]]] = {}  # noqa: E501
     _supported_kwargs_doc = ""
 
     @abc.abstractmethod
-    def has_completed(self, state):
-        # type: (EcuState) -> bool
+    def has_completed(self, state: EcuState) -> bool:
         """
         Tells if this TestCase was executed for a certain state
         :param state: State of interest
@@ -66,10 +67,10 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def pre_execute(self,
-                    socket,  # type: _SocketUnion
-                    state,  # type: EcuState
-                    global_configuration  # type: AutomotiveTestCaseExecutorConfiguration  # noqa: E501
-                    ):  # type: (...) -> None
+                    socket: _SocketUnion,
+                    state: EcuState,
+                    global_configuration: AutomotiveTestCaseExecutorConfiguration  # noqa: E501
+                    ) -> None:
         """
         Will be executed previously to ``execute``. This function can be used
         to manipulate the configuration passed to execute.
@@ -81,8 +82,7 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         """
         Executes this TestCase for a given state
 
@@ -95,10 +95,10 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def post_execute(self,
-                     socket,  # type: _SocketUnion
-                     state,  # type: EcuState
-                     global_configuration  # type: AutomotiveTestCaseExecutorConfiguration  # noqa: E501
-                     ):  # type: (...) -> None
+                     socket: _SocketUnion,
+                     state: EcuState,
+                     global_configuration: AutomotiveTestCaseExecutorConfiguration  # noqa: E501
+                     ) -> None:
         """
         Will be executed subsequently to ``execute``. This function can be used
         for additional evaluations after the ``execute``.
@@ -110,8 +110,7 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def show(self, dump=False, filtered=True, verbose=False):
-        # type: (bool, bool, bool) -> Optional[str]
+    def show(self, dump: bool = False, filtered: bool = True, verbose: bool = False) -> Optional[str]:
         """
         Shows results of TestCase
 
@@ -127,8 +126,7 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def completed(self):
-        # type: () -> bool
+    def completed(self) -> bool:
         """
         Tells if this TestCase is completely executed
         :return: True, if TestCase is completely executed
@@ -137,8 +135,7 @@ class AutomotiveTestCaseABC(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def supported_responses(self):
-        # type: () -> List[EcuResponse]
+    def supported_responses(self) -> List[EcuResponse]:
         """
         Tells the supported responses in TestCase
         :return: The list of supported responses
@@ -153,17 +150,14 @@ class AutomotiveTestCase(AutomotiveTestCaseABC):
     _supported_kwargs = AutomotiveTestCaseABC._supported_kwargs
     _supported_kwargs_doc = AutomotiveTestCaseABC._supported_kwargs_doc
 
-    def __init__(self):
-        # type: () -> None
-        self._state_completed = defaultdict(bool)  # type: Dict[EcuState, bool]
+    def __init__(self) -> None:
+        self._state_completed: Dict[EcuState, bool] = defaultdict(bool)
 
-    def has_completed(self, state):
-        # type: (EcuState) -> bool
+    def has_completed(self, state: EcuState) -> bool:
         return self._state_completed[state]
 
     @classmethod
-    def check_kwargs(cls, kwargs):
-        # type: (Dict[str, Any]) -> None
+    def check_kwargs(cls, kwargs: Dict[str, Any]) -> None:
         for k, v in kwargs.items():
             if k not in cls._supported_kwargs.keys():
                 raise Scapy_Exception(
@@ -181,49 +175,43 @@ class AutomotiveTestCase(AutomotiveTestCaseABC):
                 )
 
     @property
-    def completed(self):
-        # type: () -> bool
+    def completed(self) -> bool:
         return all(v for _, v in self._state_completed.items())
 
     @property
-    def scanned_states(self):
-        # type: () -> Set[EcuState]
+    def scanned_states(self) -> Set[EcuState]:
         """
         Helper function to get all scanned states
         :return: all scanned states
         """
         return set(self._state_completed.keys())
 
-    def pre_execute(self, socket, state, global_configuration):
-        # type: (_SocketUnion, EcuState, AutomotiveTestCaseExecutorConfiguration) -> None  # noqa: E501
+    def pre_execute(self, socket: _SocketUnion, state: EcuState, global_configuration: AutomotiveTestCaseExecutorConfiguration) -> None:
+        # noqa: E501
         pass
 
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         raise NotImplementedError()
 
-    def post_execute(self, socket, state, global_configuration):
-        # type: (_SocketUnion, EcuState, AutomotiveTestCaseExecutorConfiguration) -> None  # noqa: E501
+    def post_execute(self, socket: _SocketUnion, state: EcuState, global_configuration: AutomotiveTestCaseExecutorConfiguration) -> None:
+        # noqa: E501
         pass
 
-    def _show_header(self, **kwargs):
-        # type: (Any) -> str
+    def _show_header(self, **kwargs: Any) -> str:
         s = "\n\n" + "=" * (len(self._description) + 10) + "\n"
         s += " " * 5 + self._description + "\n"
         s += "-" * (len(self._description) + 10) + "\n"
 
         return s + "\n"
 
-    def _show_state_information(self, **kwargs):
-        # type: (Any) -> str
+    def _show_state_information(self, **kwargs: Any) -> str:
         completed = [(state, self._state_completed[state])
                      for state in self.scanned_states]
         return make_lined_table(
             completed, lambda x, y: ("Scan state completed", x, y),
             dump=True) or ""
 
-    def show(self, dump=False, filtered=True, verbose=False):
-        # type: (bool, bool, bool) -> Optional[str]
+    def show(self, dump: bool = False, filtered: bool = True, verbose: bool = False) -> Optional[str]:
 
         s = self._show_header()
 
@@ -239,21 +227,19 @@ class AutomotiveTestCase(AutomotiveTestCaseABC):
 
 class TestCaseGenerator(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def get_generated_test_case(self):
-        # type: () -> Optional[AutomotiveTestCaseABC]
+    def get_generated_test_case(self) -> Optional[AutomotiveTestCaseABC]:
         raise NotImplementedError()
 
 
 class StateGenerator(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def get_new_edge(self, socket, config):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]  # noqa: E501
+    def get_new_edge(self, socket: _SocketUnion, config: AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]:
+        # noqa: E501
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         """
 
         :param socket: Socket to target

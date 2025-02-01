@@ -12,6 +12,8 @@ This implements:
 - RFC6763: DNS-Based Service Discovery
 """
 
+from __future__ import annotations
+
 import abc
 import collections
 import operator
@@ -442,8 +444,7 @@ edns0types = {0: "Reserved", 1: "LLQ", 2: "UL", 3: "NSID", 4: "Owner",
 class _EDNS0Dummy(Packet):
     name = "Dummy class that implements extract_padding()"
 
-    def extract_padding(self, p):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, p: bytes) -> Tuple[bytes, Optional[bytes]]:
         return "", p
 
 
@@ -455,8 +456,7 @@ class EDNS0TLV(_EDNS0Dummy):
                                length_from=lambda pkt: pkt.optlen)]
 
     @classmethod
-    def dispatch_hook(cls, _pkt=None, *args, **kargs):
-        # type: (Optional[bytes], *Any, **Any) -> Type[Packet]
+    def dispatch_hook(cls, _pkt: Optional[bytes] = None, *args: Any, **kargs: Any) -> Type[Packet]:
         if _pkt is None:
             return EDNS0TLV
         if len(_pkt) < 2:
@@ -541,22 +541,19 @@ class ClientSubnetv4(StrLenField):
     af_length = 32
     af_default = b"\xc0"  # 192.0.0.0
 
-    def getfield(self, pkt, s):
-        # type: (Packet, bytes) -> Tuple[bytes, I]
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, I]:
         sz = operator.floordiv(self.length_from(pkt), 8)
         sz = min(sz, operator.floordiv(self.af_length, 8))
         return s[sz:], self.m2i(pkt, s[:sz])
 
-    def m2i(self, pkt, x):
-        # type: (Optional[Packet], bytes) -> str
+    def m2i(self, pkt: Optional[Packet], x: bytes) -> str:
         padding = self.af_length - self.length_from(pkt)
         if padding:
             x += b"\x00" * operator.floordiv(padding, 8)
         x = x[: operator.floordiv(self.af_length, 8)]
         return inet_ntop(self.af_familly, x)
 
-    def _pack_subnet(self, subnet):
-        # type: (bytes) -> bytes
+    def _pack_subnet(self, subnet: bytes) -> bytes:
         packed_subnet = inet_pton(self.af_familly, plain_str(subnet))
         for i in list(range(operator.floordiv(self.af_length, 8)))[::-1]:
             if orb(packed_subnet[i]) != 0:
@@ -564,8 +561,7 @@ class ClientSubnetv4(StrLenField):
                 break
         return packed_subnet[:i]
 
-    def i2m(self, pkt, x):
-        # type: (Optional[Packet], Optional[Union[str, Net]]) -> bytes
+    def i2m(self, pkt: Optional[Packet], x: Optional[Union[str, Net]]) -> bytes:
         if x is None:
             return self.af_default
         try:
@@ -574,8 +570,7 @@ class ClientSubnetv4(StrLenField):
             pkt.family = 2
             return ClientSubnetv6("", "")._pack_subnet(x)
 
-    def i2len(self, pkt, x):
-        # type: (Packet, Any) -> int
+    def i2len(self, pkt: Packet, x: Any) -> int:
         if x is None:
             return 1
         try:
@@ -1232,8 +1227,7 @@ class DNSQR(Packet):
 
 class _DNSPacketListField(PacketListField):
     # A normal PacketListField with backward-compatible hacks
-    def any2i(self, pkt, x):
-        # type: (Optional[Packet], List[Any]) -> List[Any]
+    def any2i(self, pkt: Optional[Packet], x: List[Any]) -> List[Any]:
         if x is None:
             warnings.warn(
                 ("The DNS fields 'qd', 'an', 'ns' and 'ar' are now "
@@ -1244,8 +1238,7 @@ class _DNSPacketListField(PacketListField):
             x = []
         return super(_DNSPacketListField, self).any2i(pkt, x)
 
-    def i2h(self, pkt, x):
-        # type: (Optional[Packet], List[Packet]) -> Any
+    def i2h(self, pkt: Optional[Packet], x: List[Packet]) -> Any:
         class _list(list):
             """
             Fake list object to provide compatibility with older DNS fields
@@ -1912,14 +1905,13 @@ class mDNS_am(DNS_am):
 
 class DNSSDResult(SndRcvList):
     def __init__(self,
-                 res=None,  # type: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]]  # noqa: E501
-                 name="DNS-SD",  # type: str
-                 stats=None  # type: Optional[List[Type[Packet]]]
+                 res: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]] = None,  # noqa: E501
+                 name: str = "DNS-SD",
+                 stats: Optional[List[Type[Packet]]] = None
                  ):
         SndRcvList.__init__(self, res, name, stats)
 
-    def show(self, types=['PTR', 'SRV'], alltypes=False):
-        # type: (List[str], bool) -> None
+    def show(self, types: List[str] = ['PTR', 'SRV'], alltypes: bool = False) -> None:
         """
         Print the list of discovered services.
 
@@ -1928,7 +1920,7 @@ class DNSSDResult(SndRcvList):
         """
         if alltypes:
             types = None
-        data = list()  # type: List[Tuple[str | List[str], ...]]
+        data: List[Tuple[str | List[str], ...]] = list()
 
         resolve_mac = (
             self.res and isinstance(self.res[0][1].underlayer, Ether) and

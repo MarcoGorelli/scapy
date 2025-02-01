@@ -7,6 +7,8 @@
 # scapy.contrib.description = GMLAN Utilities
 # scapy.contrib.status = loads
 
+from __future__ import annotations
+
 import time
 
 from scapy.contrib.automotive import log_automotive
@@ -41,8 +43,7 @@ except KeyError:
 
 
 # Helper function
-def _check_response(resp):
-    # type: (Optional[Packet]) -> bool
+def _check_response(resp: Optional[Packet]) -> bool:
     if resp is None:
         log_automotive.debug("Timeout.")
         return False
@@ -52,8 +53,7 @@ def _check_response(resp):
 
 class GMLAN_TesterPresentSender(PeriodicSenderThread):
 
-    def __init__(self, sock, pkt=GMLAN(service="TesterPresent"), interval=2):
-        # type: (SuperSocket, Packet, int) -> None
+    def __init__(self, sock: SuperSocket, pkt: Packet = GMLAN(service="TesterPresent"), interval: int = 2) -> None:
         """ Thread to send GMLAN TesterPresent packets periodically
 
         :param sock: socket where packet is sent periodically
@@ -62,8 +62,7 @@ class GMLAN_TesterPresentSender(PeriodicSenderThread):
         """
         PeriodicSenderThread.__init__(self, sock, pkt, interval)
 
-    def run(self):
-        # type: () -> None
+    def run(self) -> None:
         while not self._stopped.is_set() and not self._socket.closed:
             for p in self._pkts:
                 self._socket.sr1(p, verbose=False, timeout=0.1)
@@ -73,13 +72,12 @@ class GMLAN_TesterPresentSender(PeriodicSenderThread):
 
 
 def GMLAN_InitDiagnostics(
-        sock,  # type: SuperSocket
-        broadcast_socket=None,  # type: Optional[SuperSocket]
-        timeout=1,  # type: int
-        retry=0,  # type: int
-        unittest=False  # type: bool
-):
-    # type: (...) -> bool
+        sock: SuperSocket,
+        broadcast_socket: Optional[SuperSocket] = None,
+        timeout: int = 1,
+        retry: int = 0,
+        unittest: bool = False
+) -> bool:
     """ Send messages to put an ECU into diagnostic/programming state.
 
     :param sock: socket for communication.
@@ -93,8 +91,7 @@ def GMLAN_InitDiagnostics(
     """
 
     # Helper function
-    def _send_and_check_response(sock, req, timeout):
-        # type: (SuperSocket, Packet, int) -> bool
+    def _send_and_check_response(sock: SuperSocket, req: Packet, timeout: int) -> bool:
         log_automotive.debug("Sending %s", repr(req))
         resp = sock.sr1(req, timeout=timeout, verbose=False)
         return _check_response(resp)
@@ -138,14 +135,13 @@ def GMLAN_InitDiagnostics(
 
 
 def GMLAN_GetSecurityAccess(
-        sock,  # type: SuperSocket
-        key_function,  # type: Callable[[int], int]
-        level=1,  # type: int
-        timeout=None,  # type: Optional[int]
-        retry=0,  # type: int
-        unittest=False  # type: bool
-):
-    # type: (...) -> bool
+        sock: SuperSocket,
+        key_function: Callable[[int], int],
+        level: int = 1,
+        timeout: Optional[int] = None,
+        retry: int = 0,
+        unittest: bool = False
+) -> bool:
     """ Authenticate on ECU. Implements Seey-Key procedure.
 
     :param sock: socket to send the message on.
@@ -203,8 +199,7 @@ def GMLAN_GetSecurityAccess(
     return False
 
 
-def GMLAN_RequestDownload(sock, length, timeout=None, retry=0):
-    # type: (SuperSocket, int, Optional[int], int) -> bool
+def GMLAN_RequestDownload(sock: SuperSocket, length: int, timeout: Optional[int] = None, retry: int = 0) -> bool:
     """ Send RequestDownload message.
 
         Usually used before calling TransferData.
@@ -230,14 +225,13 @@ def GMLAN_RequestDownload(sock, length, timeout=None, retry=0):
 
 
 def GMLAN_TransferData(
-        sock,  # type: SuperSocket
-        addr,  # type: int
-        payload,  # type: bytes
-        maxmsglen=None,  # type: Optional[int]
-        timeout=None,  # type: Optional[int]
-        retry=0  # type: int
-):
-    # type: (...) -> bool
+        sock: SuperSocket,
+        addr: int,
+        payload: bytes,
+        maxmsglen: Optional[int] = None,
+        timeout: Optional[int] = None,
+        retry: int = 0
+) -> bool:
     """ Send TransferData message.
 
     Usually used after calling RequestDownload.
@@ -288,14 +282,13 @@ def GMLAN_TransferData(
 
 
 def GMLAN_TransferPayload(
-        sock,  # type: SuperSocket
-        addr,  # type: int
-        payload,  # type: bytes
-        maxmsglen=None,  # type: Optional[int]
-        timeout=None,  # type: Optional[int]
-        retry=0  # type: int
-):
-    # type: (...) -> bool
+        sock: SuperSocket,
+        addr: int,
+        payload: bytes,
+        maxmsglen: Optional[int] = None,
+        timeout: Optional[int] = None,
+        retry: int = 0
+) -> bool:
     """ Send data by using GMLAN services.
 
     :param sock: socket to send the data on.
@@ -317,13 +310,12 @@ def GMLAN_TransferPayload(
 
 
 def GMLAN_ReadMemoryByAddress(
-        sock,  # type: SuperSocket
-        addr,  # type: int
-        length,  # type: int
-        timeout=None,  # type: Optional[int]
-        retry=0  # type: int
-):
-    # type: (...) -> Optional[bytes]
+        sock: SuperSocket,
+        addr: int,
+        length: int,
+        timeout: Optional[int] = None,
+        retry: int = 0
+) -> Optional[bytes]:
     """ Read data from ECU memory.
 
     :param sock: socket to send the data on.
@@ -360,8 +352,7 @@ def GMLAN_ReadMemoryByAddress(
     return None
 
 
-def GMLAN_BroadcastSocket(interface):
-    # type: (str) -> SuperSocket
+def GMLAN_BroadcastSocket(interface: str) -> SuperSocket:
     """ Returns a GMLAN broadcast socket using interface.
 
     :param interface: interface name

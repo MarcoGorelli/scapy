@@ -8,6 +8,8 @@ PacketList: holds several packets and allows to do operations on them.
 """
 
 
+from __future__ import annotations
+
 import os
 from collections import defaultdict
 from typing import Sequence, NamedTuple
@@ -67,11 +69,10 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
     __slots__ = ["stats", "res", "listname"]
 
     def __init__(self,
-                 res=None,  # type: Optional[Union[_PacketList[_Inner], List[_Inner]]]  # noqa: E501
-                 name="PacketList",  # type: str
-                 stats=None  # type: Optional[List[Type[Packet]]]
-                 ):
-        # type: (...) -> None
+                 res: Optional[Union[_PacketList[_Inner], List[_Inner]]] = None,  # noqa: E501
+                 name: str = "PacketList",
+                 stats: Optional[List[Type[Packet]]] = None
+                 ) -> None:
         """create a packet list from a list of packets
            res: the list of packets
            stats: a list of classes that will appear in the stats (defaults to [TCP,UDP,ICMP])"""  # noqa: E501
@@ -79,31 +80,26 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             stats = conf.stats_classic_protocols
         self.stats = stats
         if res is None:
-            self.res = []  # type: List[_Inner]
+            self.res: List[_Inner] = []
         elif isinstance(res, _PacketList):
             self.res = res.res
         else:
             self.res = res
         self.listname = name
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self.res)
 
-    def _elt2pkt(self, elt):
-        # type: (_Inner) -> Packet
+    def _elt2pkt(self, elt: _Inner) -> Packet:
         return elt  # type: ignore
 
-    def _elt2sum(self, elt):
-        # type: (_Inner) -> str
+    def _elt2sum(self, elt: _Inner) -> str:
         return elt.summary()  # type: ignore
 
-    def _elt2show(self, elt):
-        # type: (_Inner) -> str
+    def _elt2show(self, elt: _Inner) -> str:
         return self._elt2sum(elt)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         stats = {x: 0 for x in self.stats}
         other = 0
         for r in self.res:
@@ -130,8 +126,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                                s,
                                ct.punct(">"))
 
-    def __getstate__(self):
-        # type: () -> Dict[str, Any]
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Creates a basic representation of the instance, used in
         conjunction with __setstate__() e.g. by pickle
@@ -145,8 +140,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         }
         return state
 
-    def __setstate__(self, state):
-        # type: (Dict[str, Any]) -> None
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """
         Sets instance attributes to values given by state, used in
         conjunction with __getstate__() e.g. by pickle
@@ -157,16 +151,13 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         self.stats = state['stats']
         self.listname = state['listname']
 
-    def __iter__(self):
-        # type: () -> Iterator[_Inner]
+    def __iter__(self) -> Iterator[_Inner]:
         return self.res.__iter__()
 
-    def __getattr__(self, attr):
-        # type: (str) -> Any
+    def __getattr__(self, attr: str) -> Any:
         return getattr(self.res, attr)
 
-    def __getitem__(self, item):
-        # type: (Any) -> Any
+    def __getitem__(self, item: Any) -> Any:
         if issubtype(item, BasePacket):
             return self.__class__([x for x in self.res if item in self._elt2pkt(x)],  # noqa: E501
                                   name="%s from %s" % (item.__name__, self.listname))  # noqa: E501
@@ -178,10 +169,9 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
     _T = TypeVar('_T', 'SndRcvList', 'PacketList')
 
     # Hinting hack: type self
-    def __add__(self,  # type: _PacketList._T  # type: ignore
-                other  # type: _PacketList._T
-                ):
-        # type: (...) -> _PacketList._T
+    def __add__(self: _PacketList._T,  # type: ignore
+                other: _PacketList._T
+                ) -> _PacketList._T:
         return self.__class__(
             self.res + other.res,
             name="%s+%s" % (
@@ -191,10 +181,9 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         )
 
     def summary(self,
-                prn=None,  # type: Optional[Callable[..., Any]]
-                lfilter=None  # type: Optional[Callable[..., bool]]
-                ):
-        # type: (...) -> None
+                prn: Optional[Callable[..., Any]] = None,
+                lfilter: Optional[Callable[..., bool]] = None
+                ) -> None:
         """prints a summary of each packet
 
         :param prn: function to apply to each packet instead of
@@ -212,10 +201,9 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                 print(prn(*r))
 
     def nsummary(self,
-                 prn=None,  # type: Optional[Callable[..., Any]]
-                 lfilter=None  # type: Optional[Callable[..., bool]]
-                 ):
-        # type: (...) -> None
+                 prn: Optional[Callable[..., Any]] = None,
+                 lfilter: Optional[Callable[..., bool]] = None
+                 ) -> None:
         """prints a summary of each packet with the packet's number
 
         :param prn: function to apply to each packet instead of
@@ -233,13 +221,11 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             else:
                 print(prn(*res))
 
-    def show(self, *args, **kargs):
-        # type: (*Any, **Any) -> None
+    def show(self, *args: Any, **kargs: Any) -> None:
         """Best way to display the packet list. Defaults to nsummary() method"""  # noqa: E501
         return self.nsummary(*args, **kargs)
 
-    def filter(self, func):
-        # type: (Callable[..., bool]) -> _PacketList[_Inner]
+    def filter(self, func: Callable[..., bool]) -> _PacketList[_Inner]:
         """Returns a packet list filtered by a truth function. This truth
         function has to take a packet as the only argument and return
         a boolean value.
@@ -247,29 +233,25 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         return self.__class__([x for x in self.res if func(*x)],
                               name="filtered %s" % self.listname)
 
-    def make_table(self, *args, **kargs):
-        # type: (Any, Any) -> Optional[str]
+    def make_table(self, *args: Any, **kargs: Any) -> Optional[str]:
         """Prints a table using a function that returns for each packet its head column value, head row value and displayed value  # noqa: E501
         ex: p.make_table(lambda x:(x[IP].dst, x[TCP].dport, x[TCP].sprintf("%flags%")) """  # noqa: E501
         return make_table(self.res, *args, **kargs)
 
-    def make_lined_table(self, *args, **kargs):
-        # type: (Any, Any) -> Optional[str]
+    def make_lined_table(self, *args: Any, **kargs: Any) -> Optional[str]:
         """Same as make_table, but print a table with lines"""
         return make_lined_table(self.res, *args, **kargs)
 
-    def make_tex_table(self, *args, **kargs):
-        # type: (Any, Any) -> Optional[str]
+    def make_tex_table(self, *args: Any, **kargs: Any) -> Optional[str]:
         """Same as make_table, but print a table with LaTeX syntax"""
         return make_tex_table(self.res, *args, **kargs)
 
     def plot(self,
-             f,  # type: Callable[..., Any]
-             lfilter=None,  # type: Optional[Callable[..., bool]]
-             plot_xy=False,  # type: bool
-             **kargs  # type: Any
-             ):
-        # type: (...) -> Line2D
+             f: Callable[..., Any],
+             lfilter: Optional[Callable[..., bool]] = None,
+             plot_xy: bool = False,
+             **kargs: Any
+             ) -> Line2D:
         """Applies a function to each packet to get a value that will be plotted
         with matplotlib. A list of matplotlib.lines.Line2D is returned.
 
@@ -304,12 +286,11 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         return lines
 
     def diffplot(self,
-                 f,  # type: Callable[..., Any]
-                 delay=1,  # type: int
-                 lfilter=None,  # type: Optional[Callable[..., bool]]
-                 **kargs  # type: Any
-                 ):
-        # type: (...) -> Line2D
+                 f: Callable[..., Any],
+                 delay: int = 1,
+                 lfilter: Optional[Callable[..., bool]] = None,
+                 **kargs: Any
+                 ) -> Line2D:
         """diffplot(f, delay=1, lfilter=None)
         Applies a function to couples (l[i],l[i+delay])
 
@@ -344,12 +325,11 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         return lines
 
     def multiplot(self,
-                  f,  # type: Callable[..., Any]
-                  lfilter=None,  # type: Optional[Callable[..., Any]]
-                  plot_xy=False,  # type: bool
-                  **kargs  # type: Any
-                  ):
-        # type: (...) -> Line2D
+                  f: Callable[..., Any],
+                  lfilter: Optional[Callable[..., Any]] = None,
+                  plot_xy: bool = False,
+                  **kargs: Any
+                  ) -> Line2D:
         """Uses a function that returns a label and a value for this label, then
         plots all the values label by label.
 
@@ -370,7 +350,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             lst_pkts = (f(*e) for e in self.res if lfilter(*e))
 
         # Apply the function f to the packets
-        d = {}  # type: Dict[str, List[float]]
+        d: Dict[str, List[float]] = {}
         for k, v in lst_pkts:
             d.setdefault(k, []).append(v)
 
@@ -392,14 +372,12 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
 
         return lines
 
-    def rawhexdump(self):
-        # type: () -> None
+    def rawhexdump(self) -> None:
         """Prints an hexadecimal dump of each packet in the list"""
         for p in self:
             hexdump(self._elt2pkt(p))
 
-    def hexraw(self, lfilter=None):
-        # type: (Optional[Callable[..., bool]]) -> None
+    def hexraw(self, lfilter: Optional[Callable[..., bool]] = None) -> None:
         """Same as nsummary(), except that if a packet has a Raw layer, it will be hexdumped  # noqa: E501
         lfilter: a truth function that decides whether a packet must be displayed"""  # noqa: E501
         for i, res in enumerate(self.res):
@@ -412,8 +390,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             if p.haslayer(conf.raw_layer):
                 hexdump(p.getlayer(conf.raw_layer).load)  # type: ignore
 
-    def hexdump(self, lfilter=None):
-        # type: (Optional[Callable[..., bool]]) -> None
+    def hexdump(self, lfilter: Optional[Callable[..., bool]] = None) -> None:
         """Same as nsummary(), except that packets are also hexdumped
         lfilter: a truth function that decides whether a packet must be displayed"""  # noqa: E501
         for i, res in enumerate(self.res):
@@ -425,8 +402,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                                 self._elt2sum(res)))
             hexdump(p)
 
-    def padding(self, lfilter=None):
-        # type: (Optional[Callable[..., bool]]) -> None
+    def padding(self, lfilter: Optional[Callable[..., bool]] = None) -> None:
         """Same as hexraw(), for Padding layer"""
         for i, res in enumerate(self.res):
             p = self._elt2pkt(res)
@@ -439,8 +415,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                         p.getlayer(conf.padding_layer).load  # type: ignore
                     )
 
-    def nzpadding(self, lfilter=None):
-        # type: (Optional[Callable[..., bool]]) -> None
+    def nzpadding(self, lfilter: Optional[Callable[..., bool]] = None) -> None:
         """Same as padding() but only non null padding"""
         for i, res in enumerate(self.res):
             p = self._elt2pkt(res)
@@ -457,10 +432,9 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                     )
 
     def conversations(self,
-                      getsrcdst=None,  # type: Optional[Callable[[Packet], Tuple[Any, ...]]]  # noqa: E501
-                      **kargs  # type: Any
-                      ):
-        # type: (...) -> Any
+                      getsrcdst: Optional[Callable[[Packet], Tuple[Any, ...]]] = None,  # noqa: E501
+                      **kargs: Any
+                      ) -> Any:
         """Graphes a conversations between sources and destinations and display it
         (using graphviz and imagemagick)
 
@@ -475,8 +449,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         :param prog: which graphviz program to use
         """
         if getsrcdst is None:
-            def _getsrcdst(pkt):
-                # type: (Packet) -> Tuple[str, str]
+            def _getsrcdst(pkt: Packet) -> Tuple[str, str]:
                 """Extract src and dst addresses"""
                 if 'IP' in pkt:
                     return (pkt['IP'].src, pkt['IP'].dst)
@@ -486,7 +459,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                     return (pkt['ARP'].psrc, pkt['ARP'].pdst)
                 raise TypeError()
             getsrcdst = _getsrcdst
-        conv = {}  # type: Dict[Tuple[Any, ...], Any]
+        conv: Dict[Tuple[Any, ...], Any] = {}
         for elt in self.res:
             p = self._elt2pkt(elt)
             try:
@@ -511,12 +484,11 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         return do_graph(gr, **kargs)
 
     def afterglow(self,
-                  src=None,  # type: Optional[Callable[[_Inner], Any]]
-                  event=None,  # type: Optional[Callable[[_Inner], Any]]
-                  dst=None,  # type: Optional[Callable[[_Inner], Any]]
-                  **kargs  # type: Any
-                  ):
-        # type: (...) -> Any
+                  src: Optional[Callable[[_Inner], Any]] = None,
+                  event: Optional[Callable[[_Inner], Any]] = None,
+                  dst: Optional[Callable[[_Inner], Any]] = None,
+                  **kargs: Any
+                  ) -> Any:
         """Experimental clone attempt of http://sourceforge.net/projects/afterglow
         each datum is reduced as src -> event -> dst and the data are graphed.
         by default we have IP.src -> IP.dport -> IP.dst"""
@@ -526,9 +498,9 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             event = lambda *x: x[0]['IP'].dport
         if dst is None:
             dst = lambda *x: x[0]['IP'].dst
-        sl = {}  # type: Dict[Any, Tuple[Union[float, int], List[Any]]]
-        el = {}  # type: Dict[Any, Tuple[Union[float, int], List[Any]]]
-        dl = {}  # type: Dict[Any, int]
+        sl: Dict[Any, Tuple[Union[float, int], List[Any]]] = {}
+        el: Dict[Any, Tuple[Union[float, int], List[Any]]] = {}
+        dl: Dict[Any, int] = {}
         for i in self.res:
             try:
                 s, e, d = src(i), event(i), dst(i)
@@ -552,8 +524,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             except Exception:
                 continue
 
-        def minmax(x):
-            # type: (Any) -> Tuple[int, int]
+        def minmax(x: Any) -> Tuple[int, int]:
             m, M = reduce(lambda a, b: (min(a[0], b[0]), max(a[1], b[1])),
                           ((a, a) for a in x))
             if m == M:
@@ -596,8 +567,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         gr += "}"
         return do_graph(gr, **kargs)
 
-    def canvas_dump(self, layer_shift=0, rebuild=1):
-        # type: (int, int) -> 'pyx.canvas.canvas'
+    def canvas_dump(self, layer_shift: int = 0, rebuild: int = 1) -> 'pyx.canvas.canvas':
         d = pyx.document.document()
         len_res = len(self.res)
         for i, res in enumerate(self.res):
@@ -614,12 +584,10 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
 
     def sessions(
             self,
-            session_extractor=None  # type: Optional[Callable[[Packet], str]]
-    ):
-        # type: (...) -> Dict[str, _PacketList[_Inner]]
+            session_extractor: Optional[Callable[[Packet], str]] = None
+    ) -> Dict[str, _PacketList[_Inner]]:
         if session_extractor is None:
-            def _session_extractor(p):
-                # type: (Packet) -> str
+            def _session_extractor(p: Packet) -> str:
                 """Extract sessions from packets"""
                 if 'Ether' in p:
                     if 'IP' in p or 'IPv6' in p:
@@ -647,7 +615,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
                         return p.sprintf("Ethernet type=%04xr,Ether.type%")
                 return "Other"
             session_extractor = _session_extractor
-        sessions = defaultdict(self.__class__)  # type: DefaultDict[str, _PacketList[_Inner]]  # noqa: E501
+        sessions: DefaultDict[str, _PacketList[_Inner]] = defaultdict(self.__class__)  # noqa: E501
         for p in self.res:
             sess = session_extractor(
                 self._elt2pkt(p)
@@ -655,8 +623,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             sessions[sess].append(p)
         return dict(sessions)
 
-    def replace(self, *args, **kargs):
-        # type: (Any, Any) -> PacketList
+    def replace(self, *args: Any, **kargs: Any) -> PacketList:
         """
         lst.replace(<field>,[<oldvalue>,]<newvalue>)
         lst.replace( (fld,[ov],nv),(fld,[ov,]nv),...)
@@ -689,13 +656,12 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
             x.append(p)
         return x
 
-    def getlayer(self, cls,  # type: Packet
-                 nb=None,  # type: Optional[int]
-                 flt=None,  # type: Optional[Dict[str, Any]]
-                 name=None,  # type: Optional[str]
-                 stats=None  # type: Optional[List[Type[Packet]]]
-                 ):
-        # type: (...) -> PacketList
+    def getlayer(self, cls: Packet,
+                 nb: Optional[int] = None,
+                 flt: Optional[Dict[str, Any]] = None,
+                 name: Optional[str] = None,
+                 stats: Optional[List[Type[Packet]]] = None
+                 ) -> PacketList:
         """Returns the packet list from a given layer.
 
         See ``Packet.getlayer`` for more info.
@@ -722,7 +688,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
         if stats is None:
             stats = self.stats
 
-        getlayer_arg = {}  # type: Dict[str, Any]
+        getlayer_arg: Dict[str, Any] = {}
         if flt is not None:
             getlayer_arg.update(flt)
         getlayer_arg['cls'] = cls
@@ -741,8 +707,7 @@ class _PacketList(Generic[_Inner], metaclass=PacketList_metaclass):
 class PacketList(_PacketList[Packet],
                  BasePacketList[Packet],
                  _CanvasDumpExtended):
-    def sr(self, multi=False, lookahead=None):
-        # type: (bool, Optional[int]) -> Tuple[SndRcvList, PacketList]
+    def sr(self, multi: bool = False, lookahead: Optional[int] = None) -> Tuple[SndRcvList, PacketList]:
         """
         Matches packets in the list
 
@@ -753,7 +718,7 @@ class PacketList(_PacketList[Packet],
         :return: ( (matched couples), (unmatched packets) )
         """
         remain = self.res[:]
-        sr = []  # type: List[QueryAnswer]
+        sr: List[QueryAnswer] = []
         i = 0
         if lookahead is None or lookahead == 0:
             lookahead = len(remain)
@@ -790,20 +755,17 @@ _PacketIterable = Union[
 class SndRcvList(_PacketList[QueryAnswer],
                  BasePacketList[QueryAnswer],
                  _CanvasDumpExtended):
-    __slots__ = []  # type: List[str]
+    __slots__: List[str] = []
 
     def __init__(self,
-                 res=None,  # type: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]]  # noqa: E501
-                 name="Results",  # type: str
-                 stats=None  # type: Optional[List[Type[Packet]]]
-                 ):
-        # type: (...) -> None
+                 res: Optional[Union[_PacketList[QueryAnswer], List[QueryAnswer]]] = None,  # noqa: E501
+                 name: str = "Results",
+                 stats: Optional[List[Type[Packet]]] = None
+                 ) -> None:
         super(SndRcvList, self).__init__(res, name, stats)
 
-    def _elt2pkt(self, elt):
-        # type: (QueryAnswer) -> Packet
+    def _elt2pkt(self, elt: QueryAnswer) -> Packet:
         return elt[1]
 
-    def _elt2sum(self, elt):
-        # type: (QueryAnswer) -> str
+    def _elt2sum(self, elt: QueryAnswer) -> str:
         return "%s ==> %s" % (elt[0].summary(), elt[1].summary())

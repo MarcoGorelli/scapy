@@ -8,6 +8,8 @@ This file implements the rtnetlink API that is used to read the network
 configuration of the machine.
 """
 
+from __future__ import annotations
+
 import socket
 import struct
 import time
@@ -753,8 +755,7 @@ def _sr1_rtrequest(pkt: Packet) -> List[Packet]:
         sock.close()
 
 
-def _get_ips(af_family=socket.AF_UNSPEC):
-    # type: (socket.AddressFamily) -> Dict[int, List[Dict[str, Any]]]
+def _get_ips(af_family: socket.AddressFamily = socket.AF_UNSPEC) -> Dict[int, List[Dict[str, Any]]]:
     """
     Return a mapping of all interfaces IP using a NETLINK socket.
     """
@@ -790,8 +791,7 @@ def _get_ips(af_family=socket.AF_UNSPEC):
     return ips
 
 
-def _get_if_list():
-    # type: () -> Dict[int, Dict[str, Any]]
+def _get_if_list() -> Dict[int, Dict[str, Any]]:
     """
     Read the interfaces list using a NETLINK socket.
     """
@@ -833,8 +833,7 @@ def _get_if_list():
     return interfaces
 
 
-def in6_getifaddr():
-    # type: () -> List[Tuple[str, int, str]]
+def in6_getifaddr() -> List[Tuple[str, int, str]]:
     """
     Returns a list of 3-tuples of the form (addr, scope, iface) where
     'addr' is the address of scope 'scope' associated to the interface
@@ -853,8 +852,7 @@ def in6_getifaddr():
     return result
 
 
-def _read_routes(af_family):
-    # type: (socket.AddressFamily) -> List[Packet]
+def _read_routes(af_family: socket.AddressFamily) -> List[Packet]:
     """
     Read routes using a NETLINK socket.
     """
@@ -878,8 +876,7 @@ def _read_routes(af_family):
     return [msg for msg in results if msg.nlmsg_type == 24]  # RTM_NEWROUTE
 
 
-def read_routes():
-    # type: () -> List[Tuple[int, int, str, str, str, int]]
+def read_routes() -> List[Tuple[int, int, str, str, str, int]]:
     """
     Read IPv4 routes for current process
     """
@@ -930,8 +927,7 @@ def read_routes():
     return routes
 
 
-def read_routes6():
-    # type: () -> List[Tuple[str, int, str, str, List[str], int]]
+def read_routes6() -> List[Tuple[str, int, str, str, List[str], int]]:
     """
     Read IPv6 routes for current process
     """

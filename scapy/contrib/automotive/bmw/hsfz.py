@@ -5,6 +5,8 @@
 
 # scapy.contrib.description = HSFZ - BMW High-Speed-Fahrzeug-Zugang
 # scapy.contrib.status = loads
+from __future__ import annotations
+
 import logging
 import socket
 import struct
@@ -68,18 +70,15 @@ class HSFZ(Packet):
             lambda p: p.control == 0x11)
     ]
 
-    def hashret(self):
-        # type: () -> bytes
+    def hashret(self) -> bytes:
         hdr_hash = struct.pack("B", self.source ^ self.target)
         pay_hash = self.payload.hashret()
         return hdr_hash + pay_hash
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, bytes]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, bytes]:
         return s[:self.length - 2], s[self.length - 2:]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         """
         This will set the LenField 'length' to the correct value.
         """
@@ -103,8 +102,7 @@ bind_layers(HSFZ, UDS)
 
 
 class HSFZSocket(StreamSocket):
-    def __init__(self, ip='127.0.0.1', port=6801):
-        # type: (str, int) -> None
+    def __init__(self, ip: str = '127.0.0.1', port: int = 6801) -> None:
         self.ip = ip
         self.port = port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -114,8 +112,7 @@ class HSFZSocket(StreamSocket):
         StreamSocket.__init__(self, s, HSFZ)
         self.buffer = b""
 
-    def recv(self, x=MTU, **kwargs):
-        # type: (Optional[int], **Any) -> Optional[Packet]
+    def recv(self, x: Optional[int] = MTU, **kwargs: Any) -> Optional[Packet]:
         if self.buffer:
             len_data = self.buffer[:4]
         else:
@@ -130,22 +127,20 @@ class HSFZSocket(StreamSocket):
         if len(self.buffer) != len_int:
             return None
 
-        pkt = self.basecls(self.buffer, **kwargs)  # type: Packet
+        pkt: Packet = self.basecls(self.buffer, **kwargs)
         self.buffer = b""
         return pkt
 
 
 class UDS_HSFZSocket(HSFZSocket):
-    def __init__(self, source, target, ip='127.0.0.1', port=6801, basecls=UDS):
-        # type: (int, int, str, int, Type[Packet]) -> None
+    def __init__(self, source: int, target: int, ip: str = '127.0.0.1', port: int = 6801, basecls: Type[Packet] = UDS) -> None:
         super(UDS_HSFZSocket, self).__init__(ip, port)
         self.source = source
         self.target = target
         self.basecls = HSFZ
         self.outputcls = basecls
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         try:
             x.sent_time = time.time()
         except AttributeError:
@@ -167,8 +162,7 @@ class UDS_HSFZSocket(HSFZSocket):
             self.close()
             return 0
 
-    def recv(self, x=MTU, **kwargs):
-        # type: (Optional[int], **Any) -> Optional[Packet]
+    def recv(self, x: Optional[int] = MTU, **kwargs: Any) -> Optional[Packet]:
         pkt = super(UDS_HSFZSocket, self).recv(x)
         if pkt:
             return self.outputcls(bytes(pkt.payload), **kwargs)
@@ -176,13 +170,12 @@ class UDS_HSFZSocket(HSFZSocket):
             return pkt
 
 
-def hsfz_scan(ip,  # type: str
-              scan_range=range(0x100),  # type: Iterable[int]
-              source=0xf4,  # type: int
-              timeout=0.1,  # type: Union[int, float]
-              verbose=True  # type: bool
-              ):
-    # type: (...) -> List[UDS_HSFZSocket]
+def hsfz_scan(ip: str,
+              scan_range: Iterable[int] = range(0x100),
+              source: int = 0xf4,
+              timeout: Union[int, float] = 0.1,
+              verbose: bool = True
+              ) -> List[UDS_HSFZSocket]:
     """
     Helper function to scan for HSFZ endpoints.
 

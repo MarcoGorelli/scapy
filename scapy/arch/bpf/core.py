@@ -8,6 +8,8 @@ Scapy *BSD native support - core
 """
 
 
+from __future__ import annotations
+
 import fcntl
 import os
 import socket
@@ -45,8 +47,7 @@ if LINUX:
 # BPF specific functions
 
 
-def get_dev_bpf():
-    # type: () -> Tuple[int, int]
+def get_dev_bpf() -> Tuple[int, int]:
     """Returns an opened BPF file object"""
 
     # Get the first available BPF handle
@@ -68,8 +69,7 @@ def get_dev_bpf():
     raise Scapy_Exception("No /dev/bpf handle is available !")
 
 
-def attach_filter(fd, bpf_filter, iface):
-    # type: (int, str, _GlobInterfaceType) -> None
+def attach_filter(fd: int, bpf_filter: str, iface: _GlobInterfaceType) -> None:
     """Attach a BPF filter to the BPF file descriptor"""
     bp = compile_filter(bpf_filter, iface)
     # Assign the BPF program to the interface
@@ -78,8 +78,7 @@ def attach_filter(fd, bpf_filter, iface):
         raise Scapy_Exception("Can't attach the BPF filter !")
 
 
-def in6_getifaddr():
-    # type: () -> List[Tuple[str, int, str]]
+def in6_getifaddr() -> List[Tuple[str, int, str]]:
     """
     Returns a list of 3-tuples of the form (addr, scope, iface) where
     'addr' is the address of scope 'scope' associated to the interface
@@ -103,8 +102,7 @@ def in6_getifaddr():
 class BPFInterfaceProvider(InterfaceProvider):
     name = "BPF"
 
-    def _is_valid(self, dev):
-        # type: (NetworkInterface) -> bool
+    def _is_valid(self, dev: NetworkInterface) -> bool:
         if not dev.flags & 0x1:  # not IFF_UP
             return False
         # Get a BPF handle
@@ -125,8 +123,7 @@ class BPFInterfaceProvider(InterfaceProvider):
             # Close the file descriptor
             os.close(fd)
 
-    def load(self):
-        # type: () -> Dict[str, NetworkInterface]
+    def load(self) -> Dict[str, NetworkInterface]:
         data = {}
         for iface in _get_if_list().values():
             if_data = iface.copy()

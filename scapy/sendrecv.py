@@ -7,6 +7,8 @@
 Functions to send and receive packets.
 """
 
+from __future__ import annotations
+
 import itertools
 from threading import Thread, Event
 import os
@@ -68,7 +70,7 @@ class debug:
     recv = PacketList([], "Received")
     sent = PacketList([], "Sent")
     match = SndRcvList([], "Matched")
-    crashed_on = None  # type: Optional[Tuple[Type[Packet], bytes]]
+    crashed_on: Optional[Tuple[Type[Packet], bytes]] = None
 
 
 ####################
@@ -117,23 +119,22 @@ class SndRcvHandler(object):
         to avoid races that could result in negative latency. We aren't Stadia
     """
     def __init__(self,
-                 pks,  # type: SuperSocket
-                 pkt,  # type: _PacketIterable
-                 timeout=None,  # type: Optional[int]
-                 inter=0,  # type: int
-                 verbose=None,  # type: Optional[int]
-                 chainCC=False,  # type: bool
-                 retry=0,  # type: int
-                 multi=False,  # type: bool
-                 rcv_pks=None,  # type: Optional[SuperSocket]
-                 prebuild=False,  # type: bool
-                 _flood=None,  # type: Optional[_FloodGenerator]
-                 threaded=True,  # type: bool
-                 session=None,  # type: Optional[_GlobSessionType]
-                 chainEX=False,  # type: bool
-                 stop_filter=None  # type: Optional[Callable[[Packet], bool]]
-                 ):
-        # type: (...) -> None
+                 pks: SuperSocket,
+                 pkt: _PacketIterable,
+                 timeout: Optional[int] = None,
+                 inter: int = 0,
+                 verbose: Optional[int] = None,
+                 chainCC: bool = False,
+                 retry: int = 0,
+                 multi: bool = False,
+                 rcv_pks: Optional[SuperSocket] = None,
+                 prebuild: bool = False,
+                 _flood: Optional[_FloodGenerator] = None,
+                 threaded: bool = True,
+                 session: Optional[_GlobSessionType] = None,
+                 chainEX: bool = False,
+                 stop_filter: Optional[Callable[[Packet], bool]] = None
+                 ) -> None:
         # Instantiate all arguments
         if verbose is None:
             verbose = conf.verb
@@ -142,7 +143,7 @@ class SndRcvHandler(object):
             debug.sent = PacketList([], "Sent")
             debug.match = SndRcvList([], "Matched")
         self.nbrecv = 0
-        self.ans = []  # type: List[QueryAnswer]
+        self.ans: List[QueryAnswer] = []
         self.pks = pks
         self.rcv_pks = rcv_pks or pks
         self.inter = inter
@@ -161,7 +162,7 @@ class SndRcvHandler(object):
         self.breakout = Event()
         # Instantiate packet holders
         if prebuild and not self._flood:
-            self.tobesent = list(pkt)  # type: _PacketIterable
+            self.tobesent: _PacketIterable = list(pkt)
         else:
             self.tobesent = pkt
 
@@ -175,7 +176,7 @@ class SndRcvHandler(object):
 
         while retry >= 0:
             self.breakout.clear()
-            self.hsent = {}  # type: Dict[bytes, List[Packet]]
+            self.hsent: Dict[bytes, List[Packet]] = {}
 
             if threaded or self._flood:
                 # Send packets in thread.
@@ -248,8 +249,7 @@ class SndRcvHandler(object):
         self.ans_result = SndRcvList(self.ans)
         self.unans_result = PacketList(remain, "Unanswered")
 
-    def results(self):
-        # type: () -> Tuple[SndRcvList, PacketList]
+    def results(self) -> Tuple[SndRcvList, PacketList]:
         return self.ans_result, self.unans_result
 
     def _stop_sniffer_if_done(self) -> None:
@@ -258,8 +258,7 @@ class SndRcvHandler(object):
             if self.sniffer and self.sniffer.running:
                 self.sniffer.stop(join=False)
 
-    def _sndrcv_snd(self):
-        # type: () -> None
+    def _sndrcv_snd(self) -> None:
         """Function used in the sending thread of sndrcv()"""
         i = 0
         p = None
@@ -304,8 +303,7 @@ class SndRcvHandler(object):
             if self.sniffer and self.sniffer.running:
                 self.sniffer.stop()
 
-    def _process_packet(self, r):
-        # type: (Packet) -> None
+    def _process_packet(self, r: Packet) -> None:
         """Internal function used to process each packet."""
         if r is None:
             return
@@ -335,11 +333,10 @@ class SndRcvHandler(object):
             if conf.debug_match:
                 debug.recv.append(r)
 
-    def _sndrcv_rcv(self, callback):
-        # type: (Callable[[], None]) -> None
+    def _sndrcv_rcv(self, callback: Callable[[], None]) -> None:
         """Function used to receive packets and check their hashret"""
         # This is blocking.
-        self.sniffer = None  # type: Optional[AsyncSniffer]
+        self.sniffer: Optional[AsyncSniffer] = None
         self.sniffer = AsyncSniffer()
         self.sniffer._run(
             prn=self._process_packet,
@@ -353,8 +350,7 @@ class SndRcvHandler(object):
         )
 
 
-def sndrcv(*args, **kwargs):
-    # type: (*Any, **Any) -> Tuple[SndRcvList, PacketList]
+def sndrcv(*args: Any, **kwargs: Any) -> Tuple[SndRcvList, PacketList]:
     """Scapy raw function to send a packet and receive its answer.
     WARNING: This is an internal function. Using sr/srp/sr1/srp is
     more appropriate in many cases.
@@ -363,18 +359,17 @@ def sndrcv(*args, **kwargs):
     return sndrcver.results()
 
 
-def __gen_send(s,  # type: SuperSocket
-               x,  # type: _PacketIterable
-               inter=0,  # type: int
-               loop=0,  # type: int
-               count=None,  # type: Optional[int]
-               verbose=None,  # type: Optional[int]
-               realtime=False,  # type: bool
-               return_packets=False,  # type: bool
-               *args,  # type: Any
-               **kargs  # type: Any
-               ):
-    # type: (...) -> Optional[PacketList]
+def __gen_send(s: SuperSocket,
+               x: _PacketIterable,
+               inter: int = 0,
+               loop: int = 0,
+               count: Optional[int] = None,
+               verbose: Optional[int] = None,
+               realtime: bool = False,
+               return_packets: bool = False,
+               *args: Any,
+               **kargs: Any
+               ) -> Optional[PacketList]:
     """
     An internal function used by send/sendp to actually send the packets,
     implement the send logic...
@@ -427,19 +422,18 @@ def __gen_send(s,  # type: SuperSocket
     return sent_packets
 
 
-def _send(x,  # type: _PacketIterable
-          _func,  # type: Callable[[NetworkInterface], Type[SuperSocket]]
-          inter=0,  # type: int
-          loop=0,  # type: int
-          iface=None,  # type: Optional[_GlobInterfaceType]
-          count=None,  # type: Optional[int]
-          verbose=None,  # type: Optional[int]
-          realtime=False,  # type: bool
-          return_packets=False,  # type: bool
-          socket=None,  # type: Optional[SuperSocket]
-          **kargs  # type: Any
-          ):
-    # type: (...) -> Optional[PacketList]
+def _send(x: _PacketIterable,
+          _func: Callable[[NetworkInterface], Type[SuperSocket]],
+          inter: int = 0,
+          loop: int = 0,
+          iface: Optional[_GlobInterfaceType] = None,
+          count: Optional[int] = None,
+          verbose: Optional[int] = None,
+          realtime: bool = False,
+          return_packets: bool = False,
+          socket: Optional[SuperSocket] = None,
+          **kargs: Any
+          ) -> Optional[PacketList]:
     """Internal function used by send and sendp"""
     need_closing = socket is None
     iface = resolve_iface(iface or conf.iface)
@@ -453,10 +447,9 @@ def _send(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def send(x,  # type: _PacketIterable
-         **kargs  # type: Any
-         ):
-    # type: (...) -> Optional[PacketList]
+def send(x: _PacketIterable,
+         **kargs: Any
+         ) -> Optional[PacketList]:
     """
     Send packets at layer 3
 
@@ -492,13 +485,12 @@ def send(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def sendp(x,  # type: _PacketIterable
-          iface=None,  # type: Optional[_GlobInterfaceType]
-          iface_hint=None,  # type: Optional[str]
-          socket=None,  # type: Optional[SuperSocket]
-          **kargs  # type: Any
-          ):
-    # type: (...) -> Optional[PacketList]
+def sendp(x: _PacketIterable,
+          iface: Optional[_GlobInterfaceType] = None,
+          iface_hint: Optional[str] = None,
+          socket: Optional[SuperSocket] = None,
+          **kargs: Any
+          ) -> Optional[PacketList]:
     """
     Send packets at layer 2
 
@@ -536,8 +528,7 @@ def sendpfast(x: _PacketIterable,
               iface: Optional[_GlobInterfaceType] = None,
               replay_args: Optional[List[str]] = None,
               parse_results: bool = False,
-              ):
-    # type: (...) -> Optional[Dict[str, Any]]
+              ) -> Optional[Dict[str, Any]]:
     """Send packets at layer 2 using tcpreplay for performance
 
     :param pps:  packets per second
@@ -603,8 +594,7 @@ def sendpfast(x: _PacketIterable,
     return results
 
 
-def _parse_tcpreplay_result(stdout_b, stderr_b, argv):
-    # type: (bytes, bytes, List[str]) -> Dict[str, Any]
+def _parse_tcpreplay_result(stdout_b: bytes, stderr_b: bytes, argv: List[str]) -> Dict[str, Any]:
     """
     Parse the output of tcpreplay and modify the results_dict to populate output information.  # noqa: E501
     Tested with tcpreplay v3.4.4
@@ -680,14 +670,13 @@ def _interface_selection(packet: _PacketIterable) -> Tuple[NetworkInterface, boo
 
 
 @conf.commands.register
-def sr(x,  # type: _PacketIterable
-       promisc=None,  # type: Optional[bool]
-       filter=None,  # type: Optional[str]
-       nofilter=0,  # type: int
-       *args,  # type: Any
-       **kargs  # type: Any
-       ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def sr(x: _PacketIterable,
+       promisc: Optional[bool] = None,
+       filter: Optional[str] = None,
+       nofilter: int = 0,
+       *args: Any,
+       **kargs: Any
+       ) -> Tuple[SndRcvList, PacketList]:
     """
     Send and receive packets at layer 3
 
@@ -713,8 +702,7 @@ def sr(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def sr1(*args, **kargs):
-    # type: (*Any, **Any) -> Optional[Packet]
+def sr1(*args: Any, **kargs: Any) -> Optional[Packet]:
     """
     Send packets at layer 3 and return only the first answer
 
@@ -736,17 +724,16 @@ def sr1(*args, **kargs):
 
 
 @conf.commands.register
-def srp(x,  # type: _PacketIterable
-        promisc=None,  # type: Optional[bool]
-        iface=None,  # type: Optional[_GlobInterfaceType]
-        iface_hint=None,  # type: Optional[str]
-        filter=None,  # type: Optional[str]
-        nofilter=0,  # type: int
-        type=ETH_P_ALL,  # type: int
-        *args,  # type: Any
-        **kargs  # type: Any
-        ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def srp(x: _PacketIterable,
+        promisc: Optional[bool] = None,
+        iface: Optional[_GlobInterfaceType] = None,
+        iface_hint: Optional[str] = None,
+        filter: Optional[str] = None,
+        nofilter: int = 0,
+        type: int = ETH_P_ALL,
+        *args: Any,
+        **kargs: Any
+        ) -> Tuple[SndRcvList, PacketList]:
     """
     Send and receive packets at layer 2
     """
@@ -761,8 +748,7 @@ def srp(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def srp1(*args, **kargs):
-    # type: (*Any, **Any) -> Optional[Packet]
+def srp1(*args: Any, **kargs: Any) -> Optional[Packet]:
     """
     Send and receive packets at layer 2 and return only the first answer
     """
@@ -781,27 +767,26 @@ for sr_func in [srp, srp1, sr, sr1]:
 # SEND/RECV LOOP METHODS
 
 
-def __sr_loop(srfunc,  # type: Callable[..., Tuple[SndRcvList, PacketList]]
-              pkts,  # type: _PacketIterable
-              prn=lambda x: x[1].summary(),  # type: Optional[Callable[[QueryAnswer], Any]]  # noqa: E501
-              prnfail=lambda x: x.summary(),  # type: Optional[Callable[[Packet], Any]]
-              inter=1,  # type: int
-              timeout=None,  # type: Optional[int]
-              count=None,  # type: Optional[int]
-              verbose=None,  # type: Optional[int]
-              store=1,  # type: int
-              *args,  # type: Any
-              **kargs  # type: Any
-              ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def __sr_loop(srfunc: Callable[..., Tuple[SndRcvList, PacketList]],
+              pkts: _PacketIterable,
+              prn: Optional[Callable[[QueryAnswer], Any]] = lambda x: x[1].summary(),  # noqa: E501
+              prnfail: Optional[Callable[[Packet], Any]] = lambda x: x.summary(),
+              inter: int = 1,
+              timeout: Optional[int] = None,
+              count: Optional[int] = None,
+              verbose: Optional[int] = None,
+              store: int = 1,
+              *args: Any,
+              **kargs: Any
+              ) -> Tuple[SndRcvList, PacketList]:
     n = 0
     r = 0
     ct = conf.color_theme
     if verbose is None:
         verbose = conf.verb
     parity = 0
-    ans = []  # type: List[QueryAnswer]
-    unans = []  # type: List[Packet]
+    ans: List[QueryAnswer] = []
+    unans: List[Packet] = []
     if timeout is None:
         timeout = min(2 * inter, 5)
     try:
@@ -854,11 +839,10 @@ def __sr_loop(srfunc,  # type: Callable[..., Tuple[SndRcvList, PacketList]]
 
 
 @conf.commands.register
-def srloop(pkts,  # type: _PacketIterable
-           *args,  # type: Any
-           **kargs  # type: Any
-           ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def srloop(pkts: _PacketIterable,
+           *args: Any,
+           **kargs: Any
+           ) -> Tuple[SndRcvList, PacketList]:
     """
     Send a packet at layer 3 in loop and print the answer each time
     srloop(pkts, [prn], [inter], [count], ...) --> None
@@ -867,11 +851,10 @@ def srloop(pkts,  # type: _PacketIterable
 
 
 @conf.commands.register
-def srploop(pkts,  # type: _PacketIterable
-            *args,  # type: Any
-            **kargs  # type: Any
-            ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def srploop(pkts: _PacketIterable,
+            *args: Any,
+            **kargs: Any
+            ) -> Tuple[SndRcvList, PacketList]:
     """
     Send a packet at layer 2 in loop and print the answer each time
     srloop(pkts, [prn], [inter], [count], ...) --> None
@@ -882,15 +865,13 @@ def srploop(pkts,  # type: _PacketIterable
 
 
 class _FloodGenerator(object):
-    def __init__(self, tobesent, maxretries):
-        # type: (_PacketIterable, Optional[int]) -> None
+    def __init__(self, tobesent: _PacketIterable, maxretries: Optional[int]) -> None:
         self.tobesent = tobesent
         self.maxretries = maxretries
         self.stopevent = Event()
         self.iterlen = 0
 
-    def __iter__(self):
-        # type: () -> Iterator[Packet]
+    def __iter__(self) -> Iterator[Packet]:
         i = 0
         while True:
             i += 1
@@ -906,29 +887,25 @@ class _FloodGenerator(object):
                 self.iterlen = j
 
     @property
-    def sent_time(self):
-        # type: () -> Union[EDecimal, float, None]
+    def sent_time(self) -> Union[EDecimal, float, None]:
         return cast(Packet, self.tobesent).sent_time
 
     @sent_time.setter
-    def sent_time(self, val):
-        # type: (Union[EDecimal, float, None]) -> None
+    def sent_time(self, val: Union[EDecimal, float, None]) -> None:
         cast(Packet, self.tobesent).sent_time = val
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         self.stopevent.set()
 
 
-def sndrcvflood(pks,  # type: SuperSocket
-                pkt,  # type: _PacketIterable
-                inter=0,  # type: int
-                maxretries=None,  # type: Optional[int]
-                verbose=None,  # type: Optional[int]
-                chainCC=False,  # type: bool
-                timeout=None  # type: Optional[int]
-                ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def sndrcvflood(pks: SuperSocket,
+                pkt: _PacketIterable,
+                inter: int = 0,
+                maxretries: Optional[int] = None,
+                verbose: Optional[int] = None,
+                chainCC: bool = False,
+                timeout: Optional[int] = None
+                ) -> Tuple[SndRcvList, PacketList]:
     """sndrcv equivalent for flooding."""
 
     flood_gen = _FloodGenerator(pkt, maxretries)
@@ -941,15 +918,14 @@ def sndrcvflood(pks,  # type: SuperSocket
 
 
 @conf.commands.register
-def srflood(x,  # type: _PacketIterable
-            promisc=None,  # type: Optional[bool]
-            filter=None,  # type: Optional[str]
-            iface=None,  # type: Optional[_GlobInterfaceType]
-            nofilter=None,  # type: Optional[bool]
-            *args,  # type: Any
-            **kargs  # type: Any
-            ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def srflood(x: _PacketIterable,
+            promisc: Optional[bool] = None,
+            filter: Optional[str] = None,
+            iface: Optional[_GlobInterfaceType] = None,
+            nofilter: Optional[bool] = None,
+            *args: Any,
+            **kargs: Any
+            ) -> Tuple[SndRcvList, PacketList]:
     """Flood and receive packets at layer 3
 
     This determines the interface (or L2 source to use) based on the routing
@@ -979,14 +955,13 @@ def srflood(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def sr1flood(x,  # type: _PacketIterable
-             promisc=None,  # type: Optional[bool]
-             filter=None,  # type: Optional[str]
-             nofilter=0,  # type: int
-             *args,  # type: Any
-             **kargs  # type: Any
-             ):
-    # type: (...) -> Optional[Packet]
+def sr1flood(x: _PacketIterable,
+             promisc: Optional[bool] = None,
+             filter: Optional[str] = None,
+             nofilter: int = 0,
+             *args: Any,
+             **kargs: Any
+             ) -> Optional[Packet]:
     """Flood and receive packets at layer 3 and return only the first answer
 
     This determines the interface (or L2 source to use) based on the routing
@@ -1019,16 +994,15 @@ def sr1flood(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def srpflood(x,  # type: _PacketIterable
-             promisc=None,  # type: Optional[bool]
-             filter=None,  # type: Optional[str]
-             iface=None,  # type: Optional[_GlobInterfaceType]
-             iface_hint=None,  # type: Optional[str]
-             nofilter=None,  # type: Optional[bool]
-             *args,  # type: Any
-             **kargs  # type: Any
-             ):
-    # type: (...) -> Tuple[SndRcvList, PacketList]
+def srpflood(x: _PacketIterable,
+             promisc: Optional[bool] = None,
+             filter: Optional[str] = None,
+             iface: Optional[_GlobInterfaceType] = None,
+             iface_hint: Optional[str] = None,
+             nofilter: Optional[bool] = None,
+             *args: Any,
+             **kargs: Any
+             ) -> Tuple[SndRcvList, PacketList]:
     """Flood and receive packets at layer 2
 
     :param prn:      function applied to packets received
@@ -1047,15 +1021,14 @@ def srpflood(x,  # type: _PacketIterable
 
 
 @conf.commands.register
-def srp1flood(x,  # type: _PacketIterable
-              promisc=None,  # type: Optional[bool]
-              filter=None,  # type: Optional[str]
-              iface=None,  # type: Optional[_GlobInterfaceType]
-              nofilter=0,  # type: int
-              *args,  # type: Any
-              **kargs  # type: Any
-              ):
-    # type: (...) -> Optional[Packet]
+def srp1flood(x: _PacketIterable,
+              promisc: Optional[bool] = None,
+              filter: Optional[str] = None,
+              iface: Optional[_GlobInterfaceType] = None,
+              nofilter: int = 0,
+              *args: Any,
+              **kargs: Any
+              ) -> Optional[Packet]:
     """Flood and receive packets at layer 2 and return only the first answer
 
     :param prn:      function applied to packets received
@@ -1138,20 +1111,17 @@ class AsyncSniffer(object):
       >>> t.stop()
     """
 
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Store keyword arguments
         self.args = args
         self.kwargs = kwargs
         self.running = False
-        self.thread = None  # type: Optional[Thread]
-        self.results = None  # type: Optional[PacketList]
-        self.exception = None  # type: Optional[Exception]
+        self.thread: Optional[Thread] = None
+        self.results: Optional[PacketList] = None
+        self.exception: Optional[Exception] = None
 
-    def _setup_thread(self):
-        # type: () -> None
-        def _run_catch(self=self, *args, **kwargs):
-            # type: (Any, *Any, **Any) -> None
+    def _setup_thread(self) -> None:
+        def _run_catch(self: Any = self, *args: Any, **kwargs: Any) -> None:
             try:
                 self._run(*args, **kwargs)
             except Exception as ex:
@@ -1166,23 +1136,22 @@ class AsyncSniffer(object):
         self.thread.daemon = True
 
     def _run(self,
-             count=0,  # type: int
-             store=True,  # type: bool
-             offline=None,  # type: Any
-             quiet=False,  # type: bool
-             prn=None,  # type: Optional[Callable[[Packet], Any]]
-             lfilter=None,  # type: Optional[Callable[[Packet], bool]]
-             L2socket=None,  # type: Optional[Type[SuperSocket]]
-             timeout=None,  # type: Optional[int]
-             opened_socket=None,  # type: Optional[SuperSocket]
-             stop_filter=None,  # type: Optional[Callable[[Packet], bool]]
-             iface=None,  # type: Optional[_GlobInterfaceType]
-             started_callback=None,  # type: Optional[Callable[[], Any]]
-             session=None,  # type: Optional[_GlobSessionType]
-             chainCC=False,  # type: bool
-             **karg  # type: Any
-             ):
-        # type: (...) -> None
+             count: int = 0,
+             store: bool = True,
+             offline: Any = None,
+             quiet: bool = False,
+             prn: Optional[Callable[[Packet], Any]] = None,
+             lfilter: Optional[Callable[[Packet], bool]] = None,
+             L2socket: Optional[Type[SuperSocket]] = None,
+             timeout: Optional[int] = None,
+             opened_socket: Optional[SuperSocket] = None,
+             stop_filter: Optional[Callable[[Packet], bool]] = None,
+             iface: Optional[_GlobInterfaceType] = None,
+             started_callback: Optional[Callable[[], Any]] = None,
+             session: Optional[_GlobSessionType] = None,
+             chainCC: bool = False,
+             **karg: Any
+             ) -> None:
         self.running = True
         self.count = 0
         lst = []
@@ -1192,7 +1161,7 @@ class AsyncSniffer(object):
             session = session or DefaultSession
             session = session()
         # sniff_sockets follows: {socket: label}
-        sniff_sockets = {}  # type: Dict[SuperSocket, _GlobInterfaceType]
+        sniff_sockets: Dict[SuperSocket, _GlobInterfaceType] = {}
         if opened_socket is not None:
             if isinstance(opened_socket, list):
                 sniff_sockets.update(
@@ -1255,7 +1224,7 @@ class AsyncSniffer(object):
                 )] = offline
         if not sniff_sockets or iface is not None:
             # The _RL2 function resolves the L2socket of an iface
-            _RL2 = lambda i: L2socket or resolve_iface(i).l2listen()  # type: Callable[[_GlobInterfaceType], Callable[..., SuperSocket]]  # noqa: E501
+            _RL2: Callable[[_GlobInterfaceType], Callable[..., SuperSocket]] = lambda i: L2socket or resolve_iface(i).l2listen()  # noqa: E501
             if isinstance(iface, list):
                 sniff_sockets.update(
                     (_RL2(ifname)(type=ETH_P_ALL, iface=ifname, **karg),
@@ -1283,23 +1252,21 @@ class AsyncSniffer(object):
                     "The used select function "
                     "will be the one of the first socket")
 
-        close_pipe = None  # type: Optional[ObjectPipe[None]]
+        close_pipe: Optional[ObjectPipe[None]] = None
         if not nonblocking_socket:
             # select is blocking: Add special control socket
             from scapy.automaton import ObjectPipe
             close_pipe = ObjectPipe[None]("control_socket")
             sniff_sockets[close_pipe] = "control_socket"  # type: ignore
 
-            def stop_cb():
-                # type: () -> None
+            def stop_cb() -> None:
                 if self.running and close_pipe:
                     close_pipe.send(None)
                 self.continue_sniff = False
             self.stop_cb = stop_cb
         else:
             # select is non blocking
-            def stop_cb():
-                # type: () -> None
+            def stop_cb() -> None:
                 self.continue_sniff = False
             self.stop_cb = stop_cb
 
@@ -1385,15 +1352,13 @@ class AsyncSniffer(object):
             close_pipe.close()
         self.results = PacketList(lst, "Sniffed")
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         """Starts AsyncSniffer in async mode"""
         self._setup_thread()
         if self.thread:
             self.thread.start()
 
-    def stop(self, join=True):
-        # type: (bool) -> Optional[PacketList]
+    def stop(self, join: bool = True) -> Optional[PacketList]:
         """Stops AsyncSniffer if not in async mode"""
         if self.running:
             try:
@@ -1409,8 +1374,7 @@ class AsyncSniffer(object):
         else:
             raise Scapy_Exception("Not running ! (check .running attr)")
 
-    def join(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
+    def join(self, *args: Any, **kwargs: Any) -> None:
         if self.thread:
             self.thread.join(*args, **kwargs)
         if self.exception is not None:
@@ -1418,8 +1382,7 @@ class AsyncSniffer(object):
 
 
 @conf.commands.register
-def sniff(*args, **kwargs):
-    # type: (*Any, **Any) -> PacketList
+def sniff(*args: Any, **kwargs: Any) -> PacketList:
     sniffer = AsyncSniffer()
     sniffer._run(*args, **kwargs)
     return cast(PacketList, sniffer.results)
@@ -1429,16 +1392,15 @@ sniff.__doc__ = AsyncSniffer.__doc__
 
 
 @conf.commands.register
-def bridge_and_sniff(if1,  # type: _GlobInterfaceType
-                     if2,  # type: _GlobInterfaceType
-                     xfrm12=None,  # type: Optional[Callable[[Packet], Union[Packet, bool]]]  # noqa: E501
-                     xfrm21=None,  # type: Optional[Callable[[Packet], Union[Packet, bool]]]  # noqa: E501
-                     prn=None,  # type: Optional[Callable[[Packet], Any]]
-                     L2socket=None,  # type: Optional[Type[SuperSocket]]
-                     *args,  # type: Any
-                     **kargs  # type: Any
-                     ):
-    # type: (...) -> PacketList
+def bridge_and_sniff(if1: _GlobInterfaceType,
+                     if2: _GlobInterfaceType,
+                     xfrm12: Optional[Callable[[Packet], Union[Packet, bool]]] = None,  # noqa: E501
+                     xfrm21: Optional[Callable[[Packet], Union[Packet, bool]]] = None,  # noqa: E501
+                     prn: Optional[Callable[[Packet], Any]] = None,
+                     L2socket: Optional[Type[SuperSocket]] = None,
+                     *args: Any,
+                     **kargs: Any
+                     ) -> PacketList:
     """Forward traffic between interfaces if1 and if2, sniff and return
     the exchanged packets.
 
@@ -1461,11 +1423,10 @@ def bridge_and_sniff(if1,  # type: _GlobInterfaceType
                                 "bridge_and_sniff() -- ignoring it.", arg)
             del kargs[arg]
 
-    def _init_socket(iface,  # type: _GlobInterfaceType
-                     count,  # type: int
-                     L2socket=L2socket  # type: Optional[Type[SuperSocket]]
-                     ):
-        # type: (...) -> Tuple[SuperSocket, _GlobInterfaceType]
+    def _init_socket(iface: _GlobInterfaceType,
+                     count: int,
+                     L2socket: Optional[Type[SuperSocket]] = L2socket
+                     ) -> Tuple[SuperSocket, _GlobInterfaceType]:
         if isinstance(iface, SuperSocket):
             return iface, "iface%d" % count
         else:
@@ -1482,8 +1443,7 @@ def bridge_and_sniff(if1,  # type: _GlobInterfaceType
     if xfrm21 is not None:
         xfrms[if2] = xfrm21
 
-    def prn_send(pkt):
-        # type: (Packet) -> None
+    def prn_send(pkt: Packet) -> None:
         try:
             sendsock = peers[pkt.sniffed_on or ""]
         except KeyError:
@@ -1517,8 +1477,7 @@ def bridge_and_sniff(if1,  # type: _GlobInterfaceType
     else:
         prn_orig = prn
 
-        def prn(pkt):
-            # type: (Packet) -> Any
+        def prn(pkt: Packet) -> Any:
             prn_send(pkt)
             return prn_orig(pkt)
 
@@ -1527,8 +1486,7 @@ def bridge_and_sniff(if1,  # type: _GlobInterfaceType
 
 
 @conf.commands.register
-def tshark(*args, **kargs):
-    # type: (Any, Any) -> None
+def tshark(*args: Any, **kargs: Any) -> None:
     """Sniff packets and print them calling pkt.summary().
     This tries to replicate what text-wireshark (tshark) would look like"""
 
@@ -1544,8 +1502,7 @@ def tshark(*args, **kargs):
     # for Python 2 compatibility
     i = [0]
 
-    def _cb(pkt):
-        # type: (Packet) -> None
+    def _cb(pkt: Packet) -> None:
         print("%5d\t%s" % (i[0], pkt.summary()))
         i[0] += 1
 

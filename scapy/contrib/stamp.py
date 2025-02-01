@@ -16,6 +16,7 @@ References:
       <https://www.rfc-editor.org/rfc/rfc8972.html>`_
 """
 
+from __future__ import annotations
 from scapy import config
 from scapy.base_classes import Packet_metaclass
 from scapy.layers.inet import UDP
@@ -110,8 +111,7 @@ class ErrorEstimate(Packet):
         ByteField('multiplier', 1),
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         # Trick to tell scapy that the remaining bytes of the currently
         # dissected string is not a payload of this packet but of some other
         # underlayer packet

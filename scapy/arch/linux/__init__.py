@@ -8,6 +8,7 @@ Linux specific functions.
 """
 
 
+from __future__ import annotations
 from fcntl import ioctl
 from select import select
 
@@ -117,8 +118,7 @@ PACKET_FASTROUTE = 6  # Fastrouted frame
 
 # Utils
 
-def attach_filter(sock, bpf_filter, iface):
-    # type: (socket.socket, str, _GlobInterfaceType) -> None
+def attach_filter(sock: socket.socket, bpf_filter: str, iface: _GlobInterfaceType) -> None:
     """
     Compile bpf filter and attach it to a socket
 
@@ -139,8 +139,7 @@ def attach_filter(sock, bpf_filter, iface):
     sock.setsockopt(socket.SOL_SOCKET, SO_ATTACH_FILTER, bp)
 
 
-def set_promisc(s, iff, val=1):
-    # type: (socket.socket, _GlobInterfaceType, int) -> None
+def set_promisc(s: socket.socket, iff: _GlobInterfaceType, val: int = 1) -> None:
     _iff = resolve_iface(iff)
     mreq = struct.pack("IHH8s", _iff.index, PACKET_MR_PROMISC, 0, b"")
     if val:
@@ -156,12 +155,10 @@ def set_promisc(s, iff, val=1):
 class LinuxInterfaceProvider(InterfaceProvider):
     name = "sys"
 
-    def _is_valid(self, dev):
-        # type: (NetworkInterface) -> bool
+    def _is_valid(self, dev: NetworkInterface) -> bool:
         return bool(dev.flags & IFF_UP)
 
-    def load(self):
-        # type: () -> Dict[str, NetworkInterface]
+    def load(self) -> Dict[str, NetworkInterface]:
         data = {}
         for iface in _get_if_list().values():
             if_data = iface.copy()
@@ -177,21 +174,18 @@ class LinuxInterfaceProvider(InterfaceProvider):
 conf.ifaces.register_provider(LinuxInterfaceProvider)
 
 if os.uname()[4] in ['x86_64', 'aarch64']:
-    def get_last_packet_timestamp(sock):
-        # type: (socket.socket) -> float
+    def get_last_packet_timestamp(sock: socket.socket) -> float:
         ts = ioctl(sock, SIOCGSTAMP, "1234567890123456")  # type: ignore
         s, us = struct.unpack("QQ", ts)  # type: Tuple[int, int]
         return s + us / 1000000.0
 else:
-    def get_last_packet_timestamp(sock):
-        # type: (socket.socket) -> float
+    def get_last_packet_timestamp(sock: socket.socket) -> float:
         ts = ioctl(sock, SIOCGSTAMP, "12345678")  # type: ignore
         s, us = struct.unpack("II", ts)  # type: Tuple[int, int]
         return s + us / 1000000.0
 
 
-def _flush_fd(fd):
-    # type: (int) -> None
+def _flush_fd(fd: int) -> None:
     while True:
         r, w, e = select([fd], [], [], 0)
         if r:
@@ -204,14 +198,13 @@ class L2Socket(SuperSocket):
     desc = "read/write packets at layer 2 using Linux PF_PACKET sockets"
 
     def __init__(self,
-                 iface=None,  # type: Optional[Union[str, NetworkInterface]]
-                 type=ETH_P_ALL,  # type: int
-                 promisc=None,  # type: Optional[Any]
-                 filter=None,  # type: Optional[Any]
-                 nofilter=0,  # type: int
-                 monitor=None,  # type: Optional[Any]
-                 ):
-        # type: (...) -> None
+                 iface: Optional[Union[str, NetworkInterface]] = None,
+                 type: int = ETH_P_ALL,
+                 promisc: Optional[Any] = None,
+                 filter: Optional[Any] = None,
+                 nofilter: int = 0,
+                 monitor: Optional[Any] = None,
+                 ) -> None:
         self.iface = network_name(iface or conf.iface)
         self.type = type
         self.promisc = conf.sniff_promisc if promisc is None else promisc
@@ -249,7 +242,7 @@ class L2Socket(SuperSocket):
             msg = "Your Linux Kernel does not support Auxiliary Data!"
             log_runtime.info(msg)
         if not isinstance(self, L2ListenSocket):
-            self.outs = self.ins  # type: socket.socket
+            self.outs: socket.socket = self.ins
             self.outs.setsockopt(
                 socket.SOL_SOCKET,
                 socket.SO_SNDBUF,
@@ -269,8 +262,7 @@ class L2Socket(SuperSocket):
             self.lvl = 2
             warning("Unable to guess type (interface=%s protocol=%#x family=%i). Using %s", sa_ll[0], sa_ll[1], sa_ll[3], self.LL.name)  # noqa: E501
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         if self.closed:
             return
         try:
@@ -280,8 +272,8 @@ class L2Socket(SuperSocket):
             pass
         SuperSocket.close(self)
 
-    def recv_raw(self, x=MTU):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = MTU) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """Receives a packet, then returns a tuple containing (cls, pkt_data, time)"""  # noqa: E501
         pkt, sa_ll, ts = self._recv_raw(self.ins, x)
         if self.outs and sa_ll[2] == socket.PACKET_OUTGOING:
@@ -290,8 +282,7 @@ class L2Socket(SuperSocket):
             ts = get_last_packet_timestamp(self.ins)
         return self.LL, pkt, ts
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         try:
             return SuperSocket.send(self, x)
         except socket.error as msg:
@@ -307,8 +298,7 @@ class L2Socket(SuperSocket):
 class L2ListenSocket(L2Socket):
     desc = "read packets at layer 2 using Linux PF_PACKET sockets. Also receives the packets going OUT"  # noqa: E501
 
-    def send(self, x):
-        # type: (Packet) -> NoReturn
+    def send(self, x: Packet) -> NoReturn:
         raise Scapy_Exception("Can't send anything with L2ListenSocket")
 
 
@@ -316,12 +306,12 @@ class L3PacketSocket(L2Socket):
     desc = "read/write packets at layer 3 using Linux PF_PACKET sockets"
 
     def __init__(self,
-                 iface=None,  # type: Optional[Union[str, NetworkInterface]]
-                 type=ETH_P_ALL,  # type: int
-                 promisc=None,  # type: Optional[Any]
-                 filter=None,  # type: Optional[Any]
-                 nofilter=0,  # type: int
-                 monitor=None,  # type: Optional[Any]
+                 iface: Optional[Union[str, NetworkInterface]] = None,
+                 type: int = ETH_P_ALL,
+                 promisc: Optional[Any] = None,
+                 filter: Optional[Any] = None,
+                 nofilter: int = 0,
+                 monitor: Optional[Any] = None,
                  ):
         self.send_socks = {}
         super(L3PacketSocket, self).__init__(
@@ -335,16 +325,14 @@ class L3PacketSocket(L2Socket):
         self.filter = filter
         self.send_socks = {network_name(self.iface): self}
 
-    def recv(self, x=MTU, **kwargs):
-        # type: (int, **Any) -> Optional[Packet]
+    def recv(self, x: int = MTU, **kwargs: Any) -> Optional[Packet]:
         pkt = SuperSocket.recv(self, x, **kwargs)
         if pkt and self.lvl == 2:
             pkt.payload.time = pkt.time
             return pkt.payload
         return pkt
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         # Select the file descriptor to send the packet on.
         iff = x.route()[0]
         if iff is None:
@@ -389,9 +377,8 @@ class L3PacketSocket(L2Socket):
                 raise
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
-        socks = []  # type: List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
+        socks: List[SuperSocket] = []
         for sock in sockets:
             if isinstance(sock, L3PacketSocket):
                 socks += sock.send_socks.values()
@@ -399,8 +386,7 @@ class L3PacketSocket(L2Socket):
                 socks.append(sock)
         return L2Socket.select(socks, remain=remain)
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         if self.closed:
             return
         super(L3PacketSocket, self).close()
@@ -414,8 +400,7 @@ class VEthPair(object):
     encapsulates a virtual Ethernet interface pair
     """
 
-    def __init__(self, iface_name, peer_name):
-        # type: (str, str) -> None
+    def __init__(self, iface_name: str, peer_name: str) -> None:
         if not LINUX:
             # ToDo: do we need a kernel version check here?
             raise ScapyInvalidPlatformException(
@@ -424,32 +409,27 @@ class VEthPair(object):
 
         self.ifaces = [iface_name, peer_name]
 
-    def iface(self):
-        # type: () -> str
+    def iface(self) -> str:
         return self.ifaces[0]
 
-    def peer(self):
-        # type: () -> str
+    def peer(self) -> str:
         return self.ifaces[1]
 
-    def setup(self):
-        # type: () -> None
+    def setup(self) -> None:
         """
         create veth pair links
         :raises subprocess.CalledProcessError if operation fails
         """
         subprocess.check_call(['ip', 'link', 'add', self.ifaces[0], 'type', 'veth', 'peer', 'name', self.ifaces[1]])  # noqa: E501
 
-    def destroy(self):
-        # type: () -> None
+    def destroy(self) -> None:
         """
         remove veth pair links
         :raises subprocess.CalledProcessError if operation fails
         """
         subprocess.check_call(['ip', 'link', 'del', self.ifaces[0]])
 
-    def up(self):
-        # type: () -> None
+    def up(self) -> None:
         """
         set veth pair links up
         :raises subprocess.CalledProcessError if operation fails
@@ -457,8 +437,7 @@ class VEthPair(object):
         for idx in [0, 1]:
             subprocess.check_call(["ip", "link", "set", self.ifaces[idx], "up"])  # noqa: E501
 
-    def down(self):
-        # type: () -> None
+    def down(self) -> None:
         """
         set veth pair links down
         :raises subprocess.CalledProcessError if operation fails
@@ -466,14 +445,12 @@ class VEthPair(object):
         for idx in [0, 1]:
             subprocess.check_call(["ip", "link", "set", self.ifaces[idx], "down"])  # noqa: E501
 
-    def __enter__(self):
-        # type: () -> VEthPair
+    def __enter__(self) -> VEthPair:
         self.setup()
         self.up()
         conf.ifaces.reload()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # type: (Any, Any, Any) -> None
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.destroy()
         conf.ifaces.reload()

@@ -7,6 +7,8 @@
 Packet sending and receiving libpcap/WinPcap.
 """
 
+from __future__ import annotations
+
 import os
 import platform
 import socket
@@ -85,8 +87,7 @@ _pcap_if_flags = [
 class _L2libpcapSocket(SuperSocket):
     __slots__ = ["pcap_fd", "lvl"]
 
-    def __init__(self, fd):
-        # type: (_PcapWrapper_libpcap) -> None
+    def __init__(self, fd: _PcapWrapper_libpcap) -> None:
         self.pcap_fd = fd
         ll = self.pcap_fd.datalink()
         if ll in conf.l2types:
@@ -106,8 +107,8 @@ class _L2libpcapSocket(SuperSocket):
                 self.iface, ll, self.LL.name
             )
 
-    def recv_raw(self, x=MTU):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = MTU) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """
         Receives a packet, then returns a tuple containing
         (cls, pkt_data, time)
@@ -117,25 +118,21 @@ class _L2libpcapSocket(SuperSocket):
             return None, None, None
         return self.LL, pkt, ts
 
-    def nonblock_recv(self, x=MTU):
-        # type: (int) -> Optional[Packet]
+    def nonblock_recv(self, x: int = MTU) -> Optional[Packet]:
         """Receives and dissect a packet in non-blocking mode."""
         self.pcap_fd.setnonblock(True)
         p = self.recv(x)
         self.pcap_fd.setnonblock(False)
         return p
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return self.pcap_fd.fileno()
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
         return select_objects(sockets, remain)
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         if self.closed:
             return
         self.closed = True
@@ -191,8 +188,7 @@ if conf.use_pcap:
             # Fallback for Winpcap... (for how long?)
             from scapy.libs.winpcapy import pcap_sendpacket as pcap_inject
 
-        def load_winpcapy():
-            # type: () -> None
+        def load_winpcapy() -> None:
             """This functions calls libpcap ``pcap_findalldevs`` function,
             and extracts and parse all the data scapy will need
             to build the Interface List.
@@ -286,13 +282,12 @@ if conf.use_pcap:
         """Wrapper for the libpcap calls"""
 
         def __init__(self,
-                     device,  # type: _GlobInterfaceType
-                     snaplen,  # type: int
-                     promisc,  # type: bool
-                     to_ms,  # type: int
-                     monitor=None,  # type: Optional[bool]
-                     ):
-            # type: (...) -> None
+                     device: _GlobInterfaceType,
+                     snaplen: int,
+                     promisc: bool,
+                     to_ms: int,
+                     monitor: Optional[bool] = None,
+                     ) -> None:
             self.errbuf = create_string_buffer(PCAP_ERRBUF_SIZE)
             self.iface = create_string_buffer(
                 network_name(device).encode("utf8")
@@ -386,8 +381,7 @@ if conf.use_pcap:
             self.pkt_data = POINTER(c_ubyte)()
             self.bpf_program = bpf_program()
 
-        def next(self):
-            # type: () -> Tuple[Optional[float], Optional[bytes]]
+        def next(self) -> Tuple[Optional[float], Optional[bytes]]:
             """
             Returns the next packet as the tuple
             (timestamp, raw_packet)
@@ -412,15 +406,13 @@ if conf.use_pcap:
             return ts, pkt
         __next__ = next
 
-        def datalink(self):
-            # type: () -> int
+        def datalink(self) -> int:
             """Wrapper around pcap_datalink"""
             if self.dtl == -1:
                 self.dtl = pcap_datalink(self.pcap)
             return self.dtl
 
-        def fileno(self):
-            # type: () -> int
+        def fileno(self) -> int:
             if WINDOWS:
                 if self.remaining:
                     # Still packets in the queue. Don't select
@@ -430,8 +422,7 @@ if conf.use_pcap:
                 # This does not exist under Windows
                 return cast(int, pcap_get_selectable_fd(self.pcap))
 
-        def setfilter(self, f):
-            # type: (str) -> None
+        def setfilter(self, f: str) -> None:
             filter_exp = create_string_buffer(f.encode("utf8"))
             if pcap_compile(self.pcap, byref(self.bpf_program), filter_exp, 1, -1) >= 0:  # noqa: E501
                 if pcap_setfilter(self.pcap, byref(self.bpf_program)) >= 0:
@@ -442,16 +433,13 @@ if conf.use_pcap:
             )
             raise Scapy_Exception("Cannot set filter: %s" % errstr)
 
-        def setnonblock(self, i):
-            # type: (bool) -> None
+        def setnonblock(self, i: bool) -> None:
             pcap_setnonblock(self.pcap, i, self.errbuf)
 
-        def send(self, x):
-            # type: (bytes) -> int
+        def send(self, x: bytes) -> int:
             return pcap_inject(self.pcap, x, len(x))  # type: ignore
 
-        def close(self):
-            # type: () -> None
+        def close(self) -> None:
             pcap_close(self.pcap)
     open_pcap = _PcapWrapper_libpcap
 
@@ -462,8 +450,7 @@ if conf.use_pcap:
         name = "libpcap"
         libpcap = True
 
-        def load(self):
-            # type: () -> Dict[str, NetworkInterface]
+        def load(self) -> Dict[str, NetworkInterface]:
             if not conf.use_pcap or WINDOWS:
                 return {}
             if not conf.cache_pcapiflist:
@@ -494,8 +481,7 @@ if conf.use_pcap:
                 data[ifname] = NetworkInterface(self, if_data)
             return data
 
-        def reload(self):
-            # type: () -> Dict[str, NetworkInterface]
+        def reload(self) -> Dict[str, NetworkInterface]:
             if conf.use_pcap:
                 from scapy.arch.libpcap import load_winpcapy
                 load_winpcapy()
@@ -510,13 +496,12 @@ if conf.use_pcap:
         desc = "read packets at layer 2 using libpcap"
 
         def __init__(self,
-                     iface=None,  # type: Optional[_GlobInterfaceType]
-                     type=ETH_P_ALL,  # type: int
-                     promisc=None,  # type: Optional[bool]
-                     filter=None,  # type: Optional[str]
-                     monitor=None,  # type: Optional[bool]
-                     ):
-            # type: (...) -> None
+                     iface: Optional[_GlobInterfaceType] = None,
+                     type: int = ETH_P_ALL,
+                     promisc: Optional[bool] = None,
+                     filter: Optional[str] = None,
+                     monitor: Optional[bool] = None,
+                     ) -> None:
             self.type = type
             self.outs = None
             if iface is None:
@@ -553,8 +538,7 @@ if conf.use_pcap:
                 if filter:
                     self.pcap_fd.setfilter(filter)
 
-        def send(self, x):
-            # type: (Packet) -> NoReturn
+        def send(self, x: Packet) -> NoReturn:
             raise Scapy_Exception(
                 "Can't send anything with L2pcapListenSocket"
             )
@@ -563,14 +547,13 @@ if conf.use_pcap:
         desc = "read/write packets at layer 2 using only libpcap"
 
         def __init__(self,
-                     iface=None,  # type: Optional[_GlobInterfaceType]
-                     type=ETH_P_ALL,  # type: int
-                     promisc=None,  # type: Optional[bool]
-                     filter=None,  # type: Optional[str]
-                     nofilter=0,  # type: int
-                     monitor=None  # type: Optional[bool]
-                     ):
-            # type: (...) -> None
+                     iface: Optional[_GlobInterfaceType] = None,
+                     type: int = ETH_P_ALL,
+                     promisc: Optional[bool] = None,
+                     filter: Optional[str] = None,
+                     nofilter: int = 0,
+                     monitor: Optional[bool] = None
+                     ) -> None:
             if iface is None:
                 iface = conf.iface
             self.iface = iface
@@ -619,8 +602,7 @@ if conf.use_pcap:
             if filter:
                 self.pcap_fd.setfilter(filter)
 
-        def send(self, x):
-            # type: (Packet) -> int
+        def send(self, x: Packet) -> int:
             sx = raw(x)
             try:
                 x.sent_time = time.time()
@@ -631,21 +613,18 @@ if conf.use_pcap:
     class L3pcapSocket(L2pcapSocket):
         desc = "read/write packets at layer 3 using only libpcap"
 
-        def __init__(self, *args, **kwargs):
-            # type: (*Any, **Any) -> None
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             super(L3pcapSocket, self).__init__(*args, **kwargs)
             self.send_socks = {network_name(self.iface): self}
 
-        def recv(self, x=MTU, **kwargs):
-            # type: (int, **Any) -> Optional[Packet]
+        def recv(self, x: int = MTU, **kwargs: Any) -> Optional[Packet]:
             r = L2pcapSocket.recv(self, x, **kwargs)
             if r and self.lvl == 2:
                 r.payload.time = r.time
                 return r.payload
             return r
 
-        def send(self, x):
-            # type: (Packet) -> int
+        def send(self, x: Packet) -> int:
             # Select the file descriptor to send the packet on.
             iff = x.route()[0]
             if iff is None:
@@ -678,9 +657,8 @@ if conf.use_pcap:
             return fd.send(sx)
 
         @staticmethod
-        def select(sockets, remain=None):
-            # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
-            socks = []  # type: List[SuperSocket]
+        def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
+            socks: List[SuperSocket] = []
             for sock in sockets:
                 if isinstance(sock, L3pcapSocket):
                     socks += sock.send_socks.values()
@@ -688,8 +666,7 @@ if conf.use_pcap:
                     socks.append(sock)
             return L2pcapSocket.select(socks, remain=remain)
 
-        def close(self):
-            # type: () -> None
+        def close(self) -> None:
             if self.closed:
                 return
             super(L3pcapSocket, self).close()

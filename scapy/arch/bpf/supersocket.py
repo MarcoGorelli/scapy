@@ -7,6 +7,7 @@
 Scapy *BSD native support - BPF sockets
 """
 
+from __future__ import annotations
 from select import select
 
 import abc
@@ -101,12 +102,12 @@ class _L2bpfSocket(SuperSocket):
     nonblocking_socket = True
 
     def __init__(self,
-                 iface=None,  # type: Optional[_GlobInterfaceType]
-                 type=ETH_P_ALL,  # type: int
-                 promisc=None,  # type: Optional[bool]
-                 filter=None,  # type: Optional[str]
-                 nofilter=0,  # type: int
-                 monitor=False,  # type: bool
+                 iface: Optional[_GlobInterfaceType] = None,
+                 type: int = ETH_P_ALL,
+                 promisc: Optional[bool] = None,
+                 filter: Optional[str] = None,
+                 nofilter: int = 0,
+                 monitor: bool = False,
                  ):
         if monitor:
             raise Scapy_Exception(
@@ -114,7 +115,7 @@ class _L2bpfSocket(SuperSocket):
                 "Please turn on libpcap using conf.use_pcap = True"
             )
 
-        self.fd_flags = None  # type: Optional[int]
+        self.fd_flags: Optional[int] = None
         self.type = type
         self.bpf_fd = -1
 
@@ -230,8 +231,7 @@ class _L2bpfSocket(SuperSocket):
         # Set the guessed packet class
         self.guessed_cls = self.guess_cls()
 
-    def set_promisc(self, value):
-        # type: (bool) -> None
+    def set_promisc(self, value: bool) -> None:
         """Set the interface in promiscuous mode"""
 
         try:
@@ -240,16 +240,14 @@ class _L2bpfSocket(SuperSocket):
             raise Scapy_Exception("Cannot set promiscuous mode on interface "
                                   "(%s)!" % self.iface)
 
-    def __del__(self):
-        # type: () -> None
+    def __del__(self) -> None:
         """Close the file descriptor on delete"""
         # When the socket is deleted on Scapy exits, __del__ is
         # sometimes called "too late", and self is None
         if self is not None:
             self.close()
 
-    def guess_cls(self):
-        # type: () -> type
+    def guess_cls(self) -> type:
         """Guess the packet class that must be used on the interface"""
 
         # Get the data link type
@@ -270,8 +268,7 @@ class _L2bpfSocket(SuperSocket):
             warning("Unable to guess type (type %i). Using %s", linktype, cls.name)
             return cls
 
-    def set_nonblock(self, set_flag=True):
-        # type: (bool) -> None
+    def set_nonblock(self, set_flag: bool = True) -> None:
         """Set the non blocking flag on the socket"""
 
         # Get the current flags
@@ -294,8 +291,7 @@ class _L2bpfSocket(SuperSocket):
         except Exception:
             warning("Can't set flags on this file descriptor !")
 
-    def get_stats(self):
-        # type: () -> Tuple[Optional[int], Optional[int]]
+    def get_stats(self) -> Tuple[Optional[int], Optional[int]]:
         """Get received / dropped statistics"""
 
         try:
@@ -305,8 +301,7 @@ class _L2bpfSocket(SuperSocket):
             warning("Unable to get stats from BPF !")
             return (None, None)
 
-    def get_blen(self):
-        # type: () -> Optional[int]
+    def get_blen(self) -> Optional[int]:
         """Get the BPF buffer length"""
 
         try:
@@ -316,13 +311,11 @@ class _L2bpfSocket(SuperSocket):
             warning("Unable to get the BPF buffer length")
             return None
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         """Get the underlying file descriptor"""
         return self.bpf_fd
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         """Close the Super Socket"""
 
         if not self.closed and self.bpf_fd != -1:
@@ -331,24 +324,22 @@ class _L2bpfSocket(SuperSocket):
             self.bpf_fd = -1
 
     @abc.abstractmethod
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         """Dummy send method"""
         raise Exception(
             "Can't send anything with %s" % self.__class__.__name__
         )
 
     @abc.abstractmethod
-    def recv_raw(self, x=BPF_BUFFER_LENGTH):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = BPF_BUFFER_LENGTH) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """Dummy recv method"""
         raise Exception(
             "Can't recv anything with %s" % self.__class__.__name__
         )
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
         """This function is called during sendrecv() routine to select
         the available sockets.
         """
@@ -359,18 +350,15 @@ class _L2bpfSocket(SuperSocket):
 class L2bpfListenSocket(_L2bpfSocket):
     """"Scapy L2 BPF Listen Super Socket"""
 
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
-        self.received_frames = []  # type: List[Tuple[Optional[type], Optional[bytes], Optional[float]]]  # noqa: E501
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.received_frames: List[Tuple[Optional[type], Optional[bytes], Optional[float]]] = []  # noqa: E501
         super(L2bpfListenSocket, self).__init__(*args, **kwargs)
 
-    def buffered_frames(self):
-        # type: () -> int
+    def buffered_frames(self) -> int:
         """Return the number of frames in the buffer"""
         return len(self.received_frames)
 
-    def get_frame(self):
-        # type: () -> Tuple[Optional[type], Optional[bytes], Optional[float]]
+    def get_frame(self) -> Tuple[Optional[type], Optional[bytes], Optional[float]]:
         """Get a frame or packet from the received list"""
         if self.received_frames:
             return self.received_frames.pop(0)
@@ -378,15 +366,13 @@ class L2bpfListenSocket(_L2bpfSocket):
             return None, None, None
 
     @staticmethod
-    def bpf_align(bh_h, bh_c):
-        # type: (int, int) -> int
+    def bpf_align(bh_h: int, bh_c: int) -> int:
         """Return the index to the end of the current packet"""
 
         # from <net/bpf.h>
         return ((bh_h + bh_c) + (BPF_ALIGNMENT - 1)) & ~(BPF_ALIGNMENT - 1)
 
-    def extract_frames(self, bpf_buffer):
-        # type: (bytes) -> None
+    def extract_frames(self, bpf_buffer: bytes) -> None:
         """
         Extract all frames from the buffer and stored them in the received list
         """
@@ -418,8 +404,7 @@ class L2bpfListenSocket(_L2bpfSocket):
         if (len_bb - end) >= 20:
             self.extract_frames(bpf_buffer[end:])
 
-    def recv_raw(self, x=BPF_BUFFER_LENGTH):
-        # type: (int) -> Tuple[Optional[type], Optional[bytes], Optional[float]]
+    def recv_raw(self, x: int = BPF_BUFFER_LENGTH) -> Tuple[Optional[type], Optional[bytes], Optional[float]]:
         """Receive a frame from the network"""
 
         x = min(x, BPF_BUFFER_LENGTH)
@@ -444,13 +429,11 @@ class L2bpfListenSocket(_L2bpfSocket):
 class L2bpfSocket(L2bpfListenSocket):
     """"Scapy L2 BPF Super Socket"""
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         """Send a frame"""
         return os.write(self.bpf_fd, raw(x))
 
-    def nonblock_recv(self):
-        # type: () -> Optional[Packet]
+    def nonblock_recv(self) -> Optional[Packet]:
         """Non blocking receive"""
 
         if self.buffered_frames():
@@ -467,12 +450,12 @@ class L2bpfSocket(L2bpfListenSocket):
 class L3bpfSocket(L2bpfSocket):
 
     def __init__(self,
-                 iface=None,  # type: Optional[_GlobInterfaceType]
-                 type=ETH_P_ALL,  # type: int
-                 promisc=None,  # type: Optional[bool]
-                 filter=None,  # type: Optional[str]
-                 nofilter=0,  # type: int
-                 monitor=False,  # type: bool
+                 iface: Optional[_GlobInterfaceType] = None,
+                 type: int = ETH_P_ALL,
+                 promisc: Optional[bool] = None,
+                 filter: Optional[str] = None,
+                 nofilter: int = 0,
+                 monitor: bool = False,
                  ):
         super(L3bpfSocket, self).__init__(
             iface=iface,
@@ -493,8 +476,7 @@ class L3bpfSocket(L2bpfSocket):
             return r.payload
         return r
 
-    def send(self, pkt):
-        # type: (Packet) -> int
+    def send(self, pkt: Packet) -> int:
         """Send a packet"""
         from scapy.layers.l2 import Loopback
 
@@ -558,9 +540,8 @@ class L3bpfSocket(L2bpfSocket):
         return L2bpfSocket.send(fd, frame)
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
-        socks = []  # type: List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
+        socks: List[SuperSocket] = []
         for sock in sockets:
             if isinstance(sock, L3bpfSocket):
                 socks += sock.send_socks.values()
@@ -571,13 +552,12 @@ class L3bpfSocket(L2bpfSocket):
 
 # Sockets manipulation functions
 
-def bpf_select(fds_list, timeout=None):
-    # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
+def bpf_select(fds_list: List[SuperSocket], timeout: Optional[float] = None) -> List[SuperSocket]:
     """A call to recv() can return several frames. This functions hides the fact
        that some frames are read from the internal buffer."""
 
     # Check file descriptors types
-    bpf_scks_buffered = list()  # type: List[SuperSocket]
+    bpf_scks_buffered: List[SuperSocket] = list()
     select_fds = list()
 
     for tmp_fd in fds_list:

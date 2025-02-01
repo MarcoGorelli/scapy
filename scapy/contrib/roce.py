@@ -10,6 +10,7 @@
 RoCE: RDMA over Converged Ethernet
 """
 
+from __future__ import annotations
 from scapy.packet import Packet, bind_layers, Raw
 from scapy.fields import ByteEnumField, ByteField, XByteField, \
     ShortField, XShortField, XLongField, BitField, XBitField, FCSField
@@ -60,8 +61,7 @@ _ops = {
 CNP_OPCODE = 0x81
 
 
-def opcode(transport, op):
-    # type: (str, str) -> Tuple[int, str]
+def opcode(transport: str, op: str) -> Tuple[int, str]:
     return (_transports[transport] + _ops[op], '{}_{}'.format(transport, op))
 
 
@@ -150,12 +150,10 @@ class BTH(Packet):
         FCSField("icrc", None, fmt="!I")]
 
     @staticmethod
-    def pack_icrc(icrc):
-        # type: (int) -> bytes
+    def pack_icrc(icrc: int) -> bytes:
         return struct.pack("!I", icrc & 0xffffffff)[::-1]
 
-    def compute_icrc(self, p):
-        # type: (bytes) -> bytes
+    def compute_icrc(self, p: bytes) -> bytes:
         udp = self.underlayer
         if udp is None or not isinstance(udp, UDP):
             warning("Expecting UDP underlayer to compute checksum. Got %s.",
@@ -206,8 +204,7 @@ class BTH(Packet):
     # RoCE packets end with ICRC - a 32-bit CRC of the packet payload and
     # pseudo-header. Add the ICRC header if it is missing and calculate its
     # value.
-    def post_build(self, p, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, p: bytes, pay: bytes) -> bytes:
         p += pay
         if self.icrc is None:
             p = p[:-4] + self.compute_icrc(p)
@@ -222,8 +219,7 @@ class CNPPadding(Packet):
     ]
 
 
-def cnp(dqpn):
-    # type: (int) -> BTH
+def cnp(dqpn: int) -> BTH:
     return BTH(opcode=CNP_OPCODE, becn=1, dqpn=dqpn) / CNPPadding()
 
 

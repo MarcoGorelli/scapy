@@ -13,6 +13,8 @@ This is documented in [MS-NLMP]
     `GSSAPI <https://scapy.readthedocs.io/en/latest/layers/gssapi.html#ntlm>`_
 """
 
+from __future__ import annotations
+
 import copy
 import time
 import os
@@ -106,14 +108,13 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
 
     def __init__(
         self,
-        name,  # type: str
-        offset,  # type: Union[int, Callable[[Packet], int]]
-        fields,  # type: List[Field[Any, Any]]
-        length_from=None,  # type: Optional[Callable[[Packet], int]]
-        force_order=None,  # type: Optional[List[str]]
-        offset_name="BufferOffset",  # type: str
-    ):
-        # type: (...) -> None
+        name: str,
+        offset: Union[int, Callable[[Packet], int]],
+        fields: List[Field[Any, Any]],
+        length_from: Optional[Callable[[Packet], int]] = None,
+        force_order: Optional[List[str]] = None,
+        offset_name: str = "BufferOffset",
+    ) -> None:
         self.offset = offset
         self.fields = fields
         self.fields_map = {field.name: field for field in fields}
@@ -129,8 +130,7 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
             ],
         )
 
-    def _on_payload(self, pkt, x, func):
-        # type: (Optional[Packet], bytes, str) -> List[Tuple[str, Any]]
+    def _on_payload(self, pkt: Optional[Packet], x: bytes, func: str) -> List[Tuple[str, Any]]:
         if not pkt or not x:
             return []
         results = []
@@ -144,26 +144,21 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
             results.append((field_name, value))
         return results
 
-    def i2h(self, pkt, x):
-        # type: (Optional[Packet], bytes) -> List[Tuple[str, str]]
+    def i2h(self, pkt: Optional[Packet], x: bytes) -> List[Tuple[str, str]]:
         return self._on_payload(pkt, x, "i2h")
 
-    def h2i(self, pkt, x):
-        # type: (Optional[Packet], bytes) -> List[Tuple[str, str]]
+    def h2i(self, pkt: Optional[Packet], x: bytes) -> List[Tuple[str, str]]:
         return self._on_payload(pkt, x, "h2i")
 
-    def i2repr(self, pkt, x):
-        # type: (Optional[Packet], bytes) -> str
+    def i2repr(self, pkt: Optional[Packet], x: bytes) -> str:
         return repr(self._on_payload(pkt, x, "i2repr"))
 
-    def _o_pkt(self, pkt):
-        # type: (Optional[Packet]) -> int
+    def _o_pkt(self, pkt: Optional[Packet]) -> int:
         if callable(self.offset):
             return self.offset(pkt)
         return self.offset
 
-    def addfield(self, pkt, s, val):
-        # type: (Optional[Packet], bytes, Optional[List[Tuple[str, str]]]) -> bytes
+    def addfield(self, pkt: Optional[Packet], s: bytes, val: Optional[List[Tuple[str, str]]]) -> bytes:
         # Create string buffer
         buf = StringBuffer()
         buf.append(s, 1)
@@ -189,8 +184,7 @@ class _NTLMPayloadField(_StrField[List[Tuple[str, Any]]]):
             buf.append(field.addfield(pkt, bytes(buf), value)[len(buf) :], offset + 1)
         return bytes(buf)
 
-    def getfield(self, pkt, s):
-        # type: (Packet, bytes) -> Tuple[bytes, List[Tuple[str, str]]]
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, List[Tuple[str, str]]]:
         if self.length_from is None:
             ret, remain = b"", s
         else:
@@ -236,12 +230,12 @@ class _NTLMPayloadPacket(Packet):
 
     def __init__(
         self,
-        _pkt=b"",  # type: Union[bytes, bytearray]
-        post_transform=None,  # type: Any
-        _internal=0,  # type: int
-        _underlayer=None,  # type: Optional[Packet]
-        _parent=None,  # type: Optional[Packet]
-        **fields,  # type: Any
+        _pkt: Union[bytes, bytearray] = b"",
+        post_transform: Any = None,
+        _internal: int = 0,
+        _underlayer: Optional[Packet] = None,
+        _parent: Optional[Packet] = None,
+        **fields: Any,
     ):
         # pop unknown fields. We can't process them until the packet is initialized
         unknown = {
@@ -531,8 +525,7 @@ class NTLM_NEGOTIATE(_NTLMPayloadPacket):
         ]
     )
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,
@@ -673,8 +666,7 @@ class NTLM_CHALLENGE(_NTLMPayloadPacket):
         except (StopIteration, AttributeError):
             raise IndexError
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,
@@ -865,8 +857,7 @@ class NTLM_AUTHENTICATE(_NTLMPayloadPacket):
         ]
     )
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,

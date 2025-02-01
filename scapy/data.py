@@ -7,6 +7,8 @@
 Global variables and functions for handling external data sets.
 """
 
+from __future__ import annotations
+
 import calendar
 import hashlib
 import os
@@ -292,8 +294,7 @@ IANA_ENTERPRISE_NUMBERS = {
 }
 
 
-def scapy_data_cache(name):
-    # type: (str) -> Callable[[DecoratorCallable], DecoratorCallable]
+def scapy_data_cache(name: str) -> Callable[[DecoratorCallable], DecoratorCallable]:
     """
     This decorator caches the loading of 'data' dictionaries, in order to reduce
     loading times.
@@ -304,10 +305,8 @@ def scapy_data_cache(name):
         return lambda x: x
     cachepath = SCAPY_CACHE_FOLDER / name
 
-    def _cached_loader(func, name=name):
-        # type: (DecoratorCallable, str) -> DecoratorCallable
-        def load(filename=None):
-            # type: (Optional[str]) -> Any
+    def _cached_loader(func: DecoratorCallable, name: str = name) -> DecoratorCallable:
+        def load(filename: Optional[str] = None) -> Any:
             cache_id = hashlib.sha256((filename or "").encode()).hexdigest()
             if cachepath.exists():
                 try:
@@ -346,16 +345,14 @@ def scapy_data_cache(name):
     return _cached_loader
 
 
-def load_protocols(filename, _fallback=None, _integer_base=10,
-                   _cls=DADict[int, str]):
-    # type: (str, Optional[Callable[[], Iterator[str]]], int, type) -> DADict[int, str]
+def load_protocols(filename: str, _fallback: Optional[Callable[[], Iterator[str]]] = None, _integer_base: int = 10,
+                   _cls: type = DADict[int, str]) -> DADict[int, str]:
     """"
     Parse /etc/protocols and return values as a dictionary.
     """
-    dct = _cls(_name=filename)  # type: DADict[int, str]
+    dct: DADict[int, str] = _cls(_name=filename)
 
-    def _process_data(fdesc):
-        # type: (Iterator[str]) -> None
+    def _process_data(fdesc: Iterator[str]) -> None:
         for line in fdesc:
             try:
                 shrp = line.find("#")
@@ -391,8 +388,7 @@ def load_protocols(filename, _fallback=None, _integer_base=10,
 class EtherDA(DADict[int, str]):
     # Backward compatibility: accept
     # ETHER_TYPES["MY_GREAT_TYPE"] = 12
-    def __setitem__(self, attr, val):
-        # type: (int, str) -> None
+    def __setitem__(self, attr: int, val: str) -> None:
         if isinstance(attr, str):
             attr, val = val, attr
             warnings.warn(
@@ -401,8 +397,7 @@ class EtherDA(DADict[int, str]):
             )
         super(EtherDA, self).__setitem__(attr, val)
 
-    def __getitem__(self, attr):
-        # type: (int) -> Any
+    def __getitem__(self, attr: int) -> Any:
         if isinstance(attr, str):
             warnings.warn(
                 "Please use 'ETHER_TYPES.%s'" % attr,
@@ -413,8 +408,7 @@ class EtherDA(DADict[int, str]):
 
 
 @scapy_data_cache("ethertypes")
-def load_ethertypes(filename=None):
-    # type: (Optional[str]) -> EtherDA
+def load_ethertypes(filename: Optional[str] = None) -> EtherDA:
     """"Parse /etc/ethertypes and return values as a dictionary.
     If unavailable, use the copy bundled with Scapy."""
     def _fallback() -> Iterator[str]:
@@ -429,11 +423,11 @@ def load_ethertypes(filename=None):
 
 
 @scapy_data_cache("services")
-def load_services(filename):
-    # type: (str) -> Tuple[DADict[int, str], DADict[int, str], DADict[int, str]]  # noqa: E501
-    tdct = DADict(_name="%s-tcp" % filename)  # type: DADict[int, str]
-    udct = DADict(_name="%s-udp" % filename)  # type: DADict[int, str]
-    sdct = DADict(_name="%s-sctp" % filename)  # type: DADict[int, str]
+def load_services(filename: str) -> Tuple[DADict[int, str], DADict[int, str], DADict[int, str]]:
+    # noqa: E501
+    tdct: DADict[int, str] = DADict(_name="%s-tcp" % filename)
+    udct: DADict[int, str] = DADict(_name="%s-udp" % filename)
+    sdct: DADict[int, str] = DADict(_name="%s-sctp" % filename)
     dcts = {
         b"tcp": tdct,
         b"udp": udct,
@@ -479,37 +473,30 @@ def load_services(filename):
 
 
 class ManufDA(DADict[str, Tuple[str, str]]):
-    def ident(self, v):
-        # type: (Any) -> str
+    def ident(self, v: Any) -> str:
         return fixname(v[0] if isinstance(v, tuple) else v)
 
-    def _get_manuf_couple(self, mac):
-        # type: (str) -> Tuple[str, str]
+    def _get_manuf_couple(self, mac: str) -> Tuple[str, str]:
         oui = ":".join(mac.split(":")[:3]).upper()
         return self.d.get(oui, (mac, mac))
 
-    def _get_manuf(self, mac):
-        # type: (str) -> str
+    def _get_manuf(self, mac: str) -> str:
         return self._get_manuf_couple(mac)[1]
 
-    def _get_short_manuf(self, mac):
-        # type: (str) -> str
+    def _get_short_manuf(self, mac: str) -> str:
         return self._get_manuf_couple(mac)[0]
 
-    def _resolve_MAC(self, mac):
-        # type: (str) -> str
+    def _resolve_MAC(self, mac: str) -> str:
         oui = ":".join(mac.split(":")[:3]).upper()
         if oui in self:
             return ":".join([self[oui][0]] + mac.split(":")[3:])
         return mac
 
-    def lookup(self, mac):
-        # type: (str) -> Tuple[str, str]
+    def lookup(self, mac: str) -> Tuple[str, str]:
         """Find OUI name matching to a MAC"""
         return self._get_manuf_couple(mac)
 
-    def reverse_lookup(self, name, case_sensitive=False):
-        # type: (str, bool) -> Dict[str, str]
+    def reverse_lookup(self, name: str, case_sensitive: bool = False) -> Dict[str, str]:
         """
         Find all MACs registered to a OUI
 
@@ -518,14 +505,13 @@ class ManufDA(DADict[str, Tuple[str, str]]):
         :returns: a dict of mac:tuples (Name, Extended Name)
         """
         if case_sensitive:
-            filtr = lambda x, l: any(x in z for z in l)  # type: Callable[[str, Tuple[str, str]], bool]  # noqa: E501
+            filtr: Callable[[str, Tuple[str, str]], bool] = lambda x, l: any(x in z for z in l)  # noqa: E501
         else:
             name = name.lower()
             filtr = lambda x, l: any(x in z.lower() for z in l)
         return {k: v for k, v in self.d.items() if filtr(name, v)}  # type: ignore
 
-    def __dir__(self):
-        # type: () -> List[str]
+    def __dir__(self) -> List[str]:
         return [
             "_get_manuf",
             "_get_short_manuf",
@@ -536,8 +522,7 @@ class ManufDA(DADict[str, Tuple[str, str]]):
 
 
 @scapy_data_cache("manufdb")
-def load_manuf(filename=None):
-    # type: (Optional[str]) -> ManufDA
+def load_manuf(filename: Optional[str] = None) -> ManufDA:
     """
     Loads manuf file from Wireshark.
 
@@ -546,8 +531,7 @@ def load_manuf(filename=None):
     """
     manufdb = ManufDA(_name=filename or "scapy/manufdb")
 
-    def _process_data(fdesc):
-        # type: (Iterator[str]) -> None
+    def _process_data(fdesc: Iterator[str]) -> None:
         for line in fdesc:
             try:
                 line = line.strip()
@@ -574,8 +558,7 @@ def load_manuf(filename=None):
     return manufdb
 
 
-def select_path(directories, filename):
-    # type: (List[str], str) -> Optional[str]
+def select_path(directories: List[str], filename: str) -> Optional[str]:
     """Find filename among several directories"""
     for directory in directories:
         path = os.path.join(directory, filename)
@@ -621,17 +604,14 @@ KBBaseType = Optional[Union[str, List[Tuple[str, Dict[str, Dict[str, str]]]]]]
 
 
 class KnowledgeBase(object):
-    def __init__(self, filename):
-        # type: (Optional[Any]) -> None
+    def __init__(self, filename: Optional[Any]) -> None:
         self.filename = filename
-        self.base = None  # type: KBBaseType
+        self.base: KBBaseType = None
 
-    def lazy_init(self):
-        # type: () -> None
+    def lazy_init(self) -> None:
         self.base = ""
 
-    def reload(self, filename=None):
-        # type: (Optional[Any]) -> None
+    def reload(self, filename: Optional[Any] = None) -> None:
         if filename is not None:
             self.filename = filename
         oldbase = self.base
@@ -640,8 +620,7 @@ class KnowledgeBase(object):
         if self.base is None:
             self.base = oldbase
 
-    def get_base(self):
-        # type: () -> Union[str, List[Tuple[str, Dict[str,Dict[str,str]]]]]
+    def get_base(self) -> Union[str, List[Tuple[str, Dict[str,Dict[str,str]]]]]:
         if self.base is None:
             self.lazy_init()
         return cast(Union[str, List[Tuple[str, Dict[str, Dict[str, str]]]]], self.base)

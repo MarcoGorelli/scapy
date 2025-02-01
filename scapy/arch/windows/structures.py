@@ -10,6 +10,8 @@
 C API calls to Windows DLLs
 """
 
+from __future__ import annotations
+
 import ctypes
 import ctypes.wintypes
 from ctypes import (
@@ -63,8 +65,7 @@ USHORT = ctypes.c_ushort
 # UTILS
 
 
-def _resolve_list(list_obj):
-    # type: (Any) -> List[Dict[str, Any]]
+def _resolve_list(list_obj: Any) -> List[Dict[str, Any]]:
     current = list_obj
     _list = []
     while current and hasattr(current, "contents"):
@@ -73,9 +74,8 @@ def _resolve_list(list_obj):
     return _list
 
 
-def _struct_to_dict(struct_obj):
-    # type: (Any) -> Dict[str, Any]
-    results = {}  # type: Dict[str, Any]
+def _struct_to_dict(struct_obj: Any) -> Dict[str, Any]:
+    results: Dict[str, Any] = {}
     for fname, ctype in struct_obj.__class__._fields_:
         val = getattr(struct_obj, fname)
         if fname == "next":
@@ -101,8 +101,7 @@ _winapi_SetConsoleTitle = ctypes.windll.kernel32.SetConsoleTitleW
 _winapi_SetConsoleTitle.restype = BOOL
 _winapi_SetConsoleTitle.argtypes = [LPWSTR]
 
-def _windows_title(title=None):
-    # type: (Optional[str]) -> None
+def _windows_title(title: Optional[str] = None) -> None:
     """
     Updates the terminal title with the default one or with `title`
     if provided.
@@ -140,8 +139,7 @@ QueryServiceStatus = ctypes.windll.Advapi32.QueryServiceStatus
 QueryServiceStatus.restype = BOOL
 QueryServiceStatus.argtypes = [SC_HANDLE, POINTER(SERVICE_STATUS)]
 
-def get_service_status(service):
-    # type: (str) -> Dict[str, int]
+def get_service_status(service: str) -> Dict[str, int]:
     """Returns content of QueryServiceStatus for a service"""
     SERVICE_QUERY_STATUS = 0x0004
     schSCManager = OpenSCManagerW(
@@ -410,8 +408,7 @@ _GetAdaptersAddresses = WINFUNCTYPE(ULONG, ULONG, ULONG,
                                         ('GetAdaptersAddresses', iphlpapi))
 
 
-def GetAdaptersAddresses(AF=AddressFamily.AF_UNSPEC):
-    # type: (int) -> List[Dict[str, Any]]
+def GetAdaptersAddresses(AF: int = AddressFamily.AF_UNSPEC) -> List[Dict[str, Any]]:
     """Return all Windows Adapters addresses from iphlpapi"""
     # We get the size first
     size = ULONG()
@@ -473,8 +470,7 @@ _GetIpForwardTable = WINFUNCTYPE(DWORD,
                                      ('GetIpForwardTable', iphlpapi))
 
 
-def GetIpForwardTable():
-    # type: () -> List[Dict[str, Any]]
+def GetIpForwardTable() -> List[Dict[str, Any]]:
     """Return all Windows routes (IPv4 only) from iphlpapi"""
     # We get the size first
     size = ULONG()
@@ -551,8 +547,7 @@ if not WINDOWS_XP:
     )
 
 
-def GetIpForwardTable2(AF=AddressFamily.AF_UNSPEC):
-    # type: (AddressFamily) -> List[Dict[str, Any]]
+def GetIpForwardTable2(AF: AddressFamily = AddressFamily.AF_UNSPEC) -> List[Dict[str, Any]]:
     """Return all Windows routes (IPv4/IPv6) from iphlpapi"""
     if WINDOWS_XP:
         raise OSError("Not available on Windows XP !")

@@ -7,6 +7,8 @@
 Interfaces management
 """
 
+from __future__ import annotations
+
 import itertools
 import uuid
 from collections import defaultdict
@@ -39,29 +41,24 @@ class InterfaceProvider(object):
     header_sort = 1
     libpcap = False
 
-    def load(self):
-        # type: () -> Dict[str, NetworkInterface]
+    def load(self) -> Dict[str, NetworkInterface]:
         """Returns a dictionary of the loaded interfaces, by their
         name."""
         raise NotImplementedError
 
-    def reload(self):
-        # type: () -> Dict[str, NetworkInterface]
+    def reload(self) -> Dict[str, NetworkInterface]:
         """Same than load() but for reloads. By default calls load"""
         return self.load()
 
-    def _l2socket(self, dev):
-        # type: (NetworkInterface) -> Type[scapy.supersocket.SuperSocket]
+    def _l2socket(self, dev: NetworkInterface) -> Type[scapy.supersocket.SuperSocket]:
         """Return L2 socket used by interfaces of this provider"""
         return conf.L2socket
 
-    def _l2listen(self, dev):
-        # type: (NetworkInterface) -> Type[scapy.supersocket.SuperSocket]
+    def _l2listen(self, dev: NetworkInterface) -> Type[scapy.supersocket.SuperSocket]:
         """Return L2listen socket used by interfaces of this provider"""
         return conf.L2listen
 
-    def _l3socket(self, dev, ipv6):
-        # type: (NetworkInterface, bool) -> Type[scapy.supersocket.SuperSocket]
+    def _l3socket(self, dev: NetworkInterface, ipv6: bool) -> Type[scapy.supersocket.SuperSocket]:
         """Return L3 socket used by interfaces of this provider"""
         if LINUX and not self.libpcap and dev.name == conf.loopback_name:
             # handle the loopback case. see troubleshooting.rst
@@ -73,16 +70,14 @@ class InterfaceProvider(object):
                 return L3RawSocket
         return conf.L3socket
 
-    def _is_valid(self, dev):
-        # type: (NetworkInterface) -> bool
+    def _is_valid(self, dev: NetworkInterface) -> bool:
         """Returns whether an interface is valid or not"""
         return bool((dev.ips[4] or dev.ips[6]) and dev.mac)
 
     def _format(self,
-                dev,  # type: NetworkInterface
-                **kwargs  # type: Any
-                ):
-        # type: (...) -> Tuple[Union[str, List[str]], ...]
+                dev: NetworkInterface,
+                **kwargs: Any
+                ) -> Tuple[Union[str, List[str]], ...]:
         """Returns the elements used by show()
 
         If a tuple is returned, this consist of the strings that will be
@@ -106,25 +101,23 @@ class InterfaceProvider(object):
 
 class NetworkInterface(object):
     def __init__(self,
-                 provider,  # type: InterfaceProvider
-                 data=None,  # type: Optional[Dict[str, Any]]
-                 ):
-        # type: (...) -> None
+                 provider: InterfaceProvider,
+                 data: Optional[Dict[str, Any]] = None,
+                 ) -> None:
         self.provider = provider
         self.name = ""
         self.description = ""
         self.network_name = ""
         self.index = -1
-        self.ip = None  # type: Optional[str]
-        self.ips = defaultdict(list)  # type: DefaultDict[int, List[str]]
+        self.ip: Optional[str] = None
+        self.ips: DefaultDict[int, List[str]] = defaultdict(list)
         self.type = -1
-        self.mac = None  # type: Optional[str]
+        self.mac: Optional[str] = None
         self.dummy = False
         if data is not None:
             self.update(data)
 
-    def update(self, data):
-        # type: (Dict[str, Any]) -> None
+    def update(self, data: Dict[str, Any]) -> None:
         """Update info about a network interface according
         to a given dictionary. Such data is provided by providers
         """
@@ -149,56 +142,45 @@ class NetworkInterface(object):
         if self.ips[4] and not self.ip:
             self.ip = self.ips[4][0]
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, str):
             return other in [self.name, self.network_name, self.description]
         if isinstance(other, NetworkInterface):
             return self.__dict__ == other.__dict__
         return False
 
-    def __ne__(self, other):
-        # type: (Any) -> bool
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self):
-        # type: () -> int
+    def __hash__(self) -> int:
         return hash(self.network_name)
 
-    def is_valid(self):
-        # type: () -> bool
+    def is_valid(self) -> bool:
         if self.dummy:
             return False
         return self.provider._is_valid(self)
 
-    def l2socket(self):
-        # type: () -> Type[scapy.supersocket.SuperSocket]
+    def l2socket(self) -> Type[scapy.supersocket.SuperSocket]:
         return self.provider._l2socket(self)
 
-    def l2listen(self):
-        # type: () -> Type[scapy.supersocket.SuperSocket]
+    def l2listen(self) -> Type[scapy.supersocket.SuperSocket]:
         return self.provider._l2listen(self)
 
-    def l3socket(self, ipv6=False):
-        # type: (bool) -> Type[scapy.supersocket.SuperSocket]
+    def l3socket(self, ipv6: bool = False) -> Type[scapy.supersocket.SuperSocket]:
         return self.provider._l3socket(self, ipv6)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s %s [%s]>" % (self.__class__.__name__,
                                  self.description,
                                  self.dummy and "dummy" or (self.flags or ""))
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self.network_name
 
-    def __add__(self, other):
-        # type: (str) -> str
+    def __add__(self, other: str) -> str:
         return self.network_name + other
 
-    def __radd__(self, other):
-        # type: (str) -> str
+    def __radd__(self, other: str) -> str:
         return other + self.network_name
 
 
@@ -208,16 +190,14 @@ _GlobInterfaceType = Union[NetworkInterface, str]
 class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
     """Store information about network interfaces and convert between names"""
 
-    def __init__(self):
-        # type: () -> None
-        self.providers = {}  # type: Dict[Type[InterfaceProvider], InterfaceProvider]  # noqa: E501
+    def __init__(self) -> None:
+        self.providers: Dict[Type[InterfaceProvider], InterfaceProvider] = {}  # noqa: E501
         super(NetworkInterfaceDict, self).__init__()
 
     def _load(self,
-              dat,  # type: Dict[str, NetworkInterface]
-              prov,  # type: InterfaceProvider
-              ):
-        # type: (...) -> None
+              dat: Dict[str, NetworkInterface],
+              prov: InterfaceProvider,
+              ) -> None:
         for ifname, iface in dat.items():
             if ifname in self.data:
                 # Handle priorities: keep except if libpcap
@@ -226,16 +206,14 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
             else:
                 self.data[ifname] = iface
 
-    def register_provider(self, provider):
-        # type: (type) -> None
+    def register_provider(self, provider: type) -> None:
         prov = provider()
         self.providers[provider] = prov
         if self.data:
             # late registration
             self._load(prov.reload(), prov)
 
-    def load_confiface(self):
-        # type: () -> None
+    def load_confiface(self) -> None:
         """
         Reload conf.iface
         """
@@ -244,22 +222,19 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
             raise ValueError("Error: conf.route isn't populated !")
         conf.iface = get_working_if()  # type: ignore
 
-    def _reload_provs(self):
-        # type: () -> None
+    def _reload_provs(self) -> None:
         self.clear()
         for prov in self.providers.values():
             self._load(prov.reload(), prov)
 
-    def reload(self):
-        # type: () -> None
+    def reload(self) -> None:
         self._reload_provs()
         if not conf.route:
             # routes are not loaded yet.
             return
         self.load_confiface()
 
-    def dev_from_name(self, name):
-        # type: (str) -> NetworkInterface
+    def dev_from_name(self, name: str) -> NetworkInterface:
         """Return the first network device name for a given
         device name.
         """
@@ -269,8 +244,7 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
         except (StopIteration, RuntimeError):
             raise ValueError("Unknown network interface %r" % name)
 
-    def dev_from_networkname(self, network_name):
-        # type: (str) -> NoReturn
+    def dev_from_networkname(self, network_name: str) -> NoReturn:
         """Return interface for a given network device name."""
         try:
             return next(iface for iface in self.values()  # type: ignore
@@ -280,8 +254,7 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
                 "Unknown network interface %r" %
                 network_name)
 
-    def dev_from_index(self, if_index):
-        # type: (int) -> NetworkInterface
+    def dev_from_index(self, if_index: int) -> NetworkInterface:
         """Return interface name from interface index"""
         try:
             if_index = int(if_index)  # Backward compatibility
@@ -293,8 +266,7 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
                 return self.dev_from_networkname(conf.loopback_name)
             raise ValueError("Unknown network interface index %r" % if_index)
 
-    def _add_fake_iface(self, ifname, mac="00:00:00:00:00:00"):
-        # type: (str, str) -> None
+    def _add_fake_iface(self, ifname: str, mac: str = "00:00:00:00:00:00") -> None:
         """Internal function used for a testing purpose"""
         data = {
             'name': ifname,
@@ -325,8 +297,7 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
         else:
             self.data[ifname] = NetworkInterface(InterfaceProvider(), data)
 
-    def show(self, print_result=True, hidden=False, **kwargs):
-        # type: (bool, bool, **Any) -> Optional[str]
+    def show(self, print_result: bool = True, hidden: bool = False, **kwargs: Any) -> Optional[str]:
         """
         Print list of available network interfaces in human readable form
 
@@ -357,22 +328,19 @@ class NetworkInterfaceDict(UserDict[str, NetworkInterface]):
         else:
             return output
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return self.show(print_result=False)  # type: ignore
 
 
 conf.ifaces = IFACES = ifaces = NetworkInterfaceDict()
 
 
-def get_if_list():
-    # type: () -> List[str]
+def get_if_list() -> List[str]:
     """Return a list of interface names"""
     return list(conf.ifaces.keys())
 
 
-def get_working_if():
-    # type: () -> Optional[NetworkInterface]
+def get_working_if() -> Optional[NetworkInterface]:
     """Return an interface that works"""
     # return the interface associated with the route with smallest
     # mask (route by default if it exists)
@@ -395,26 +363,22 @@ def get_working_if():
         return None
 
 
-def get_working_ifaces():
-    # type: () -> List[NetworkInterface]
+def get_working_ifaces() -> List[NetworkInterface]:
     """Return all interfaces that work"""
     return [iface for iface in conf.ifaces.values() if iface.is_valid()]
 
 
-def dev_from_networkname(network_name):
-    # type: (str) -> NetworkInterface
+def dev_from_networkname(network_name: str) -> NetworkInterface:
     """Return Scapy device name for given network device name"""
     return conf.ifaces.dev_from_networkname(network_name)
 
 
-def dev_from_index(if_index):
-    # type: (int) -> NetworkInterface
+def dev_from_index(if_index: int) -> NetworkInterface:
     """Return interface for a given interface index"""
     return conf.ifaces.dev_from_index(if_index)
 
 
-def resolve_iface(dev, retry=True):
-    # type: (_GlobInterfaceType, bool) -> NetworkInterface
+def resolve_iface(dev: _GlobInterfaceType, retry: bool = True) -> NetworkInterface:
     """
     Resolve an interface name into the interface
     """
@@ -434,15 +398,13 @@ def resolve_iface(dev, retry=True):
     return resolve_iface(dev, retry=False)
 
 
-def network_name(dev):
-    # type: (_GlobInterfaceType) -> str
+def network_name(dev: _GlobInterfaceType) -> str:
     """
     Resolves the device network name of a device or Scapy NetworkInterface
     """
     return resolve_iface(dev).network_name
 
 
-def show_interfaces(resolve_mac=True):
-    # type: (bool) -> None
+def show_interfaces(resolve_mac: bool = True) -> None:
     """Print list of available network interfaces"""
     return conf.ifaces.show(resolve_mac)  # type: ignore

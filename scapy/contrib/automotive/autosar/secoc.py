@@ -9,6 +9,7 @@
 """
 SecOC
 """
+from __future__ import annotations
 from scapy.config import conf
 from scapy.error import log_loading
 
@@ -89,16 +90,14 @@ class PduPayloadField(PacketLenField):
     __slots__ = ["guess_pkt_cls"]
 
     def __init__(self,
-                 name,  # type: str
-                 default,  # type: Packet
-                 guess_pkt_cls,  # type: Callable[[Packet, bytes], Packet]  # noqa: E501
-                 length_from=None  # type: Optional[Callable[[Packet], int]]  # noqa: E501
-                 ):
-        # type: (...) -> None
+                 name: str,
+                 default: Packet,
+                 guess_pkt_cls: Callable[[Packet, bytes], Packet],  # noqa: E501
+                 length_from: Optional[Callable[[Packet], int]] = None  # noqa: E501
+                 ) -> None:
         super(PacketLenField, self).__init__(name, default, Raw)
         self.length_from = length_from or (lambda x: 0)
         self.guess_pkt_cls = guess_pkt_cls
 
-    def m2i(self, pkt, m):  # type: ignore
-        # type: (Optional[Packet], bytes) -> Packet
+    def m2i(self, pkt: Optional[Packet], m: bytes) -> Packet:  # type: ignore
         return self.guess_pkt_cls(pkt, m)

@@ -7,6 +7,8 @@
 # scapy.contrib.status = library
 
 
+from __future__ import annotations
+
 import abc
 import threading
 import time
@@ -128,31 +130,27 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         :param inter: delay between two packets during sending
         :type inter: int or float"""
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         super(ServiceEnumerator, self).__init__()
-        self._result_packets = OrderedDict()  # type: Dict[bytes, Packet]
-        self._results = list()  # type: List[_AutomotiveTestCaseScanResult]
-        self._request_iterators = dict()  # type: Dict[EcuState, Iterable[Packet]]  # noqa: E501
-        self._retry_pkt = defaultdict(list)  # type: Dict[EcuState, Union[Packet, Iterable[Packet]]]  # noqa: E501
-        self._negative_response_blacklist = [0x10, 0x11]  # type: List[int]
-        self._requests_per_state_estimated = None  # type: Optional[int]
-        self._tester_present_sender = None  # type: Optional[PeriodicSenderThread]
+        self._result_packets: Dict[bytes, Packet] = OrderedDict()
+        self._results: List[_AutomotiveTestCaseScanResult] = list()
+        self._request_iterators: Dict[EcuState, Iterable[Packet]] = dict()  # noqa: E501
+        self._retry_pkt: Dict[EcuState, Union[Packet, Iterable[Packet]]] = defaultdict(list)  # noqa: E501
+        self._negative_response_blacklist: List[int] = [0x10, 0x11]
+        self._requests_per_state_estimated: Optional[int] = None
+        self._tester_present_sender: Optional[PeriodicSenderThread] = None
 
     @staticmethod
     @abc.abstractmethod
-    def _get_negative_response_code(resp):
-        # type: (Packet) -> int
+    def _get_negative_response_code(resp: Packet) -> int:
         raise NotImplementedError()
 
     @staticmethod
     @abc.abstractmethod
-    def _get_negative_response_desc(nrc):
-        # type: (int) -> str
+    def _get_negative_response_desc(nrc: int) -> str:
         raise NotImplementedError()
 
-    def _get_table_entry_x(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_x(self, tup: _AutomotiveTestCaseScanResult) -> str:
         """
         Provides a table entry for the column which gets print during `show()`.
         :param tup: A results tuple
@@ -160,8 +158,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         """
         return str(tup[0])
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         """
         Provides a table entry for the line which gets print during `show()`.
         :param tup: A results tuple
@@ -169,8 +166,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         """
         return repr(tup[1])
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         """
         Provides a table entry for the field which gets print during `show()`.
         :param tup: A results tuple
@@ -180,13 +176,11 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def _get_negative_response_label(response):
-        # type: (Packet) -> str
+    def _get_negative_response_label(response: Packet) -> str:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         raise NotImplementedError("Overwrite this method")
 
     def __reduce__(self):  # type: ignore
@@ -205,20 +199,17 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return f, t, d
 
     @property
-    def negative_response_blacklist(self):
-        # type: () -> List[int]
+    def negative_response_blacklist(self) -> List[int]:
         return self._negative_response_blacklist
 
     @property
-    def completed(self):
-        # type: () -> bool
+    def completed(self) -> bool:
         if len(self._results):
             return all([self.has_completed(s) for s in self.scanned_states])
         else:
             return super(ServiceEnumerator, self).completed
 
-    def _store_result(self, state, req, res):
-        # type: (EcuState, Packet, Optional[Packet]) -> None
+    def _store_result(self, state: EcuState, req: Packet, res: Optional[Packet]) -> None:
         if bytes(req) not in self._result_packets:
             self._result_packets[bytes(req)] = req
 
@@ -232,8 +223,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
             req.sent_time or 0.0,
             res.time if res is not None else None))
 
-    def _get_retry_iterator(self, state):
-        # type: (EcuState) -> Iterable[Packet]
+    def _get_retry_iterator(self, state: EcuState) -> Iterable[Packet]:
         retry_entry = self._retry_pkt[state]
         if isinstance(retry_entry, Packet):
             log_automotive.debug("Provide retry packet")
@@ -247,21 +237,18 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return retry_entry
 
-    def _get_initial_request_iterator(self, state, **kwargs):
-        # type: (EcuState, Any) -> Iterable[Packet]
+    def _get_initial_request_iterator(self, state: EcuState, **kwargs: Any) -> Iterable[Packet]:
         if state not in self._request_iterators:
             self._request_iterators[state] = iter(
                 self._get_initial_requests(**kwargs))
 
         return self._request_iterators[state]
 
-    def _get_request_iterator(self, state, **kwargs):
-        # type: (EcuState, Optional[Dict[str, Any]]) -> Iterable[Packet]
+    def _get_request_iterator(self, state: EcuState, **kwargs: Optional[Dict[str, Any]]) -> Iterable[Packet]:
         return chain(self._get_retry_iterator(state),
                      self._get_initial_request_iterator(state, **kwargs))
 
-    def _prepare_runtime_estimation(self, **kwargs):
-        # type: (Optional[Dict[str, Any]]) -> None
+    def _prepare_runtime_estimation(self, **kwargs: Optional[Dict[str, Any]]) -> None:
         if self._requests_per_state_estimated is None:
             try:
                 initial_requests = self._get_initial_requests(**kwargs)
@@ -269,8 +256,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
             except NotImplementedError:
                 pass
 
-    def runtime_estimation(self):
-        # type: () -> Optional[Tuple[int, int, float]]
+    def runtime_estimation(self) -> Optional[Tuple[int, int, float]]:
         if self._requests_per_state_estimated is None:
             return None
 
@@ -280,20 +266,19 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return pkts_tbs, pkts_snt, float(pkts_snt) / pkts_tbs
 
-    def pre_execute(self, socket, state, global_configuration):
-        # type: (_SocketUnion, EcuState, AutomotiveTestCaseExecutorConfiguration) -> None  # noqa: E501
+    def pre_execute(self, socket: _SocketUnion, state: EcuState, global_configuration: AutomotiveTestCaseExecutorConfiguration) -> None:
+        # noqa: E501
         try:
             self._tester_present_sender = global_configuration["tps"]
         except KeyError:
             self._tester_present_sender = None
 
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         self.check_kwargs(kwargs)
         timeout = kwargs.pop('timeout', 1)
         count = kwargs.pop('count', None)
         execution_time = kwargs.pop("execution_time", 1200)
-        stop_event = kwargs.pop("stop_event", None)  # type: Optional[threading.Event]  # noqa: E501
+        stop_event: Optional[threading.Event] = kwargs.pop("stop_event", None)  # noqa: E501
         disable_tps = kwargs.pop("disable_tps_while_sending", False)
         inter = kwargs.pop("inter", 0)
 
@@ -368,8 +353,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
     execute.__doc__ = _supported_kwargs_doc
 
-    def sr1_with_retry_on_error(self, req, socket, state, timeout):
-        # type: (Packet, _SocketUnion, EcuState, int) -> Optional[Packet]
+    def sr1_with_retry_on_error(self, req: Packet, socket: _SocketUnion, state: EcuState, timeout: int) -> Optional[Packet]:
         try:
             res = socket.sr1(req, timeout=timeout, verbose=False,
                              chainEX=True, chainCC=True)
@@ -381,11 +365,11 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return res
 
     def _evaluate_response(self,
-                           state,  # type: EcuState
-                           request,  # type: Packet
-                           response,  # type: Optional[Packet]
-                           **kwargs  # type: Optional[Dict[str, Any]]
-                           ):  # type: (...) -> bool
+                           state: EcuState,
+                           request: Packet,
+                           response: Optional[Packet],
+                           **kwargs: Optional[Dict[str, Any]]
+                           ) -> bool:
         """
         Evaluates the response and determines if the current scan execution
         should be stopped.
@@ -424,10 +408,10 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return self._evaluate_ecu_state_modifications(state, request, response)
 
     def _evaluate_ecu_state_modifications(self,
-                                          state,  # type: EcuState
-                                          request,  # type: Packet
-                                          response,  # type: Packet
-                                          ):  # type: (...) -> bool
+                                          state: EcuState,
+                                          request: Packet,
+                                          response: Packet,
+                                          ) -> bool:
         if EcuState.is_modifier_pkt(response):
             if state != EcuState.get_modified_ecu_state(
                     response, request, state):
@@ -437,10 +421,10 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return False
 
     def _evaluate_negative_response_code(self,
-                                         state,  # type: EcuState
-                                         response,  # type: Packet
-                                         **kwargs  # type: Optional[Dict[str, Any]]  # noqa: E501
-                                         ):  # type: (...) -> bool
+                                         state: EcuState,
+                                         response: Packet,
+                                         **kwargs: Optional[Dict[str, Any]]  # noqa: E501
+                                         ) -> bool:
         exit_if_service_not_supported = \
             kwargs.pop("exit_if_service_not_supported", False)
         exit_scan_on_first_negative_response = \
@@ -465,9 +449,9 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return False
 
     def _populate_retry(self,
-                        state,  # type: EcuState
-                        request,  # type: Packet
-                        ):  # type: (...) -> bool
+                        state: EcuState,
+                        request: Packet,
+                        ) -> bool:
         """
         Populates internal storage with request for a retry.
 
@@ -490,11 +474,11 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
             return False
 
     def _evaluate_retry(self,
-                        state,  # type: EcuState
-                        request,  # type: Packet
-                        response,  # type: Packet
-                        **kwargs  # type: Optional[Dict[str, Any]]
-                        ):  # type: (...) -> bool
+                        state: EcuState,
+                        request: Packet,
+                        response: Packet,
+                        **kwargs: Optional[Dict[str, Any]]
+                        ) -> bool:
         retry_if_busy_returncode = \
             kwargs.pop("retry_if_busy_returncode", True)
 
@@ -506,15 +490,14 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
             return self._populate_retry(state, request)
         return False
 
-    def _compute_statistics(self):
-        # type: () -> List[Tuple[str, str, str]]
+    def _compute_statistics(self) -> List[Tuple[str, str, str]]:
         data_sets = [("all", self._results)]
 
         for state in self._state_completed.keys():
             data_sets.append((repr(state),
                               [r for r in self._results if r.state == state]))
 
-        stats = list()  # type: List[Tuple[str, str, str]]
+        stats: List[Tuple[str, str, str]] = list()
 
         for desc, data in data_sets:
             answered = [cast(_AutomotiveTestCaseFilteredScanResult, r)
@@ -557,8 +540,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return stats
 
-    def _show_statistics(self, **kwargs):
-        # type: (Any) -> str
+    def _show_statistics(self, **kwargs: Any) -> str:
         stats = self._compute_statistics()
 
         s = "%d requests were sent, %d answered, %d unanswered" % \
@@ -572,9 +554,8 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return s + "\n"
 
-    def _prepare_negative_response_blacklist(self):
-        # type: () -> None
-        nrc_dict = defaultdict(int)  # type: Dict[int, int]
+    def _prepare_negative_response_blacklist(self) -> None:
+        nrc_dict: Dict[int, int] = defaultdict(int)
         for nr in self.results_with_negative_response:
             nrc_dict[self._get_negative_response_code(nr.resp)] += 1
 
@@ -590,13 +571,11 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
                 self.negative_response_blacklist.remove(nrc)
 
     @property
-    def results(self):
-        # type: () -> List[_AutomotiveTestCaseScanResult]
+    def results(self) -> List[_AutomotiveTestCaseScanResult]:
         return self._results
 
     @property
-    def results_with_response(self):
-        # type: () -> List[_AutomotiveTestCaseFilteredScanResult]
+    def results_with_response(self) -> List[_AutomotiveTestCaseFilteredScanResult]:
         filtered_results = list()
         for r in self._results:
             if r.resp is None:
@@ -608,8 +587,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return filtered_results
 
     @property
-    def filtered_results(self):
-        # type: () -> List[_AutomotiveTestCaseFilteredScanResult]
+    def filtered_results(self) -> List[_AutomotiveTestCaseFilteredScanResult]:
         filtered_results = self.results_with_positive_response
 
         for r in self.results_with_negative_response:
@@ -619,8 +597,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return filtered_results
 
     @property
-    def scanned_states(self):
-        # type: () -> Set[EcuState]
+    def scanned_states(self) -> Set[EcuState]:
         """
         Helper function to get all sacnned states in results
         :return: all scanned states
@@ -628,8 +605,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
         return set([tup.state for tup in self._results])
 
     @property
-    def results_with_negative_response(self):
-        # type: () -> List[_AutomotiveTestCaseFilteredScanResult]
+    def results_with_negative_response(self) -> List[_AutomotiveTestCaseFilteredScanResult]:
         """
         Helper function to get all results with negative response
         :return: all results with negative response
@@ -638,8 +614,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
                 if r.resp and r.resp.service == 0x7f]
 
     @property
-    def results_with_positive_response(self):
-        # type: () -> List[_AutomotiveTestCaseFilteredScanResult]
+    def results_with_positive_response(self) -> List[_AutomotiveTestCaseFilteredScanResult]:
         """
         Helper function to get all results with positive response
         :return: all results with positive response
@@ -648,17 +623,15 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
                 if r.resp and r.resp.service != 0x7f]
 
     @property
-    def results_without_response(self):
-        # type: () -> List[_AutomotiveTestCaseScanResult]
+    def results_without_response(self) -> List[_AutomotiveTestCaseScanResult]:
         """
         Helper function to get all results without response
         :return: all results without response
         """
         return [r for r in self._results if r.resp is None]
 
-    def _show_negative_response_details(self, **kwargs):
-        # type: (Any) -> str
-        nrc_dict = defaultdict(int)  # type: Dict[int, int]
+    def _show_negative_response_details(self, **kwargs: Any) -> str:
+        nrc_dict: Dict[int, int] = defaultdict(int)
         for nr in self.results_with_negative_response:
             nrc_dict[self._get_negative_response_code(nr.resp)] += 1
 
@@ -671,8 +644,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return s + "\n"
 
-    def _show_negative_response_information(self, **kwargs):
-        # type: (Any) -> str
+    def _show_negative_response_information(self, **kwargs: Any) -> str:
         filtered = kwargs.get("filtered", True)
         s = "%d negative responses were received\n" % \
             len(self.results_with_negative_response)
@@ -687,11 +659,10 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         return s + "\n"
 
-    def _show_results_information(self, **kwargs):
-        # type: (Any) -> str
+    def _show_results_information(self, **kwargs: Any) -> str:
         def _get_table_entry(
             *args: Any
-        ):  # type: (...) -> Tuple[str, str, str]
+        ) -> Tuple[str, str, str]:
             tup = cast(_AutomotiveTestCaseScanResult, args)
             return self._get_table_entry_x(tup), \
                 self._get_table_entry_y(tup), \
@@ -699,15 +670,14 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
 
         filtered = kwargs.get("filtered", True)
         s = "=== No data to display ===\n"
-        data = self._results if not filtered else self.filtered_results  # type: Union[List[_AutomotiveTestCaseScanResult], List[_AutomotiveTestCaseFilteredScanResult]]  # noqa: E501
+        data: Union[List[_AutomotiveTestCaseScanResult], List[_AutomotiveTestCaseFilteredScanResult]] = self._results if not filtered else self.filtered_results  # noqa: E501
         if len(data):
             s = make_lined_table(
                 data, _get_table_entry, dump=True, sortx=str) or ""
 
         return s + "\n"
 
-    def show(self, dump=False, filtered=True, verbose=False):
-        # type: (bool, bool, bool) -> Optional[str]
+    def show(self, dump: bool = False, filtered: bool = True, verbose: bool = False) -> Optional[str]:
         if filtered:
             self._prepare_negative_response_blacklist()
 
@@ -727,8 +697,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
             print(s)
             return None
 
-    def _get_label(self, response, positive_case="PR: PositiveResponse"):
-        # type: (Optional[Packet], Union[Callable[[Packet], str], str]) -> str
+    def _get_label(self, response: Optional[Packet], positive_case: Union[Callable[[Packet], str], str] = "PR: PositiveResponse") -> str:
         if response is None:
             return "Timeout"
         elif orb(bytes(response)[0]) == 0x7f:
@@ -743,8 +712,7 @@ class ServiceEnumerator(AutomotiveTestCase, metaclass=abc.ABCMeta):
                                       "Provide a string or a function.")
 
     @property
-    def supported_responses(self):
-        # type: () -> List[EcuResponse]
+    def supported_responses(self) -> List[EcuResponse]:
         supported_resps = list()
         all_responses = [p for p in self._result_packets.values()
                          if orb(bytes(p)[0]) & 0x40]
@@ -760,21 +728,19 @@ class StateGeneratingServiceEnumerator(
     StateGenerator,
     metaclass=abc.ABCMeta
 ):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         super(StateGeneratingServiceEnumerator, self).__init__()
 
         # Internal storage of request packets for a certain Edge. If an edge
         # is found during the evaluation of the last result of the
         # ServiceEnumerator, the according request of the result tuple is
         # stored together with the new Edge.
-        self._edge_requests = dict()  # type: Dict[_Edge, Packet]
+        self._edge_requests: Dict[_Edge, Packet] = dict()
 
     def get_new_edge(self,
-                     socket,  # type: _SocketUnion
-                     config  # type: AutomotiveTestCaseExecutorConfiguration
-                     ):
-        # type: (...) -> Optional[_Edge]
+                     socket: _SocketUnion,
+                     config: AutomotiveTestCaseExecutorConfiguration
+                     ) -> Optional[_Edge]:
         """
         Basic identification of a new edge. The last response is evaluated.
         If this response packet can modify the state of an Ecu, this new
@@ -802,11 +768,10 @@ class StateGeneratingServiceEnumerator(
 
     @staticmethod
     def transition_function(
-            sock,  # type: _SocketUnion
-            config,  # type: AutomotiveTestCaseExecutorConfiguration
-            kwargs  # type: Dict[str, Any]
-    ):
-        # type: (...) -> bool
+            sock: _SocketUnion,
+            config: AutomotiveTestCaseExecutorConfiguration,
+            kwargs: Dict[str, Any]
+    ) -> bool:
         """
         Very basic transition function. This function sends a given request
         in kwargs and evaluates the response.
@@ -830,12 +795,10 @@ class StateGeneratingServiceEnumerator(
                 "Exception in transition function: %s", e)
             return False
 
-    def get_transition_function_description(self, edge):
-        # type: (_Edge) -> str
+    def get_transition_function_description(self, edge: _Edge) -> str:
         return repr(self._edge_requests[edge])
 
-    def get_transition_function_kwargs(self, edge):
-        # type: (_Edge) -> Dict[str, Any]
+    def get_transition_function_kwargs(self, edge: _Edge) -> Dict[str, Any]:
         req = self._edge_requests[edge]
         kwargs = {
             "desc": self.get_transition_function_description(edge),
@@ -843,8 +806,7 @@ class StateGeneratingServiceEnumerator(
         }
         return kwargs
 
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         try:
             return self.transition_function, \
                 self.get_transition_function_kwargs(edge), None

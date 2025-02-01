@@ -6,7 +6,7 @@
 """
 Implementation of the configuration object.
 """
-
+from __future__ import annotations
 
 import atexit
 import copy
@@ -72,16 +72,13 @@ if TYPE_CHECKING:
 
 
 class ConfClass(object):
-    def configure(self, cnf):
-        # type: (ConfClass) -> None
+    def configure(self, cnf: ConfClass) -> None:
         self.__dict__ = cnf.__dict__.copy()
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         s = ""
         dkeys = self.__class__.__dict__.copy()
         dkeys.update(self.__dict__)
@@ -99,13 +96,12 @@ class ConfClass(object):
 
 class Interceptor(object):
     def __init__(self,
-                 name,  # type: str
-                 default,  # type: Any
-                 hook,  # type: Callable[..., Any]
-                 args=None,  # type: Optional[List[Any]]
-                 kargs=None  # type: Optional[Dict[str, Any]]
-                 ):
-        # type: (...) -> None
+                 name: str,
+                 default: Any,
+                 hook: Callable[..., Any],
+                 args: Optional[List[Any]] = None,
+                 kargs: Optional[Dict[str, Any]] = None
+                 ) -> None:
         self.name = name
         self.intname = "_intercepted_%s" % name
         self.default = default
@@ -113,27 +109,23 @@ class Interceptor(object):
         self.args = args if args is not None else []
         self.kargs = kargs if kargs is not None else {}
 
-    def __get__(self, obj, typ=None):
-        # type: (Conf, Optional[type]) -> Any
+    def __get__(self, obj: Conf, typ: Optional[type] = None) -> Any:
         if not hasattr(obj, self.intname):
             setattr(obj, self.intname, self.default)
         return getattr(obj, self.intname)
 
     @staticmethod
-    def set_from_hook(obj, name, val):
-        # type: (Conf, str, bool) -> None
+    def set_from_hook(obj: Conf, name: str, val: bool) -> None:
         int_name = "_intercepted_%s" % name
         setattr(obj, int_name, val)
 
-    def __set__(self, obj, val):
-        # type: (Conf, Any) -> None
+    def __set__(self, obj: Conf, val: Any) -> None:
         old = getattr(obj, self.intname, self.default)
         val = self.hook(self.name, val, old, *self.args, **self.kargs)
         setattr(obj, self.intname, val)
 
 
-def _readonly(name):
-    # type: (str) -> NoReturn
+def _readonly(name: str) -> NoReturn:
     default = Conf.__dict__[name].default
     Interceptor.set_from_hook(conf, name, default)
     raise ValueError("Read-only value !")
@@ -167,38 +159,31 @@ class ProgPath(ConfClass):
 
 
 class ConfigFieldList:
-    def __init__(self):
-        # type: () -> None
-        self.fields = set()  # type: Set[Any]
-        self.layers = set()  # type: Set[Any]
+    def __init__(self) -> None:
+        self.fields: Set[Any] = set()
+        self.layers: Set[Any] = set()
 
     @staticmethod
-    def _is_field(f):
-        # type: (Any) -> bool
+    def _is_field(f: Any) -> bool:
         return hasattr(f, "owners")
 
-    def _recalc_layer_list(self):
-        # type: () -> None
+    def _recalc_layer_list(self) -> None:
         self.layers = {owner for f in self.fields for owner in f.owners}
 
-    def add(self, *flds):
-        # type: (*Any) -> None
+    def add(self, *flds: Any) -> None:
         self.fields |= {f for f in flds if self._is_field(f)}
         self._recalc_layer_list()
 
-    def remove(self, *flds):
-        # type: (*Any) -> None
+    def remove(self, *flds: Any) -> None:
         self.fields -= set(flds)
         self._recalc_layer_list()
 
-    def __contains__(self, elt):
-        # type: (Any) -> bool
+    def __contains__(self, elt: Any) -> bool:
         if isinstance(elt, BasePacket):
             return elt in self.layers
         return elt in self.fields
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s [%s]>" % (self.__class__.__name__, " ".join(str(x) for x in self.fields))  # noqa: E501
 
 
@@ -211,57 +196,47 @@ class Resolve(ConfigFieldList):
 
 
 class Num2Layer:
-    def __init__(self):
-        # type: () -> None
-        self.num2layer = {}  # type: Dict[int, Type[Packet]]
-        self.layer2num = {}  # type: Dict[Type[Packet], int]
+    def __init__(self) -> None:
+        self.num2layer: Dict[int, Type[Packet]] = {}
+        self.layer2num: Dict[Type[Packet], int] = {}
 
-    def register(self, num, layer):
-        # type: (int, Type[Packet]) -> None
+    def register(self, num: int, layer: Type[Packet]) -> None:
         self.register_num2layer(num, layer)
         self.register_layer2num(num, layer)
 
-    def register_num2layer(self, num, layer):
-        # type: (int, Type[Packet]) -> None
+    def register_num2layer(self, num: int, layer: Type[Packet]) -> None:
         self.num2layer[num] = layer
 
-    def register_layer2num(self, num, layer):
-        # type: (int, Type[Packet]) -> None
+    def register_layer2num(self, num: int, layer: Type[Packet]) -> None:
         self.layer2num[layer] = num
 
     @overload
-    def __getitem__(self, item):
-        # type: (Type[Packet]) -> int
+    def __getitem__(self, item: Type[Packet]) -> int:
         pass
 
     @overload
-    def __getitem__(self, item):  # noqa: F811
-        # type: (int) -> Type[Packet]
+    def __getitem__(self, item: int) -> Type[Packet]:  # noqa: F811
         pass
 
-    def __getitem__(self, item):  # noqa: F811
-        # type: (Union[int, Type[Packet]]) -> Union[int, Type[Packet]]
+    def __getitem__(self, item: Union[int, Type[Packet]]) -> Union[int, Type[Packet]]:  # noqa: F811
         if isinstance(item, int):
             return self.num2layer[item]
         else:
             return self.layer2num[item]
 
-    def __contains__(self, item):
-        # type: (Union[int, Type[Packet]]) -> bool
+    def __contains__(self, item: Union[int, Type[Packet]]) -> bool:
         if isinstance(item, int):
             return item in self.num2layer
         else:
             return item in self.layer2num
 
     def get(self,
-            item,  # type: Union[int, Type[Packet]]
-            default=None,  # type: Optional[Type[Packet]]
-            ):
-        # type: (...) -> Optional[Union[int, Type[Packet]]]
+            item: Union[int, Type[Packet]],
+            default: Optional[Type[Packet]] = None,
+            ) -> Optional[Union[int, Type[Packet]]]:
         return self[item] if item in self else default
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         lst = []
         for num, layer in self.num2layer.items():
             if layer in self.layer2num and self.layer2num[layer] == num:
@@ -279,27 +254,23 @@ class Num2Layer:
 
 
 class LayersList(List[Type['scapy.packet.Packet']]):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         list.__init__(self)
-        self.ldict = {}  # type: Dict[str, List[Type[Packet]]]
+        self.ldict: Dict[str, List[Type[Packet]]] = {}
         self.filtered = False
-        self._backup_dict = {}  # type: Dict[Type[Packet], List[Tuple[Dict[str, Any], Type[Packet]]]]  # noqa: E501
+        self._backup_dict: Dict[Type[Packet], List[Tuple[Dict[str, Any], Type[Packet]]]] = {}  # noqa: E501
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "\n".join("%-20s: %s" % (layer.__name__, layer.name)
                          for layer in self)
 
-    def register(self, layer):
-        # type: (Type[Packet]) -> None
+    def register(self, layer: Type[Packet]) -> None:
         self.append(layer)
         if layer.__module__ not in self.ldict:
             self.ldict[layer.__module__] = []
         self.ldict[layer.__module__].append(layer)
 
-    def layers(self):
-        # type: () -> List[Tuple[str, str]]
+    def layers(self) -> List[Tuple[str, str]]:
         result = []
         # This import may feel useless, but it is required for the eval below
         import scapy  # noqa: F401
@@ -312,8 +283,7 @@ class LayersList(List[Type['scapy.packet.Packet']]):
             result.append((lay, doc.strip().split("\n")[0] if doc else lay))
         return result
 
-    def filter(self, items):
-        # type: (List[Type[Packet]]) -> None
+    def filter(self, items: List[Type[Packet]]) -> None:
         """Disable dissection of unused layers to speed up dissection"""
         if self.filtered:
             raise ValueError("Already filtered. Please disable it first")
@@ -326,8 +296,7 @@ class LayersList(List[Type['scapy.packet.Packet']]):
                     ]
         self.filtered = True
 
-    def unfilter(self):
-        # type: () -> None
+    def unfilter(self) -> None:
         """Re-enable dissection for all layers"""
         if not self.filtered:
             raise ValueError("Not filtered. Please filter first")
@@ -339,8 +308,7 @@ class LayersList(List[Type['scapy.packet.Packet']]):
 
 
 class CommandsList(List[Callable[..., Any]]):
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         s = []
         for li in sorted(self, key=lambda x: x.__name__):
             doc = li.__doc__ if li.__doc__ else "--"
@@ -348,14 +316,12 @@ class CommandsList(List[Callable[..., Any]]):
             s.append("%-22s: %s" % (li.__name__, doc))
         return "\n".join(s)
 
-    def register(self, cmd):
-        # type: (DecoratorCallable) -> DecoratorCallable
+    def register(self, cmd: DecoratorCallable) -> DecoratorCallable:
         self.append(cmd)
         return cmd  # return cmd so that method can be used as a decorator
 
 
-def lsc():
-    # type: () -> None
+def lsc() -> None:
     """Displays Scapy's default commands"""
     print(repr(conf.commands))
 
@@ -363,19 +329,16 @@ def lsc():
 class CacheInstance(Dict[str, Any]):
     __slots__ = ["timeout", "name", "_timetable"]
 
-    def __init__(self, name="noname", timeout=None):
-        # type: (str, Optional[int]) -> None
+    def __init__(self, name: str = "noname", timeout: Optional[int] = None) -> None:
         self.timeout = timeout
         self.name = name
-        self._timetable = {}  # type: Dict[str, float]
+        self._timetable: Dict[str, float] = {}
 
-    def flush(self):
-        # type: () -> None
+    def flush(self) -> None:
         self._timetable.clear()
         self.clear()
 
-    def __getitem__(self, item):
-        # type: (str) -> Any
+    def __getitem__(self, item: str) -> Any:
         if item in self.__slots__:
             return object.__getattribute__(self, item)
         if not self.__contains__(item):
@@ -391,8 +354,7 @@ class CacheInstance(Dict[str, Any]):
                 return False
         return True
 
-    def get(self, item, default=None):
-        # type: (str, Optional[Any]) -> Any
+    def get(self, item: str, default: Optional[Any] = None) -> Any:
         # overloading this method is needed to force the dict to go through
         # the timetable check
         try:
@@ -400,18 +362,16 @@ class CacheInstance(Dict[str, Any]):
         except KeyError:
             return default
 
-    def __setitem__(self, item, v):
-        # type: (str, str) -> None
+    def __setitem__(self, item: str, v: str) -> None:
         if item in self.__slots__:
             return object.__setattr__(self, item, v)
         self._timetable[item] = time.time()
         super(CacheInstance, self).__setitem__(item, v)
 
     def update(self,
-               other,  # type: Any
-               **kwargs  # type: Any
-               ):
-        # type: (...) -> None
+               other: Any,
+               **kwargs: Any
+               ) -> None:
         for key, value in other.items():
             # We only update an element from `other` either if it does
             # not exist in `self` or if the entry in `self` is older.
@@ -419,8 +379,7 @@ class CacheInstance(Dict[str, Any]):
                 dict.__setitem__(self, key, value)
                 self._timetable[key] = other._timetable[key]
 
-    def iteritems(self):
-        # type: () -> Iterator[Tuple[str, Any]]
+    def iteritems(self) -> Iterator[Tuple[str, Any]]:
         if self.timeout is None:
             return super(CacheInstance, self).items()
         t0 = time.time()
@@ -430,8 +389,7 @@ class CacheInstance(Dict[str, Any]):
             if t0 - self._timetable[k] < self.timeout
         )
 
-    def iterkeys(self):
-        # type: () -> Iterator[str]
+    def iterkeys(self) -> Iterator[str]:
         if self.timeout is None:
             return super(CacheInstance, self).keys()
         t0 = time.time()
@@ -441,12 +399,10 @@ class CacheInstance(Dict[str, Any]):
             if t0 - self._timetable[k] < self.timeout
         )
 
-    def __iter__(self):
-        # type: () -> Iterator[str]
+    def __iter__(self) -> Iterator[str]:
         return self.iterkeys()
 
-    def itervalues(self):
-        # type: () -> Iterator[Tuple[str, Any]]
+    def itervalues(self) -> Iterator[Tuple[str, Any]]:
         if self.timeout is None:
             return super(CacheInstance, self).values()
         t0 = time.time()
@@ -456,30 +412,24 @@ class CacheInstance(Dict[str, Any]):
             if t0 - self._timetable[k] < self.timeout
         )
 
-    def items(self):
-        # type: () -> Any
+    def items(self) -> Any:
         return list(self.iteritems())
 
-    def keys(self):
-        # type: () -> Any
+    def keys(self) -> Any:
         return list(self.iterkeys())
 
-    def values(self):
-        # type: () -> Any
+    def values(self) -> Any:
         return list(self.itervalues())
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         if self.timeout is None:
             return super(CacheInstance, self).__len__()
         return len(self.keys())
 
-    def summary(self):
-        # type: () -> str
+    def summary(self) -> str:
         return "%s: %i valid items. Timeout=%rs" % (self.name, len(self), self.timeout)  # noqa: E501
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         s = []
         if self:
             mk = max(len(k) for k in self)
@@ -488,46 +438,38 @@ class CacheInstance(Dict[str, Any]):
                 s.append(fmt % item)
         return "\n".join(s)
 
-    def copy(self):
-        # type: () -> CacheInstance
+    def copy(self) -> CacheInstance:
         return copy.copy(self)
 
 
 class NetCache:
-    def __init__(self):
-        # type: () -> None
-        self._caches_list = []  # type: List[CacheInstance]
+    def __init__(self) -> None:
+        self._caches_list: List[CacheInstance] = []
 
-    def add_cache(self, cache):
-        # type: (CacheInstance) -> None
+    def add_cache(self, cache: CacheInstance) -> None:
         self._caches_list.append(cache)
         setattr(self, cache.name, cache)
 
-    def new_cache(self, name, timeout=None):
-        # type: (str, Optional[int]) -> CacheInstance
+    def new_cache(self, name: str, timeout: Optional[int] = None) -> CacheInstance:
         c = CacheInstance(name=name, timeout=timeout)
         self.add_cache(c)
         return c
 
-    def __delattr__(self, attr):
-        # type: (str) -> NoReturn
+    def __delattr__(self, attr: str) -> NoReturn:
         raise AttributeError("Cannot delete attributes")
 
-    def update(self, other):
-        # type: (NetCache) -> None
+    def update(self, other: NetCache) -> None:
         for co in other._caches_list:
             if hasattr(self, co.name):
                 getattr(self, co.name).update(co)
             else:
                 self.add_cache(co.copy())
 
-    def flush(self):
-        # type: () -> None
+    def flush(self) -> None:
         for c in self._caches_list:
             c.flush()
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "\n".join(c.summary() for c in self._caches_list)
 
 
@@ -684,8 +626,7 @@ class ExtsManager(importlib.abc.MetaPathFinder):
         )
 
 
-def _version_checker(module, minver):
-    # type: (ModuleType, Tuple[int, ...]) -> bool
+def _version_checker(module: ModuleType, minver: Tuple[int, ...]) -> bool:
     """Checks that module has a higher version that minver.
 
     params:
@@ -705,8 +646,7 @@ def _version_checker(module, minver):
     return bool(version_tags >= minver)
 
 
-def isCryptographyValid():
-    # type: () -> bool
+def isCryptographyValid() -> bool:
     """
     Check if the cryptography module >= 2.0.0 is present. This is the minimum
     version for most usages in Scapy.
@@ -718,8 +658,7 @@ def isCryptographyValid():
     return _version_checker(cryptography, (2, 0, 0))
 
 
-def isCryptographyAdvanced():
-    # type: () -> bool
+def isCryptographyAdvanced() -> bool:
     """
     Check if the cryptography module is present, and if it supports X25519,
     ChaCha20Poly1305 and such.
@@ -737,8 +676,7 @@ def isCryptographyAdvanced():
         return True
 
 
-def isPyPy():
-    # type: () -> bool
+def isPyPy() -> bool:
     """Returns either scapy is running under PyPy or not"""
     try:
         import __pypy__  # noqa: F401
@@ -747,8 +685,7 @@ def isPyPy():
         return False
 
 
-def _prompt_changer(attr, val, old):
-    # type: (str, Any, Any) -> Any
+def _prompt_changer(attr: str, val: Any, old: Any) -> Any:
     """Change the current prompt theme"""
     Interceptor.set_from_hook(conf, attr, val)
     try:
@@ -764,8 +701,7 @@ def _prompt_changer(attr, val, old):
     return getattr(conf, attr, old)
 
 
-def _set_conf_sockets():
-    # type: () -> None
+def _set_conf_sockets() -> None:
     """Populate the conf.L2Socket and conf.L3Socket
     according to the various use_* parameters
     """
@@ -826,8 +762,7 @@ def _set_conf_sockets():
     conf.ifaces.reload()
 
 
-def _socket_changer(attr, val, old):
-    # type: (str, bool, bool) -> Any
+def _socket_changer(attr: str, val: bool, old: bool) -> Any:
     if not isinstance(val, bool):
         raise TypeError("This argument should be a boolean")
     Interceptor.set_from_hook(conf, attr, val)
@@ -850,15 +785,13 @@ def _socket_changer(attr, val, old):
     return getattr(conf, attr)
 
 
-def _loglevel_changer(attr, val, old):
-    # type: (str, int, int) -> int
+def _loglevel_changer(attr: str, val: int, old: int) -> int:
     """Handle a change of conf.logLevel"""
     log_scapy.setLevel(val)
     return val
 
 
-def _iface_changer(attr, val, old):
-    # type: (str, Any, Any) -> 'scapy.interfaces.NetworkInterface'
+def _iface_changer(attr: str, val: Any, old: Any) -> 'scapy.interfaces.NetworkInterface':
     """Resolves the interface in conf.iface"""
     if isinstance(val, str):
         from scapy.interfaces import resolve_iface
@@ -872,8 +805,7 @@ def _iface_changer(attr, val, old):
     return val
 
 
-def _reset_tls_nss_keys(attr, val, old):
-    # type: (str, Any, Any) -> Any
+def _reset_tls_nss_keys(attr: str, val: Any, old: Any) -> Any:
     """Reset conf.tls_nss_keys when conf.tls_nss_filename changes"""
     conf.tls_nss_keys = None
     return val
@@ -894,15 +826,15 @@ class Conf(ConfClass):
     #: if 1, prevents any unwanted packet to go out (ARP, DNS, ...)
     stealth = "not implemented"
     #: selects the default output interface for srp() and sendp().
-    iface = Interceptor("iface", None, _iface_changer)  # type: 'scapy.interfaces.NetworkInterface'  # noqa: E501
+    iface: 'scapy.interfaces.NetworkInterface' = Interceptor("iface", None, _iface_changer)  # noqa: E501
     layers: LayersList = LayersList()
-    commands = CommandsList()  # type: CommandsList
+    commands: CommandsList = CommandsList()
     #: Codec used by default for ASN1 objects
-    ASN1_default_codec = None  # type: 'scapy.asn1.asn1.ASN1Codec'
+    ASN1_default_codec: 'scapy.asn1.asn1.ASN1Codec' = None
     #: Default size for ASN1 objects
     ASN1_default_long_size = 0
     #: choose the AS resolver class to use
-    AS_resolver = None  # type: scapy.as_resolvers.AS_resolver
+    AS_resolver: scapy.as_resolvers.AS_resolver = None
     dot15d4_protocol = None  # Used in dot15d4.py
     logLevel: int = Interceptor("logLevel", log_scapy.level, _loglevel_changer)
     #: if 0, doesn't check that IPID matches between IP sent and
@@ -925,21 +857,21 @@ class Conf(ConfClass):
     prompt: str = Interceptor("prompt", ">>> ", _prompt_changer)
     #: default mode for the promiscuous mode of a socket (to get answers if you
     #: spoof on a lan)
-    sniff_promisc = True  # type: bool
-    raw_layer = None  # type: Type[Packet]
-    raw_summary = False  # type: Union[bool, Callable[[bytes], Any]]
-    padding_layer = None  # type: Type[Packet]
-    default_l2 = None  # type: Type[Packet]
+    sniff_promisc: bool = True
+    raw_layer: Type[Packet] = None
+    raw_summary: Union[bool, Callable[[bytes], Any]] = False
+    padding_layer: Type[Packet] = None
+    default_l2: Type[Packet] = None
     l2types: Num2Layer = Num2Layer()
     l3types: Num2Layer = Num2Layer()
-    L3socket = None  # type: Type[scapy.supersocket.SuperSocket]
-    L3socket6 = None  # type: Type[scapy.supersocket.SuperSocket]
-    L2socket = None  # type: Type[scapy.supersocket.SuperSocket]
-    L2listen = None  # type: Type[scapy.supersocket.SuperSocket]
-    BTsocket = None  # type: Type[scapy.supersocket.SuperSocket]
+    L3socket: Type[scapy.supersocket.SuperSocket] = None
+    L3socket6: Type[scapy.supersocket.SuperSocket] = None
+    L2socket: Type[scapy.supersocket.SuperSocket] = None
+    L2listen: Type[scapy.supersocket.SuperSocket] = None
+    BTsocket: Type[scapy.supersocket.SuperSocket] = None
     min_pkt_size = 60
     #: holds MIB direct access dictionary
-    mib = None  # type: 'scapy.asn1.mib.MIBDict'
+    mib: 'scapy.asn1.mib.MIBDict' = None
     bufsize = 2**16
     #: history file
     histfile: str = os.getenv(
@@ -963,13 +895,13 @@ class Conf(ConfClass):
     debug_tls = False
     wepkey = ""
     #: holds the Scapy interface list and manager
-    ifaces = None  # type: 'scapy.interfaces.NetworkInterfaceDict'
+    ifaces: 'scapy.interfaces.NetworkInterfaceDict' = None
     #: holds the cache of interfaces loaded from Libpcap
-    cache_pcapiflist = {}  # type: Dict[str, Tuple[str, List[str], Any, str, int]]
+    cache_pcapiflist: Dict[str, Tuple[str, List[str], Any, str, int]] = {}
     # `neighbor` will be filed by scapy.layers.l2
-    neighbor = None  # type: 'scapy.layers.l2.Neighbor'
+    neighbor: 'scapy.layers.l2.Neighbor' = None
     #: holds the name servers IP/hosts used for custom DNS resolution
-    nameservers = None  # type: str
+    nameservers: str = None
     #: automatically load IPv4 routes on startup. Disable this if your
     #: routing table is too big.
     route_autoload = True
@@ -978,20 +910,20 @@ class Conf(ConfClass):
     route6_autoload = True
     #: holds the Scapy IPv4 routing table and provides methods to
     #: manipulate it
-    route = None  # type: 'scapy.route.Route'
+    route: 'scapy.route.Route' = None
     # `route` will be filed by route.py
     #: holds the Scapy IPv6 routing table and provides methods to
     #: manipulate it
-    route6 = None  # type: 'scapy.route6.Route6'
-    manufdb = None  # type: 'scapy.data.ManufDA'
-    ethertypes = None  # type: 'scapy.data.EtherDA'
-    protocols = None  # type: 'scapy.dadict.DADict[int, str]'
-    services_udp = None  # type: 'scapy.dadict.DADict[int, str]'
-    services_tcp = None  # type: 'scapy.dadict.DADict[int, str]'
-    services_sctp = None  # type: 'scapy.dadict.DADict[int, str]'
+    route6: 'scapy.route6.Route6' = None
+    manufdb: 'scapy.data.ManufDA' = None
+    ethertypes: 'scapy.data.EtherDA' = None
+    protocols: 'scapy.dadict.DADict[int, str]' = None
+    services_udp: 'scapy.dadict.DADict[int, str]' = None
+    services_tcp: 'scapy.dadict.DADict[int, str]' = None
+    services_sctp: 'scapy.dadict.DADict[int, str]' = None
     # 'route6' will be filed by route6.py
-    teredoPrefix = ""  # type: str
-    teredoServerPort = None  # type: int
+    teredoPrefix: str = ""
+    teredoServerPort: int = None
     auto_fragment = True
     #: raise exception when a packet dissector raises an exception
     debug_dissector = False
@@ -1017,9 +949,9 @@ class Conf(ConfClass):
     use_bpf: bool = Interceptor("use_bpf", False, _socket_changer)
     use_npcap = False
     ipv6_enabled: bool = socket.has_ipv6
-    stats_classic_protocols = []  # type: List[Type[Packet]]
-    stats_dot11_protocols = []  # type: List[Type[Packet]]
-    temp_files = []  # type: List[str]
+    stats_classic_protocols: List[Type[Packet]] = []
+    stats_dot11_protocols: List[Type[Packet]] = []
+    temp_files: List[str] = []
     #: netcache holds time-based caches for net operations
     netcache: NetCache = NetCache()
     geoip_city = None
@@ -1077,7 +1009,7 @@ class Conf(ConfClass):
     ]
     #: a dict which can be used by contrib layers to store local
     #: configuration
-    contribs = dict()  # type: Dict[str, Any]
+    contribs: Dict[str, Any] = dict()
     exts: ExtsManager = ExtsManager()
     crypto_valid = isCryptographyValid()
     crypto_valid_advanced = isCryptographyAdvanced()
@@ -1093,8 +1025,8 @@ class Conf(ConfClass):
     #: Default is False.
     raise_no_dst_mac = False
     loopback_name: str = "lo" if LINUX else "lo0"
-    nmap_base = ""  # type: str
-    nmap_kdb = None  # type: Optional[NmapKnowledgeBase]
+    nmap_base: str = ""
+    nmap_kdb: Optional[NmapKnowledgeBase] = None
     #: a safety mechanism: the maximum amount of items included in a PacketListField
     #: or a FieldListField
     max_list_count = 100
@@ -1118,8 +1050,7 @@ class Conf(ConfClass):
     #: dcerpc_session_enable
     winssps_passive = []
 
-    def __getattribute__(self, attr):
-        # type: (str) -> Any
+    def __getattribute__(self, attr: str) -> Any:
         # Those are loaded on runtime to avoid import loops
         if attr == "manufdb":
             from scapy.data import MANUFDB
@@ -1154,21 +1085,19 @@ if not Conf.ipv6_enabled:
         if m in Conf.load_layers:
             Conf.load_layers.remove(m)
 
-conf = Conf()  # type: Conf
+conf: Conf = Conf()
 
 # Python 3.8 Only
 if sys.version_info >= (3, 8):
     conf.exts.load()
 
 
-def crypto_validator(func):
-    # type: (DecoratorCallable) -> DecoratorCallable
+def crypto_validator(func: DecoratorCallable) -> DecoratorCallable:
     """
     This a decorator to be used for any method relying on the cryptography library.  # noqa: E501
     Its behaviour depends on the 'crypto_valid' attribute of the global 'conf'.
     """
-    def func_in(*args, **kwargs):
-        # type: (*Any, **Any) -> Any
+    def func_in(*args: Any, **kwargs: Any) -> Any:
         if not conf.crypto_valid:
             raise ImportError("Cannot execute crypto-related method! "
                               "Please install python-cryptography v1.7 or later.")  # noqa: E501
@@ -1176,8 +1105,7 @@ def crypto_validator(func):
     return func_in
 
 
-def scapy_delete_temp_files():
-    # type: () -> None
+def scapy_delete_temp_files() -> None:
     for f in conf.temp_files:
         try:
             os.unlink(f)

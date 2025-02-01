@@ -12,6 +12,7 @@ IPv6 (Internet Protocol v6).
 """
 
 
+from __future__ import annotations
 from hashlib import md5
 import random
 import socket
@@ -146,8 +147,7 @@ def neighsol(addr, src, iface, timeout=1, chainCC=0):
 
 
 @conf.commands.register
-def getmacbyip6(ip6, chainCC=0):
-    # type: (str, int) -> Optional[str]
+def getmacbyip6(ip6: str, chainCC: int = 0) -> Optional[str]:
     """
     Returns the MAC address of the next hop used to reach a given IPv6 address.
 
@@ -611,8 +611,7 @@ class PseudoIPv6(Packet):  # IPv6 Pseudo-header for checksum computation
                    ByteField("nh", 0)]
 
 
-def in6_pseudoheader(nh, u, plen):
-    # type: (int, IP, int) -> PseudoIPv6
+def in6_pseudoheader(nh: int, u: IP, plen: int) -> PseudoIPv6:
     """
     Build an PseudoIPv6 instance as specified in RFC 2460 8.1
 

@@ -8,6 +8,8 @@
 # scapy.contrib.description = Diagnostic over IP (DoIP) / ISO 13400
 # scapy.contrib.status = loads
 
+from __future__ import annotations
+
 import socket
 import ssl
 import struct
@@ -221,8 +223,7 @@ class DoIP(Packet):
                          lambda p: p.payload_type in [0x8002, 0x8003])
     ]
 
-    def answers(self, other):
-        # type: (Packet) -> int
+    def answers(self, other: Packet) -> int:
         """DEV: true if self is an answer from other"""
         if isinstance(other, type(self)):
             if self.payload_type == 0:
@@ -237,12 +238,10 @@ class DoIP(Packet):
                 return 1
         return 0
 
-    def hashret(self):
-        # type: () -> bytes
+    def hashret(self) -> bytes:
         return bytes(self)[:3]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         """
         This will set the Field 'payload_length' to the correct value.
         """
@@ -251,16 +250,14 @@ class DoIP(Packet):
                 "!I", len(pay) + len(pkt) - 8) + pkt[8:]
         return pkt + pay
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, Optional[bytes]]:
         if self.payload_type == 0x8001:
             return s[:self.payload_length - 4], s[self.payload_length - 4:]
         else:
             return b"", s
 
     @classmethod
-    def tcp_reassemble(cls, data, metadata, session):
-        # type: (bytes, Dict[str, Any], Dict[str, Any]) -> Optional[Packet]
+    def tcp_reassemble(cls, data: bytes, metadata: Dict[str, Any], session: Dict[str, Any]) -> Optional[Packet]:
         length = struct.unpack("!I", data[4:8])[0] + 8
         if len(data) >= length:
             return DoIP(data)
@@ -281,13 +278,11 @@ class DoIPSSLStreamSocket(SSLStreamSocket):
     """Custom SSLStreamSocket for DoIP communication.
     """
 
-    def __init__(self, sock, basecls=None):
-        # type: (socket.socket, Optional[Type[Packet]]) -> None
+    def __init__(self, sock: socket.socket, basecls: Optional[Type[Packet]] = None) -> None:
         super(DoIPSSLStreamSocket, self).__init__(sock, basecls or DoIP)
         self.buffer = b""
 
-    def recv(self, x=MTU, **kwargs):
-        # type: (Optional[int], **Any) -> Optional[Packet]
+    def recv(self, x: Optional[int] = MTU, **kwargs: Any) -> Optional[Packet]:
         if len(self.buffer) < 8:
             self.buffer += self.ins.recv(8)
         if len(self.buffer) < 8:
@@ -303,7 +298,7 @@ class DoIPSSLStreamSocket(SSLStreamSocket):
         pktbuf = self.buffer[:len_int]
         self.buffer = self.buffer[len_int:]
 
-        pkt = self.basecls(pktbuf, **kwargs)  # type: Packet
+        pkt: Packet = self.basecls(pktbuf, **kwargs)
         return pkt
 
 
@@ -336,17 +331,17 @@ class DoIPSocket(DoIPSSLStreamSocket):
     """  # noqa: E501
 
     def __init__(self,
-                 ip='127.0.0.1',  # type: str
-                 port=13400,  # type: int
-                 tls_port=3496,  # type: int
-                 activate_routing=True,  # type: bool
-                 source_address=0xe80,  # type: int
-                 target_address=0,  # type: int
-                 activation_type=0,  # type: int
-                 reserved_oem=b"",  # type: bytes
-                 force_tls=False,  # type: bool
-                 context=None  # type: Optional[ssl.SSLContext]
-                 ):  # type: (...) -> None
+                 ip: str = '127.0.0.1',
+                 port: int = 13400,
+                 tls_port: int = 3496,
+                 activate_routing: bool = True,
+                 source_address: int = 0xe80,
+                 target_address: int = 0,
+                 activation_type: int = 0,
+                 reserved_oem: bytes = b"",
+                 force_tls: bool = False,
+                 context: Optional[ssl.SSLContext] = None
+                 ) -> None:
         self.ip = ip
         self.port = port
         self.tls_port = tls_port
@@ -363,8 +358,7 @@ class DoIPSocket(DoIPSSLStreamSocket):
             self.close()
             raise
 
-    def _init_socket(self):
-        # type: () -> None
+    def _init_socket(self) -> None:
         connected = False
         addrinfo = socket.getaddrinfo(self.ip, self.port, proto=socket.IPPROTO_TCP)
         sock_family = addrinfo[0][0]
@@ -427,7 +421,7 @@ class DoIPSocket(DoIPSSLStreamSocket):
                 "DoIPSocket activate_routing failed with "
                 "routing_activation_response 0x%x!" % activation_return)
 
-    def _activate_routing(self):  # type: (...) -> int
+    def _activate_routing(self) -> int:
         resp = self.sr1(
             DoIP(payload_type=0x5, activation_type=self.activation_type,
                  source_address=self.source_address, reserved_oem=self.reserved_oem),
@@ -460,8 +454,7 @@ class UDS_DoIPSocket(DoIPSocket):
         >>> resp = socket.sr1(pkt, timeout=1)
     """
 
-    def send(self, x):
-        # type: (Union[Packet, bytes]) -> int
+    def send(self, x: Union[Packet, bytes]) -> int:
         if isinstance(x, UDS):
             pkt = DoIP(payload_type=0x8001,
                        source_address=self.source_address,
@@ -477,8 +470,7 @@ class UDS_DoIPSocket(DoIPSocket):
 
         return super().send(pkt)
 
-    def recv(self, x=MTU, **kwargs):
-        # type: (Optional[int], **Any) -> Optional[Packet]
+    def recv(self, x: Optional[int] = MTU, **kwargs: Any) -> Optional[Packet]:
         pkt = super().recv(x, **kwargs)
         if pkt and pkt.payload_type == 0x8001:
             return pkt.payload

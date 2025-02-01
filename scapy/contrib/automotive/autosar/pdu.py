@@ -7,6 +7,7 @@
 
 # scapy.contrib.description = AUTOSAR PDU packets handling package.
 # scapy.contrib.status = loads
+from __future__ import annotations
 from typing import Tuple, Optional
 from scapy.layers.inet import UDP
 from scapy.fields import XIntField, PacketListField, LenField
@@ -28,8 +29,7 @@ class PDU(Packet):
         XIntField('pdu_id', 0),
         LenField('pdu_payload_len', None, fmt="I")]
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, Optional[bytes]]:
         return s[:self.pdu_payload_len], s[self.pdu_payload_len:]
 
 

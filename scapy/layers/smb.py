@@ -17,6 +17,8 @@ Specs:
 - [MS-SMB] (extension of CIFS - SMB v1)
 """
 
+from __future__ import annotations
+
 import struct
 
 from scapy.config import conf
@@ -203,8 +205,7 @@ class SMB_Header(Packet):
         LEShortField("MID", 0),
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (bytes) -> Packet
+    def guess_payload_class(self, payload: bytes) -> Packet:
         if not payload:
             return super(SMB_Header, self).guess_payload_class(payload)
         WordCount = ord(payload[:1])
@@ -771,8 +772,7 @@ class SMBTransaction_Request(_NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,
@@ -863,8 +863,7 @@ class SMBTransaction_Response(_NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NTLM_post_build(
                 self,

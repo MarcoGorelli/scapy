@@ -8,6 +8,8 @@ Main module for interactive startup.
 """
 
 
+from __future__ import annotations
+
 import builtins
 import pathlib
 import sys
@@ -65,8 +67,7 @@ QUOTES = [
 ]
 
 
-def _probe_xdg_folder(var, default, *cf):
-    # type: (str, str, *str) -> Optional[pathlib.Path]
+def _probe_xdg_folder(var: str, default: str, *cf: str) -> Optional[pathlib.Path]:
     path = pathlib.Path(os.environ.get(var, default))
     if not path.exists():
         # ~ folder doesn't exist. Create according to spec
@@ -82,8 +83,7 @@ def _probe_xdg_folder(var, default, *cf):
     return path.joinpath(*cf).resolve()
 
 
-def _probe_config_folder(*cf):
-    # type: (str) -> Optional[pathlib.Path]
+def _probe_config_folder(*cf: str) -> Optional[pathlib.Path]:
     return _probe_xdg_folder(
         "XDG_CONFIG_HOME",
         os.path.join(os.path.expanduser("~"), ".config"),
@@ -91,8 +91,7 @@ def _probe_config_folder(*cf):
     )
 
 
-def _probe_cache_folder(*cf):
-    # type: (str) -> Optional[pathlib.Path]
+def _probe_cache_folder(*cf: str) -> Optional[pathlib.Path]:
     return _probe_xdg_folder(
         "XDG_CACHE_HOME",
         os.path.join(os.path.expanduser("~"), ".cache"),
@@ -100,9 +99,8 @@ def _probe_cache_folder(*cf):
     )
 
 
-def _read_config_file(cf, _globals=globals(), _locals=locals(),
-                      interactive=True, default=None):
-    # type: (str, Dict[str, Any], Dict[str, Any], bool, Optional[str]) -> None
+def _read_config_file(cf: str, _globals: Dict[str, Any] = globals(), _locals: Dict[str, Any] = locals(),
+                      interactive: bool = True, default: Optional[str] = None) -> None:
     """Read a config file: execute a python file while loading scapy, that
     may contain some pre-configured values.
 
@@ -189,8 +187,7 @@ def _read_config_file(cf, _globals=globals(), _locals=locals(),
                               cf)
 
 
-def _validate_local(k):
-    # type: (str) -> bool
+def _validate_local(k: str) -> bool:
     """Returns whether or not a variable should be imported."""
     return k[0] != "_" and k not in ["range", "map"]
 
@@ -227,8 +224,7 @@ conf.color_theme = DefaultTheme()
 """.strip()
 
 
-def _usage():
-    # type: () -> None
+def _usage() -> None:
     print(
         "Usage: scapy.py [-s sessionfile] [-c new_startup_file] "
         "[-p new_prestart_file] [-C] [-P] [-H]\n"
@@ -245,8 +241,7 @@ def _usage():
 ######################
 
 
-def _load(module, globals_dict=None, symb_list=None):
-    # type: (str, Optional[Dict[str, Any]], Optional[List[str]]) -> None
+def _load(module: str, globals_dict: Optional[Dict[str, Any]] = None, symb_list: Optional[List[str]] = None) -> None:
     """Loads a Python module to make variables, objects and functions
 available globally.
 
@@ -275,8 +270,7 @@ symbols to the global symbol table.
         log_interactive.error("Loading module %s", module, exc_info=True)
 
 
-def load_module(name, globals_dict=None, symb_list=None):
-    # type: (str, Optional[Dict[str, Any]], Optional[List[str]]) -> None
+def load_module(name: str, globals_dict: Optional[Dict[str, Any]] = None, symb_list: Optional[List[str]] = None) -> None:
     """Loads a Scapy module to make variables, objects and functions
     available globally.
 
@@ -285,8 +279,7 @@ def load_module(name, globals_dict=None, symb_list=None):
           globals_dict=globals_dict, symb_list=symb_list)
 
 
-def load_layer(name, globals_dict=None, symb_list=None):
-    # type: (str, Optional[Dict[str, Any]], Optional[List[str]]) -> None
+def load_layer(name: str, globals_dict: Optional[Dict[str, Any]] = None, symb_list: Optional[List[str]] = None) -> None:
     """Loads a Scapy layer module to make variables, objects and functions
     available globally.
 
@@ -295,8 +288,7 @@ def load_layer(name, globals_dict=None, symb_list=None):
           globals_dict=globals_dict, symb_list=symb_list)
 
 
-def load_contrib(name, globals_dict=None, symb_list=None):
-    # type: (str, Optional[Dict[str, Any]], Optional[List[str]]) -> None
+def load_contrib(name: str, globals_dict: Optional[Dict[str, Any]] = None, symb_list: Optional[List[str]] = None) -> None:
     """Loads a Scapy contrib module to make variables, objects and
     functions available globally.
 
@@ -317,11 +309,10 @@ def load_contrib(name, globals_dict=None, symb_list=None):
             raise e  # Let's raise the original error to avoid confusion
 
 
-def list_contrib(name=None,  # type: Optional[str]
-                 ret=False,  # type: bool
-                 _debug=False  # type: bool
-                 ):
-    # type: (...) -> Optional[List[Dict[str, str]]]
+def list_contrib(name: Optional[str] = None,
+                 ret: bool = False,
+                 _debug: bool = False
+                 ) -> Optional[List[Dict[str, str]]]:
     """Show the list of all existing contribs.
 
     :param name: filter to search the contribs
@@ -340,7 +331,7 @@ def list_contrib(name=None,  # type: Optional[str]
         name = "*.py"
     elif "*" not in name and "?" not in name and not name.endswith(".py"):
         name += ".py"
-    results = []  # type: List[Dict[str, str]]
+    results: List[Dict[str, str]] = []
     dir_path = os.path.join(os.path.dirname(__file__), "contrib")
     if sys.version_info >= (3, 5):
         name = os.path.join(dir_path, "**", name)
@@ -390,8 +381,7 @@ def list_contrib(name=None,  # type: Optional[str]
 #  Session saving/restoring  #
 ##############################
 
-def update_ipython_session(session):
-    # type: (Dict[str, Any]) -> None
+def update_ipython_session(session: Dict[str, Any]) -> None:
     """Updates IPython session with a custom one"""
     if "_oh" not in session:
         session["_oh"] = session["Out"] = {}
@@ -403,8 +393,7 @@ def update_ipython_session(session):
         pass
 
 
-def _scapy_prestart_builtins():
-    # type: () -> Dict[str, Any]
+def _scapy_prestart_builtins() -> Dict[str, Any]:
     """Load Scapy prestart and return all builtins"""
     return {
         k: v
@@ -413,8 +402,7 @@ def _scapy_prestart_builtins():
     }
 
 
-def _scapy_builtins():
-    # type: () -> Dict[str, Any]
+def _scapy_builtins() -> Dict[str, Any]:
     """Load Scapy and return all builtins"""
     return {
         k: v
@@ -423,8 +411,7 @@ def _scapy_builtins():
     }
 
 
-def _scapy_exts():
-    # type: () -> Dict[str, Any]
+def _scapy_exts() -> Dict[str, Any]:
     """Load Scapy exts and return their builtins"""
     from scapy.config import conf
     res = {}
@@ -439,8 +426,7 @@ def _scapy_exts():
     return res
 
 
-def save_session(fname="", session=None, pickleProto=-1):
-    # type: (str, Optional[Dict[str, Any]], int) -> None
+def save_session(fname: str = "", session: Optional[Dict[str, Any]] = None, pickleProto: int = -1) -> None:
     """Save current Scapy session to the file specified in the fname arg.
 
     params:
@@ -500,8 +486,7 @@ def save_session(fname="", session=None, pickleProto=-1):
     f.close()
 
 
-def load_session(fname=None):
-    # type: (Optional[Union[str, None]]) -> None
+def load_session(fname: Optional[Union[str, None]] = None) -> None:
     """Load current Scapy session from the file specified in the fname arg.
     This will erase any existing session.
 
@@ -528,8 +513,7 @@ def load_session(fname=None):
     log_loading.info("Loaded session [%s]", fname)
 
 
-def update_session(fname=None):
-    # type: (Optional[Union[str, None]]) -> None
+def update_session(fname: Optional[Union[str, None]] = None) -> None:
     """Update current Scapy session from the file specified in the fname arg.
 
     params:
@@ -547,30 +531,27 @@ def update_session(fname=None):
 
 
 @overload
-def init_session(session_name,  # type: Optional[Union[str, None]]
-                 mydict,  # type: Optional[Union[Dict[str, Any], None]]
-                 ret,  # type: Literal[True]
-                 ):
-    # type: (...) -> Dict[str, Any]
+def init_session(session_name: Optional[Union[str, None]],
+                 mydict: Optional[Union[Dict[str, Any], None]],
+                 ret: Literal[True],
+                 ) -> Dict[str, Any]:
     pass
 
 
 @overload
-def init_session(session_name,  # type: Optional[Union[str, None]]
-                 mydict=None,  # type: Optional[Union[Dict[str, Any], None]]
-                 ret=False,  # type: Literal[False]
-                 ):
-    # type: (...) -> None
+def init_session(session_name: Optional[Union[str, None]],
+                 mydict: Optional[Union[Dict[str, Any], None]] = None,
+                 ret: Literal[False] = False,
+                 ) -> None:
     pass
 
 
-def init_session(session_name,  # type: Optional[Union[str, None]]
-                 mydict=None,  # type: Optional[Union[Dict[str, Any], None]]
-                 ret=False,  # type: bool
-                 ):
-    # type: (...) -> Union[Dict[str, Any], None]
+def init_session(session_name: Optional[Union[str, None]],
+                 mydict: Optional[Union[Dict[str, Any], None]] = None,
+                 ret: bool = False,
+                 ) -> Union[Dict[str, Any], None]:
     from scapy.config import conf
-    SESSION = {}  # type: Optional[Dict[str, Any]]
+    SESSION: Optional[Dict[str, Any]] = {}
 
     # Load Scapy
     scapy_builtins = _scapy_builtins()
@@ -628,8 +609,7 @@ def init_session(session_name,  # type: Optional[Union[str, None]]
 ################
 
 
-def _prepare_quote(quote, author, max_len=78):
-    # type: (str, str, int) -> List[str]
+def _prepare_quote(quote: str, author: str, max_len: int = 78) -> List[str]:
     """This function processes a quote and returns a string that is ready
 to be used in the fancy banner.
 
@@ -637,10 +617,9 @@ to be used in the fancy banner.
     _quote = quote.split(' ')
     max_len -= 6
     lines = []
-    cur_line = []  # type: List[str]
+    cur_line: List[str] = []
 
-    def _len(line):
-        # type: (List[str]) -> int
+    def _len(line: List[str]) -> int:
         return sum(len(elt) for elt in line) + len(line) - 1
     while _quote:
         if not cur_line or (_len(cur_line) + len(_quote[0]) - 1 <= max_len):
@@ -733,8 +712,7 @@ def get_fancy_banner(mini: Optional[bool] = None) -> str:
     )
 
 
-def interact(mydict=None, argv=None, mybanner=None, loglevel=logging.INFO):
-    # type: (Optional[Any], Optional[Any], Optional[Any], int) -> None
+def interact(mydict: Optional[Any] = None, argv: Optional[Any] = None, mybanner: Optional[Any] = None, loglevel: int = logging.INFO) -> None:
     """
     Starts Scapy's console.
     """
@@ -891,8 +869,7 @@ def interact(mydict=None, argv=None, mybanner=None, loglevel=logging.INFO):
         )
 
     # ptpython configure function
-    def ptpython_configure(repl):
-        # type: (Any) -> None
+    def ptpython_configure(repl: Any) -> None:
         # Hide status bar
         repl.show_status_bar = False
         # Complete while typing (versus only when pressing tab)

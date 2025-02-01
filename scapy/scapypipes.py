@@ -3,6 +3,7 @@
 # See https://scapy.net/ for more information
 # Copyright (C) Philippe Biondi <phil@secdev.org>
 
+from __future__ import annotations
 from queue import Queue, Empty
 import socket
 import subprocess
@@ -47,12 +48,11 @@ class SniffSource(Source):
     """
 
     def __init__(self,
-                 iface=None,  # type: Optional[str]
-                 filter=None,  # type: Optional[Any]
-                 socket=None,  # type: Optional[SuperSocket]
-                 name=None,  # type: Optional[Any]
-                 ):
-        # type: (...) -> None
+                 iface: Optional[str] = None,
+                 filter: Optional[Any] = None,
+                 socket: Optional[SuperSocket] = None,
+                 name: Optional[Any] = None,
+                 ) -> None:
         Source.__init__(self, name=name)
 
         if (iface or filter) and socket:
@@ -63,22 +63,18 @@ class SniffSource(Source):
         self.iface = iface
         self.filter = filter
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         if not self.s:
             self.s = conf.L2listen(iface=self.iface, filter=self.filter)
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         if self.s:
             self.s.close()
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return self.s.fileno()
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         try:
             pkt = self.s.recv()
             if pkt is not None:
@@ -99,27 +95,22 @@ class RdpcapSource(Source):
          +----------+
     """
 
-    def __init__(self, fname, name=None):
-        # type: (str, Optional[Any]) -> None
+    def __init__(self, fname: str, name: Optional[Any] = None) -> None:
         Source.__init__(self, name=name)
         self.fname = fname
         self.f = PcapReader(self.fname)
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.f = PcapReader(self.fname)
         self.is_exhausted = False
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         self.f.close()
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return self.f.fileno()
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         try:
             p = self.f.recv()
             self._send(p)
@@ -139,29 +130,24 @@ class InjectSink(Sink):
          +-----------+
     """
 
-    def __init__(self, iface=None, name=None):
-        # type: (Optional[_GlobInterfaceType], Optional[str]) -> None
+    def __init__(self, iface: Optional[_GlobInterfaceType] = None, name: Optional[str] = None) -> None:
         Sink.__init__(self, name=name)
         if iface is None:
             iface = conf.iface
         self.iface = iface
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.s = conf.L2socket(iface=self.iface)
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         self.s.close()
 
-    def push(self, msg):
-        # type: (Packet) -> None
+    def push(self, msg: Packet) -> None:
         self.s.send(msg)
 
 
 class Inject3Sink(InjectSink):
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.s = conf.L3socket(iface=self.iface)
 
 
@@ -203,26 +189,22 @@ class WrpcapSink(Sink):
         This attribute has no effect after calling :py:meth:`PipeEngine.start`.
     """
 
-    def __init__(self, fname, name=None, linktype=None, **kwargs):
-        # type: (str, Optional[str], Optional[int], **Any) -> None
+    def __init__(self, fname: str, name: Optional[str] = None, linktype: Optional[int] = None, **kwargs: Any) -> None:
         Sink.__init__(self, name=name)
         self.fname = fname
-        self.f = None  # type: Optional[PcapWriter]
+        self.f: Optional[PcapWriter] = None
         self.linktype = linktype
         self.kwargs = kwargs
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.f = PcapWriter(self.fname, linktype=self.linktype, **self.kwargs)
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         if self.f:
             self.f.flush()
             self.f.close()
 
-    def push(self, msg):
-        # type: (Packet) -> None
+    def push(self, msg: Packet) -> None:
         if msg and self.f:
             self.f.write(msg)
 
@@ -264,13 +246,11 @@ class WiresharkSink(WrpcapSink):
         See :manpage:`wireshark(1)` for more details.
     """
 
-    def __init__(self, name=None, linktype=None, args=None):
-        # type: (Optional[Any], Optional[int], Optional[List[str]]) -> None
+    def __init__(self, name: Optional[Any] = None, linktype: Optional[int] = None, args: Optional[List[str]] = None) -> None:
         WrpcapSink.__init__(self, fname="", name=name, linktype=linktype)
         self.args = args
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         # Wireshark must be running first, because PcapWriter will block until
         # data has been read!
         with ContextManagerSubprocess(conf.prog.wireshark):
@@ -301,21 +281,18 @@ class UDPDrain(Drain):
          +-------------+
     """
 
-    def __init__(self, ip="127.0.0.1", port=1234):
-        # type: (str, int) -> None
+    def __init__(self, ip: str = "127.0.0.1", port: int = 1234) -> None:
         Drain.__init__(self)
         self.ip = ip
         self.port = port
 
-    def push(self, msg):
-        # type: (Packet) -> None
+    def push(self, msg: Packet) -> None:
         from scapy.layers.inet import IP, UDP
         if IP in msg and msg[IP].proto == 17 and UDP in msg:
             payload = msg[UDP].payload
             self._high_send(raw(payload))
 
-    def high_push(self, msg):
-        # type: (Packet) -> None
+    def high_push(self, msg: Packet) -> None:
         from scapy.layers.inet import IP, UDP
         p = IP(dst=self.ip) / UDP(sport=1234, dport=self.port) / msg
         self._send(p)
@@ -333,21 +310,17 @@ class FDSourceSink(Source):
          +-------------+
     """
 
-    def __init__(self, fd, name=None):
-        # type: (ObjectPipe[Any], Optional[Any]) -> None
+    def __init__(self, fd: ObjectPipe[Any], name: Optional[Any] = None) -> None:
         Source.__init__(self, name=name)
         self.fd = fd
 
-    def push(self, msg):
-        # type: (str) -> None
+    def push(self, msg: str) -> None:
         self.fd.write(msg)
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return self.fd.fileno()
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         self._send(self.fd.read())
 
 
@@ -364,33 +337,27 @@ class TCPConnectPipe(Source):
     """
     __selectable_force_select__ = True
 
-    def __init__(self, addr="", port=0, name=None):
-        # type: (str, int, Optional[str]) -> None
+    def __init__(self, addr: str = "", port: int = 0, name: Optional[str] = None) -> None:
         Source.__init__(self, name=name)
         self.addr = addr
         self.port = port
         self.fd = cast(socket.socket, None)
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.fd = socket.socket()
         self.fd.connect((self.addr, self.port))
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         if self.fd:
             self.fd.close()
 
-    def push(self, msg):
-        # type: (bytes) -> None
+    def push(self, msg: bytes) -> None:
         self.fd.send(msg)
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return self.fd.fileno()
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         try:
             msg = self.fd.recv(65536)
         except socket.error:
@@ -414,29 +381,25 @@ class TCPListenPipe(TCPConnectPipe):
     """
     __selectable_force_select__ = True
 
-    def __init__(self, addr="", port=0, name=None):
-        # type: (str, int, Optional[str]) -> None
+    def __init__(self, addr: str = "", port: int = 0, name: Optional[str] = None) -> None:
         TCPConnectPipe.__init__(self, addr, port, name)
         self.connected = False
         self.q: Queue[Any] = Queue()
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.connected = False
         self.fd = socket.socket()
         self.fd.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.fd.bind((self.addr, self.port))
         self.fd.listen(1)
 
-    def push(self, msg):
-        # type: (bytes) -> None
+    def push(self, msg: bytes) -> None:
         if self.connected:
             self.fd.send(msg)
         else:
             self.q.put(msg)
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         if self.connected:
             try:
                 msg = self.fd.recv(65536)
@@ -472,23 +435,19 @@ class UDPClientPipe(TCPConnectPipe):
          +-------------+
     """
 
-    def __init__(self, addr="", port=0, name=None):
-        # type: (str, int, Optional[str]) -> None
+    def __init__(self, addr: str = "", port: int = 0, name: Optional[str] = None) -> None:
         TCPConnectPipe.__init__(self, addr, port, name)
         self.connected = False
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.fd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.fd.connect((self.addr, self.port))
         self.connected = True
 
-    def push(self, msg):
-        # type: (bytes) -> None
+    def push(self, msg: bytes) -> None:
         self.fd.send(msg)
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         if not self.connected:
             return
         try:
@@ -513,25 +472,21 @@ class UDPServerPipe(TCPListenPipe):
          +-------------+
     """
 
-    def __init__(self, addr="", port=0, name=None):
-        # type: (str, int, Optional[str]) -> None
+    def __init__(self, addr: str = "", port: int = 0, name: Optional[str] = None) -> None:
         TCPListenPipe.__init__(self, addr, port, name)
-        self._destination = None  # type: Any
+        self._destination: Any = None
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.fd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.fd.bind((self.addr, self.port))
 
-    def push(self, msg):
-        # type: (bytes) -> None
+    def push(self, msg: bytes) -> None:
         if self._destination:
             self.fd.sendto(msg, self._destination)
         else:
             self.q.put(msg)
 
-    def deliver(self):
-        # type: () -> None
+    def deliver(self) -> None:
         if self._destination:
             try:
                 msg = self.fd.recv(65536)
@@ -567,13 +522,11 @@ class TriggeredMessage(Drain):
          +------^------+
     """
 
-    def __init__(self, msg, name=None):
-        # type: (str, Optional[Any]) -> None
+    def __init__(self, msg: str, name: Optional[Any] = None) -> None:
         Drain.__init__(self, name=name)
         self.msg = msg
 
-    def on_trigger(self, trigmsg):
-        # type: (bool) -> None
+    def on_trigger(self, trigmsg: bool) -> None:
         self._send(self.msg)
         self._high_send(self.msg)
         self._trigger(trigmsg)
@@ -591,20 +544,17 @@ class TriggerDrain(Drain):
          +-------------+
     """
 
-    def __init__(self, f, name=None):
-        # type: (Callable[..., None], Optional[str]) -> None
+    def __init__(self, f: Callable[..., None], name: Optional[str] = None) -> None:
         Drain.__init__(self, name=name)
         self.f = f
 
-    def push(self, msg):
-        # type: (str) -> None
+    def push(self, msg: str) -> None:
         v = self.f(msg)
         if v:
             self._trigger(v)
         self._send(msg)
 
-    def high_push(self, msg):
-        # type: (str) -> None
+    def high_push(self, msg: str) -> None:
         v = self.f(msg)
         if v:
             self._trigger(v)
@@ -623,23 +573,19 @@ class TriggeredValve(Drain):
          +------^------+
     """
 
-    def __init__(self, start_state=True, name=None):
-        # type: (bool, Optional[Any]) -> None
+    def __init__(self, start_state: bool = True, name: Optional[Any] = None) -> None:
         Drain.__init__(self, name=name)
         self.opened = start_state
 
-    def push(self, msg):
-        # type: (str) -> None
+    def push(self, msg: str) -> None:
         if self.opened:
             self._send(msg)
 
-    def high_push(self, msg):
-        # type: (str) -> None
+    def high_push(self, msg: str) -> None:
         if self.opened:
             self._high_send(msg)
 
-    def on_trigger(self, msg):
-        # type: (bool) -> None
+    def on_trigger(self, msg: bool) -> None:
         self.opened ^= True
         self._trigger(msg)
 
@@ -656,32 +602,27 @@ class TriggeredQueueingValve(Drain):
          +------^-------+
     """
 
-    def __init__(self, start_state=True, name=None):
-        # type: (bool, Optional[Any]) -> None
+    def __init__(self, start_state: bool = True, name: Optional[Any] = None) -> None:
         Drain.__init__(self, name=name)
         self.opened = start_state
         self.q: Queue[Any] = Queue()
 
-    def start(self):
-        # type: () -> None
+    def start(self) -> None:
         self.q = Queue()
 
-    def push(self, msg):
-        # type: (str) -> None
+    def push(self, msg: str) -> None:
         if self.opened:
             self._send(msg)
         else:
             self.q.put((True, msg))
 
-    def high_push(self, msg):
-        # type: (str) -> None
+    def high_push(self, msg: str) -> None:
         if self.opened:
             self._send(msg)
         else:
             self.q.put((False, msg))
 
-    def on_trigger(self, msg):
-        # type: (bool) -> None
+    def on_trigger(self, msg: bool) -> None:
         self.opened ^= True
         self._trigger(msg)
         while True:
@@ -708,20 +649,17 @@ class TriggeredSwitch(Drain):
          +------^------+
     """
 
-    def __init__(self, start_state=True, name=None):
-        # type: (bool, Optional[Any]) -> None
+    def __init__(self, start_state: bool = True, name: Optional[Any] = None) -> None:
         Drain.__init__(self, name=name)
         self.low = start_state
 
-    def push(self, msg):
-        # type: (str) -> None
+    def push(self, msg: str) -> None:
         if self.low:
             self._send(msg)
         else:
             self._high_send(msg)
     high_push = push
 
-    def on_trigger(self, msg):
-        # type: (bool) -> None
+    def on_trigger(self, msg: bool) -> None:
         self.low ^= True
         self._trigger(msg)

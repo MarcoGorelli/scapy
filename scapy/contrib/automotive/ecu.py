@@ -6,6 +6,8 @@
 # scapy.contrib.description = Helper class for tracking Ecu states (Ecu)
 # scapy.contrib.status = loads
 
+from __future__ import annotations
+
 import time
 import random
 import copy
@@ -50,16 +52,14 @@ class EcuState(object):
     """
     __slots__ = ["__dict__", "__cache__"]
 
-    def __init__(self, **kwargs):
-        # type: (Any) -> None
-        self.__cache__ = None  # type: Optional[Tuple[List[EcuState], List[Any]]]  # noqa: E501
+    def __init__(self, **kwargs: Any) -> None:
+        self.__cache__: Optional[Tuple[List[EcuState], List[Any]]] = None  # noqa: E501
         for k, v in kwargs.items():
             if isinstance(v, GeneratorType):
                 v = list(v)
             self.__setitem__(k, v)
 
-    def _expand(self):
-        # type: () -> List[EcuState]
+    def _expand(self) -> List[EcuState]:
         values = list(self.__dict__.values())
         keys = list(self.__dict__.keys())
         if self.__cache__ is None or self.__cache__[1] != values:
@@ -75,8 +75,7 @@ class EcuState(object):
         return self.__cache__[0]
 
     @staticmethod
-    def _flatten(x):
-        # type: (Any) -> List[Any]
+    def _flatten(x: Any) -> List[Any]:
         if isinstance(x, (str, bytes)):
             return [x]
         elif hasattr(x, "__iter__") and hasattr(x, "__len__") and len(x) == 1:
@@ -91,31 +90,25 @@ class EcuState(object):
                 flattened += [y]
         return flattened
 
-    def __delitem__(self, key):
-        # type: (str) -> None
+    def __delitem__(self, key: str) -> None:
         self.__cache__ = None
         del self.__dict__[key]
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self.__dict__.keys())
 
-    def __getitem__(self, item):
-        # type: (str) -> Any
+    def __getitem__(self, item: str) -> Any:
         return self.__dict__[item]
 
-    def __setitem__(self, key, value):
-        # type: (str, Any) -> None
+    def __setitem__(self, key: str, value: Any) -> None:
         self.__cache__ = None
         self.__dict__[key] = value
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "".join(str(k) + str(v) for k, v in
                        sorted(self.__dict__.items(), key=lambda t: t[0]))
 
-    def __eq__(self, other):
-        # type: (object) -> bool
+    def __eq__(self, other: object) -> bool:
         other = cast(EcuState, other)
         if len(self.__dict__) != len(other.__dict__):
             return False
@@ -125,18 +118,15 @@ class EcuState(object):
         except KeyError:
             return False
 
-    def __contains__(self, item):
-        # type: (EcuState) -> bool
+    def __contains__(self, item: EcuState) -> bool:
         if not isinstance(item, EcuState):
             return False
         return all(s in self._expand() for s in item._expand())
 
-    def __ne__(self, other):
-        # type: (object) -> bool
+    def __ne__(self, other: object) -> bool:
         return not other == self
 
-    def __lt__(self, other):
-        # type: (EcuState) -> bool
+    def __lt__(self, other: EcuState) -> bool:
         if self == other:
             return False
 
@@ -174,26 +164,23 @@ class EcuState(object):
         raise TypeError("EcuStates should be identical. Something bad happen. "
                         "self: %s other: %s" % (self.__dict__, other.__dict__))
 
-    def __hash__(self):
-        # type: () -> int
+    def __hash__(self) -> int:
         return hash(repr(self))
 
-    def reset(self):
-        # type: () -> None
+    def reset(self) -> None:
         self.__cache__ = None
         keys = list(self.__dict__.keys())
         for k in keys:
             del self.__dict__[k]
 
-    def command(self):
-        # type: () -> str
+    def command(self) -> str:
         return "EcuState(" + ", ".join(
             ["%s=%s" % (k, repr(v)) for k, v in sorted(
                 self.__dict__.items(), key=lambda t: t[0])]) + ")"
 
     @staticmethod
-    def extend_pkt_with_modifier(cls):
-        # type: (Type[Packet]) -> Callable[[Callable[[Packet, Packet, EcuState], None]], None]  # noqa: E501
+    def extend_pkt_with_modifier(cls: Type[Packet]) -> Callable[[Callable[[Packet, Packet, EcuState], None]], None]:
+        # noqa: E501
         """
         Decorator to add a function as 'modify_ecu_state' method to a given
         class. This allows dynamic modifications and additions to a protocol.
@@ -207,15 +194,13 @@ class EcuState(object):
             raise Scapy_Exception(
                 "Class already extended. Can't override existing method.")
 
-        def decorator_function(f):
-            # type: (Callable[[Packet, Packet, EcuState], None]) -> None
+        def decorator_function(f: Callable[[Packet, Packet, EcuState], None]) -> None:
             setattr(cls, "modify_ecu_state", f)
 
         return decorator_function
 
     @staticmethod
-    def is_modifier_pkt(pkt):
-        # type: (Packet) -> bool
+    def is_modifier_pkt(pkt: Packet) -> bool:
         """
         Helper function to determine if a Packet contains a layer that
         modifies the EcuState.
@@ -226,8 +211,7 @@ class EcuState(object):
                    for layer in pkt.layers())
 
     @staticmethod
-    def get_modified_ecu_state(response, request, state, modify_in_place=False):  # noqa: E501
-        # type: (Packet, Packet, EcuState, bool) -> EcuState
+    def get_modified_ecu_state(response: Packet, request: Packet, state: EcuState, modify_in_place: bool = False) -> EcuState:  # noqa: E501
         """
         Helper function to get a modified EcuState from a Packet and a
         previous EcuState. An EcuState is always modified after a response
@@ -285,27 +269,24 @@ class Ecu(object):
     :param store_supported_responses: Create a list of supported responses if True.
     :param lookahead: Configuration for lookahead when computing supported responses
     """    # noqa: E501
-    def __init__(self, logging=True, verbose=True,
-                 store_supported_responses=True, lookahead=10):
-        # type: (bool, bool, bool, int) -> None
+    def __init__(self, logging: bool = True, verbose: bool = True,
+                 store_supported_responses: bool = True, lookahead: int = 10) -> None:
         self.state = EcuState()
         self.verbose = verbose
         self.logging = logging
         self.store_supported_responses = store_supported_responses
         self.lookahead = lookahead
-        self.log = defaultdict(list)  # type: Dict[str, List[Any]]
-        self.__supported_responses = list()  # type: List[EcuResponse]
+        self.log: Dict[str, List[Any]] = defaultdict(list)
+        self.__supported_responses: List[EcuResponse] = list()
         self.__unanswered_packets = PacketList()
 
-    def reset(self):
-        # type: () -> None
+    def reset(self) -> None:
         """
         Resets the internal state to a default EcuState.
         """
         self.state = EcuState(session=1)
 
-    def update(self, p):
-        # type: (Union[Packet, PacketList]) -> None
+    def update(self, p: Union[Packet, PacketList]) -> None:
         """
         Processes a Packet or a list of Packets, according to the chosen
         configuration.
@@ -319,8 +300,7 @@ class Ecu(object):
         else:
             self.__update(p)
 
-    def __update(self, pkt):
-        # type: (Packet) -> None
+    def __update(self, pkt: Packet) -> None:
         """
         Processes a Packet according to the chosen configuration.
         :param pkt: Packet to be processed
@@ -331,8 +311,7 @@ class Ecu(object):
             self.__update_log(pkt)
         self.__update_supported_responses(pkt)
 
-    def __update_log(self, pkt):
-        # type: (Packet) -> None
+    def __update_log(self, pkt: Packet) -> None:
         """
         Checks if a packet or a layer of this packet supports the function
         `get_log`. If `get_log` is supported, this function will be executed
@@ -350,8 +329,7 @@ class Ecu(object):
 
             self.log[log_key].append((pkt.time, log_value))
 
-    def __update_supported_responses(self, pkt):
-        # type: (Packet) -> None
+    def __update_supported_responses(self, pkt: Packet) -> None:
         """
         Stores a given packet as supported response, if a matching request
         packet is found in a list of the latest unanswered packets. For
@@ -390,8 +368,7 @@ class Ecu(object):
             self.__supported_responses.append(ecu_resp)
 
     @staticmethod
-    def sort_key_func(resp):
-        # type: (EcuResponse) -> Tuple[bool, int, int, int]
+    def sort_key_func(resp: EcuResponse) -> Tuple[bool, int, int, int]:
         """
         This sorts responses in the following order:
         1. Positive responses first
@@ -409,8 +386,7 @@ class Ecu(object):
                 0xffffffff - len(resp.key_response))
 
     @property
-    def supported_responses(self):
-        # type: () -> List[EcuResponse]
+    def supported_responses(self) -> List[EcuResponse]:
         """
         Returns a sorted list of supported responses. The sort is done in a way
         to provide the best possible results, if this list of supported
@@ -422,8 +398,7 @@ class Ecu(object):
         return self.__supported_responses
 
     @property
-    def unanswered_packets(self):
-        # type: () -> PacketList
+    def unanswered_packets(self) -> PacketList:
         """
         A list of all unanswered packets, which were processed by this Ecu
         object.
@@ -431,13 +406,12 @@ class Ecu(object):
         """
         return self.__unanswered_packets
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return repr(self.state)
 
     @staticmethod
-    def extend_pkt_with_logging(cls):
-        # type: (Type[Packet]) -> Callable[[Callable[[Packet], Tuple[str, Any]]], None]  # noqa: E501
+    def extend_pkt_with_logging(cls: Type[Packet]) -> Callable[[Callable[[Packet], Tuple[str, Any]]], None]:
+        # noqa: E501
         """
         Decorator to add a function as 'get_log' method to a given
         class. This allows dynamic modifications and additions to a protocol.
@@ -445,8 +419,7 @@ class Ecu(object):
         :return: Decorator function
         """
 
-        def decorator_function(f):
-            # type: (Callable[[Packet], Tuple[str, Any]]) -> None
+        def decorator_function(f: Callable[[Packet], Tuple[str, Any]]) -> None:
             setattr(cls, "get_log", f)
 
         return decorator_function
@@ -467,8 +440,7 @@ class EcuSession(DefaultSession):
         >>> sniff(session=EcuSession)
 
     """
-    def __init__(self, *args, **kwargs):
-        # type: (Any, Any) -> None
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.ecu = Ecu(logging=kwargs.pop("logging", True),
                        verbose=kwargs.pop("verbose", True),
                        store_supported_responses=kwargs.pop("store_supported_responses", True))  # noqa: E501
@@ -507,10 +479,10 @@ class EcuResponse:
                     messages which answers to everything can be realized
                     in this way.
     """   # noqa: E501
-    def __init__(self, state=None, responses=Raw(b"\x7f\x10"), answers=None):
-        # type: (Optional[Union[EcuState, Iterable[EcuState]]], Union[Iterable[Packet], PacketList, Packet], Optional[Callable[[Packet, Packet], bool]]) -> None  # noqa: E501
+    def __init__(self, state: Optional[Union[EcuState, Iterable[EcuState]]] = None, responses: Union[Iterable[Packet], PacketList, Packet] = Raw(b"\x7f\x10"), answers: Optional[Callable[[Packet, Packet], bool]] = None) -> None:
+        # noqa: E501
         if state is None:
-            self.__states = None  # type: Optional[List[EcuState]]
+            self.__states: Optional[List[EcuState]] = None
         else:
             if hasattr(state, "__iter__"):
                 state = cast(List[EcuState], state)
@@ -519,7 +491,7 @@ class EcuResponse:
                 self.__states = [state]
 
         if isinstance(responses, PacketList):
-            self.__responses = responses  # type: PacketList
+            self.__responses: PacketList = responses
         elif isinstance(responses, Packet):
             self.__responses = PacketList([responses])
         elif hasattr(responses, "__iter__"):
@@ -532,43 +504,36 @@ class EcuResponse:
         self.__custom_answers = answers
 
     @property
-    def states(self):
-        # type: () -> Optional[List[EcuState]]
+    def states(self) -> Optional[List[EcuState]]:
         return self.__states
 
     @property
-    def responses(self):
-        # type: () -> PacketList
+    def responses(self) -> PacketList:
         return self.__responses
 
     @property
-    def key_response(self):
-        # type: () -> Packet
-        pkt = self.__responses[-1]  # type: Packet
+    def key_response(self) -> Packet:
+        pkt: Packet = self.__responses[-1]
         return pkt
 
-    def supports_state(self, state):
-        # type: (EcuState) -> bool
+    def supports_state(self, state: EcuState) -> bool:
         if self.__states is None or len(self.__states) == 0:
             return True
         else:
             return any(s == state or state in s for s in self.__states)
 
-    def answers(self, other):
-        # type: (Packet) -> Union[int, bool]
+    def answers(self, other: Packet) -> Union[int, bool]:
         if self.__custom_answers is not None:
             return self.__custom_answers(self.key_response, other)
         else:
             return self.key_response.answers(other)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "%s, responses=%s" % \
                (repr(self.__states),
                 [resp.summary() for resp in self.__responses])
 
-    def __eq__(self, other):
-        # type: (object) -> bool
+    def __eq__(self, other: object) -> bool:
         other = cast(EcuResponse, other)
 
         responses_equal = \
@@ -581,13 +546,11 @@ class EcuResponse:
             return any(other.supports_state(s) for s in self.__states) and \
                 responses_equal
 
-    def __ne__(self, other):
-        # type: (object) -> bool
+    def __ne__(self, other: object) -> bool:
         # Python 2.7 compat
         return not self == other
 
-    def command(self):
-        # type: () -> str
+    def command(self) -> str:
         if self.__states is not None:
             return "EcuResponse(%s, responses=%s)" % (
                 "[" + ", ".join(s.command() for s in self.__states) + "]",
@@ -617,14 +580,13 @@ class EcuAnsweringMachine(AnsweringMachine[PacketList]):
 
     def parse_options(
             self,
-            supported_responses=None,  # type: Optional[List[EcuResponse]]
-            main_socket=None,  # type: Optional[SuperSocket]
-            broadcast_socket=None,  # type: Optional[SuperSocket]
-            basecls=Raw,  # type: Type[Packet]
-            timeout=None,  # type: Optional[Union[int, float]]
-            initial_ecu_state=None  # type: Optional[EcuState]
-    ):
-        # type: (...) -> None
+            supported_responses: Optional[List[EcuResponse]] = None,
+            main_socket: Optional[SuperSocket] = None,
+            broadcast_socket: Optional[SuperSocket] = None,
+            basecls: Type[Packet] = Raw,
+            timeout: Optional[Union[int, float]] = None,
+            initial_ecu_state: Optional[EcuState] = None
+    ) -> None:
         """
         :param supported_responses: List of ``EcuResponse`` objects to define
                                     the behaviour. The default response is
@@ -637,7 +599,7 @@ class EcuAnsweringMachine(AnsweringMachine[PacketList]):
         :param basecls: Provide a basecls of the used protocol
         :param timeout: Specifies the timeout for sniffing in seconds.
         """
-        self._main_socket = main_socket  # type: Optional[SuperSocket]
+        self._main_socket: Optional[SuperSocket] = main_socket
         self._sockets = [self._main_socket]
 
         if broadcast_socket is not None:
@@ -647,28 +609,24 @@ class EcuAnsweringMachine(AnsweringMachine[PacketList]):
         self._ecu_state_mutex = Lock()
         self._ecu_state = copy.copy(self._initial_ecu_state)
 
-        self._basecls = basecls  # type: Type[Packet]
+        self._basecls: Type[Packet] = basecls
         self._supported_responses = supported_responses
 
         self.sniff_options["timeout"] = timeout
         self.sniff_options["opened_socket"] = self._sockets
 
     @property
-    def state(self):
-        # type: () -> EcuState
+    def state(self) -> EcuState:
         return self._ecu_state
 
-    def reset_state(self):
-        # type: () -> None
+    def reset_state(self) -> None:
         with self._ecu_state_mutex:
             self._ecu_state = copy.copy(self._initial_ecu_state)
 
-    def is_request(self, req):
-        # type: (Packet) -> bool
+    def is_request(self, req: Packet) -> bool:
         return isinstance(req, self._basecls)
 
-    def make_reply(self, req):
-        # type: (Packet) -> PacketList
+    def make_reply(self, req: Packet) -> PacketList:
         """
         Checks if a given request can be answered by the internal list of
         EcuResponses. First, it's evaluated if the internal EcuState of this
@@ -703,8 +661,7 @@ class EcuAnsweringMachine(AnsweringMachine[PacketList]):
         return PacketList([self._basecls(
             b"\x7f" + bytes(req)[0:1] + b"\x10")])
 
-    def send_reply(self, reply, send_function=None):
-        # type: (PacketList, Optional[Any]) -> None
+    def send_reply(self, reply: PacketList, send_function: Optional[Any] = None) -> None:
         """
         Sends all Packets of a EcuResponse object. This allows to send multiple
         packets up on a request. If the list contains more than one packet,

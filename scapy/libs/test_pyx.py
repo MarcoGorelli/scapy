@@ -6,6 +6,8 @@
 External link to pyx
 """
 
+from __future__ import annotations
+
 import os
 import subprocess
 from scapy.error import log_loading
@@ -21,8 +23,7 @@ __all__ = [
 # PYX
 
 
-def _test_pyx():
-    # type: () -> bool
+def _test_pyx() -> bool:
     """Returns if PyX is correctly installed or not"""
     try:
         with open(os.devnull, 'wb') as devnull:

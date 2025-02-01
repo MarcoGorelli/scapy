@@ -11,6 +11,7 @@ Implements:
 - rfc1542 - Clarifications and Extensions for the Bootstrap Protocol
 - rfc1533 - DHCP Options and BOOTP Vendor Extensions
 """
+from __future__ import annotations
 
 try:
     from collections.abc import Iterable
@@ -153,8 +154,7 @@ class ClasslessStaticRoutesField(Field):
     by all the significant octets of the subnet.
     """
 
-    def m2i(self, pkt, x):
-        # type: (Packet, bytes) -> str
+    def m2i(self, pkt: Packet, x: bytes) -> str:
         # b'\x20\x01\x02\x03\x04\t\x08\x07\x06' -> (1.2.3.4/32:9.8.7.6)
         prefix = orb(x[0])
 
@@ -169,8 +169,7 @@ class ClasslessStaticRoutesField(Field):
 
         return dest + "/" + str(prefix) + ":" + router
 
-    def i2m(self, pkt, x):
-        # type: (Packet, str) -> bytes
+    def i2m(self, pkt: Packet, x: str) -> bytes:
         # (1.2.3.4/32:9.8.7.6) -> b'\x20\x01\x02\x03\x04\t\x08\x07\x06'
         if not x:
             return b''

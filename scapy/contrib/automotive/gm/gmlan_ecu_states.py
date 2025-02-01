@@ -5,6 +5,7 @@
 
 # scapy.contrib.description = GMLAN EcuState modifications
 # scapy.contrib.status = library
+from __future__ import annotations
 from scapy.packet import Packet
 from scapy.contrib.automotive.ecu import EcuState
 from scapy.contrib.automotive.gm.gmlan import GMLAN, GMLAN_SAPR
@@ -13,8 +14,7 @@ __all__ = ["GMLAN_modify_ecu_state", "GMLAN_SAPR_modify_ecu_state"]
 
 
 @EcuState.extend_pkt_with_modifier(GMLAN)
-def GMLAN_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def GMLAN_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     if self.service == 0x50:
         state.session = 3  # type: ignore
     elif self.service == 0x60:
@@ -31,8 +31,7 @@ def GMLAN_modify_ecu_state(self, req, state):
 
 
 @EcuState.extend_pkt_with_modifier(GMLAN_SAPR)
-def GMLAN_SAPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def GMLAN_SAPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     if self.subfunction % 2 == 0 and self.subfunction > 0 and len(req) >= 3:
         state.security_level = self.subfunction  # type: ignore
     elif self.subfunction % 2 == 1 and \

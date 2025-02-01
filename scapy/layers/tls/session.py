@@ -9,6 +9,8 @@
 TLS session handler.
 """
 
+from __future__ import annotations
+
 import binascii
 import collections
 import socket
@@ -30,8 +32,7 @@ from scapy.layers.tls.crypto.prf import PRF
 from typing import Dict
 
 
-def load_nss_keys(filename):
-    # type: (str) -> Dict[str, bytes]
+def load_nss_keys(filename: str) -> Dict[str, bytes]:
     """
     Parses a NSS Keys log and returns unpacked keys in a dictionary.
     """

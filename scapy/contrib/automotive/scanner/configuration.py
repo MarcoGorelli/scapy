@@ -6,6 +6,8 @@
 # scapy.contrib.description = AutomotiveTestCaseExecutorConfiguration
 # scapy.contrib.status = library
 
+from __future__ import annotations
+
 import inspect
 from threading import Event
 
@@ -52,16 +54,13 @@ class AutomotiveTestCaseExecutorConfiguration(object):
     Example:
         >>> config = AutomotiveTestCaseExecutorConfiguration([MyTestCase], global_config=42, MyTestCase_kwargs={"localConfig": 1337})  # noqa: E501
     """
-    def __setitem__(self, key, value):
-        # type: (Any, Any) -> None
+    def __setitem__(self, key: Any, value: Any) -> None:
         self.__dict__[key] = value
 
-    def __getitem__(self, key):
-        # type: (Any) -> Any
+    def __getitem__(self, key: Any) -> Any:
         return self.__dict__[key]
 
-    def _generate_test_case_config(self, test_case_cls):
-        # type: (Type[AutomotiveTestCaseABC]) -> None
+    def _generate_test_case_config(self, test_case_cls: Type[AutomotiveTestCaseABC]) -> None:
         # try to get config from kwargs
         if test_case_cls in self.test_case_clss:
             return
@@ -81,8 +80,8 @@ class AutomotiveTestCaseExecutorConfiguration(object):
                 val[kwargs_key] = kwargs_val
         self.__setattr__(test_case_cls.__name__, val)
 
-    def add_test_case(self, test_case):
-        # type: (Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC], StagedAutomotiveTestCase, Type[StagedAutomotiveTestCase]]) -> None  # noqa: E501
+    def add_test_case(self, test_case: Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC], StagedAutomotiveTestCase, Type[StagedAutomotiveTestCase]]) -> None:
+        # noqa: E501
         if inspect.isclass(test_case):
             test_case_class = cast(Union[Type[AutomotiveTestCaseABC],
                                          Type[StagedAutomotiveTestCase]],
@@ -110,17 +109,17 @@ class AutomotiveTestCaseExecutorConfiguration(object):
                 "Provided instance or class of "
                 "StagedAutomotiveTestCase or AutomotiveTestCaseABC")
 
-    def __init__(self, test_cases, **kwargs):
-        # type: (Union[List[Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC]]], List[Type[AutomotiveTestCaseABC]]], Any) -> None  # noqa: E501
+    def __init__(self, test_cases: Union[List[Union[AutomotiveTestCaseABC, Type[AutomotiveTestCaseABC]]], List[Type[AutomotiveTestCaseABC]]], **kwargs: Any) -> None:
+        # noqa: E501
         self.verbose = kwargs.get("verbose", False)
         self.debug = kwargs.get("debug", False)
         self.unittest = kwargs.pop("unittest", False)
         self.delay_enter_state = kwargs.pop("delay_enter_state", 0)
         self.state_graph = Graph()
-        self.test_cases = list()  # type: List[AutomotiveTestCaseABC]
-        self.stages = list()  # type: List[StagedAutomotiveTestCase]
-        self.staged_test_cases = list()  # type: List[AutomotiveTestCaseABC]
-        self.test_case_clss = set()  # type: Set[Type[AutomotiveTestCaseABC]]
+        self.test_cases: List[AutomotiveTestCaseABC] = list()
+        self.stages: List[StagedAutomotiveTestCase] = list()
+        self.staged_test_cases: List[AutomotiveTestCaseABC] = list()
+        self.test_case_clss: Set[Type[AutomotiveTestCaseABC]] = set()
         self.stop_event = Event()
         self.global_kwargs = kwargs
         self.global_kwargs["stop_event"] = self.stop_event

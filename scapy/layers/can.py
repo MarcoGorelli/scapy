@@ -9,6 +9,8 @@ Wireshark dissectors. See https://wiki.wireshark.org/CANopen
 
 """
 
+from __future__ import annotations
+
 import os
 import gzip
 import struct
@@ -106,10 +108,10 @@ class CAN(Packet):
 
     @classmethod
     def dispatch_hook(cls,
-                      _pkt=None,  # type: Optional[bytes]
-                      *args,  # type: Any
-                      **kargs  # type: Any
-                      ):  # type: (...) -> Type[Packet]
+                      _pkt: Optional[bytes] = None,
+                      *args: Any,
+                      **kargs: Any
+                      ) -> Type[Packet]:
         if _pkt:
             fdf_set = len(_pkt) > 5 and _pkt[5] & 0x04 and \
                 not _pkt[5] & 0xf8
@@ -120,8 +122,7 @@ class CAN(Packet):
         return CAN
 
     @staticmethod
-    def inv_endianness(pkt):
-        # type: (bytes) -> bytes
+    def inv_endianness(pkt: bytes) -> bytes:
         """Invert the order of the first four bytes of a CAN packet
 
         This method is meant to be used specifically to convert a CAN packet
@@ -134,21 +135,18 @@ class CAN(Packet):
         return struct.pack('<I{}s'.format(len_partial),
                            *struct.unpack('>I{}s'.format(len_partial), pkt))
 
-    def pre_dissect(self, s):
-        # type: (bytes) -> bytes
+    def pre_dissect(self, s: bytes) -> bytes:
         """Implements the swap-bytes functionality when dissecting """
         if conf.contribs['CAN']['swap-bytes']:
-            data = CAN.inv_endianness(s)  # type: bytes
+            data: bytes = CAN.inv_endianness(s)
             return data
         return s
 
-    def post_dissect(self, s):
-        # type: (bytes) -> bytes
+    def post_dissect(self, s: bytes) -> bytes:
         self.raw_packet_cache = None  # Reset packet to allow post_build
         return s
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         """Implements the swap-bytes functionality for Packet build.
 
         This is based on a copy of the Packet.self_build default method.
@@ -156,12 +154,11 @@ class CAN(Packet):
         under layers (e.g CookedLinux) unchanged
         """
         if conf.contribs['CAN']['swap-bytes']:
-            data = CAN.inv_endianness(pkt)  # type: bytes
+            data: bytes = CAN.inv_endianness(pkt)
             return data + pay
         return pkt + pay
 
-    def extract_padding(self, p):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, p: bytes) -> Tuple[bytes, Optional[bytes]]:
         if conf.contribs['CAN']['remove-padding']:
             return b'', None
         else:
@@ -189,8 +186,7 @@ class CANFD(CAN):
         StrLenField('data', b'', length_from=lambda pkt: int(pkt.length)),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
 
         data = super(CANFD, self).post_build(pkt, pay)
 
@@ -226,9 +222,9 @@ class SignalField(ScalingField):
     """
     __slots__ = ["start", "size"]
 
-    def __init__(self, name, default, start, size, scaling=1, unit="",
-                 offset=0, ndigits=3, fmt="B"):
-        # type: (str, Union[int, float], int, int, Union[int, float], str, Union[int, float], int, str) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3, fmt: str = "B") -> None:
+        # noqa: E501
         ScalingField.__init__(self, name, default, scaling, unit, offset,
                               ndigits, fmt)
         self.start = start
@@ -247,8 +243,7 @@ class SignalField(ScalingField):
                      63, 62, 61, 60, 59, 58, 57, 56]
 
     @staticmethod
-    def _msb_lookup(start):
-        # type: (int) -> int
+    def _msb_lookup(start: int) -> int:
         try:
             return SignalField._lookup_table.index(start)
         except ValueError:
@@ -256,8 +251,7 @@ class SignalField(ScalingField):
                                   "are supported")
 
     @staticmethod
-    def _lsb_lookup(start, size):
-        # type: (int, int) -> int
+    def _lsb_lookup(start: int, size: int) -> int:
         try:
             return SignalField._lookup_table[SignalField._msb_lookup(start) +
                                              size - 1]
@@ -266,35 +260,29 @@ class SignalField(ScalingField):
                                   "are supported")
 
     @staticmethod
-    def _convert_to_unsigned(number, bit_length):
-        # type: (int, int) -> int
+    def _convert_to_unsigned(number: int, bit_length: int) -> int:
         if number & (1 << (bit_length - 1)):
-            mask = (2 ** bit_length)  # type: int
+            mask: int = (2 ** bit_length)
             return mask + number
         return number
 
     @staticmethod
-    def _convert_to_signed(number, bit_length):
-        # type: (int, int) -> int
-        mask = (2 ** bit_length) - 1  # type: int
+    def _convert_to_signed(number: int, bit_length: int) -> int:
+        mask: int = (2 ** bit_length) - 1
         if number & (1 << (bit_length - 1)):
             return number | ~mask
         return number & mask
 
-    def _is_little_endian(self):
-        # type: () -> bool
+    def _is_little_endian(self) -> bool:
         return self.fmt[0] == "<"
 
-    def _is_signed_number(self):
-        # type: () -> bool
+    def _is_signed_number(self) -> bool:
         return self.fmt[-1].islower()
 
-    def _is_float_number(self):
-        # type: () -> bool
+    def _is_float_number(self) -> bool:
         return self.fmt[-1] == "f"
 
-    def addfield(self, pkt, s, val):
-        # type: (Packet, bytes, Optional[Union[int, float]]) -> bytes
+    def addfield(self, pkt: Packet, s: bytes, val: Optional[Union[int, float]]) -> bytes:
         if not isinstance(pkt, SignalPacket):
             raise Scapy_Exception("Only use SignalFields in a SignalPacket")
 
@@ -316,8 +304,8 @@ class SignalField(ScalingField):
             s += b"\x00" * (field_len - len(s))
 
         if self._is_float_number():
-            int_val = struct.unpack(self.fmt[0] + "I",
-                                    struct.pack(self.fmt, val))[0]  # type: int
+            int_val: int = struct.unpack(self.fmt[0] + "I",
+                                    struct.pack(self.fmt, val))[0]
         elif self._is_signed_number():
             int_val = self._convert_to_unsigned(int(val), self.size)
         else:
@@ -328,8 +316,7 @@ class SignalField(ScalingField):
         tmp_s = struct.pack(fmt, pkt_val)
         return tmp_s[:len(s)]
 
-    def getfield(self, pkt, s):
-        # type: (Packet, bytes) -> Tuple[bytes, Union[int, float]]
+    def getfield(self, pkt: Packet, s: bytes) -> Tuple[bytes, Union[int, float]]:
         if not isinstance(pkt, SignalPacket):
             raise Scapy_Exception("Only use SignalFields in a SignalPacket")
 
@@ -365,8 +352,7 @@ class SignalField(ScalingField):
 
         return s, self.m2i(pkt, fld_val)
 
-    def randval(self):
-        # type: () -> Union[RandBinFloat, RandFloat]
+    def randval(self) -> Union[RandBinFloat, RandFloat]:
         if self._is_float_number():
             return RandBinFloat(0, 0)
 
@@ -382,55 +368,54 @@ class SignalField(ScalingField):
 
         return RandFloat(min(min_val, max_val), max(min_val, max_val))
 
-    def i2len(self, pkt, x):
-        # type: (Packet, Any) -> int
+    def i2len(self, pkt: Packet, x: Any) -> int:
         return int(float(self.size) / 8)
 
 
 class LEUnsignedSignalField(SignalField):
-    def __init__(self, name, default, start, size, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, "<B")
 
 
 class LESignedSignalField(SignalField):
-    def __init__(self, name, default, start, size, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, "<b")
 
 
 class BEUnsignedSignalField(SignalField):
-    def __init__(self, name, default, start, size, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, ">B")
 
 
 class BESignedSignalField(SignalField):
-    def __init__(self, name, default, start, size, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, size: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, size,
                              scaling, unit, offset, ndigits, ">b")
 
 
 class LEFloatSignalField(SignalField):
-    def __init__(self, name, default, start, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, 32,
                              scaling, unit, offset, ndigits, "<f")
 
 
 class BEFloatSignalField(SignalField):
-    def __init__(self, name, default, start, scaling=1, unit="",
-                 offset=0, ndigits=3):
-        # type: (str, Union[int, float], int, Union[int, float], str, Union[int, float], int) -> None  # noqa: E501
+    def __init__(self, name: str, default: Union[int, float], start: int, scaling: Union[int, float] = 1, unit: str = "",
+                 offset: Union[int, float] = 0, ndigits: int = 3) -> None:
+        # noqa: E501
         SignalField.__init__(self, name, default, start, 32,
                              scaling, unit, offset, ndigits, ">f")
 
@@ -444,8 +429,7 @@ class SignalPacket(Packet):
     deduced by the start index of a field.
     """
 
-    def pre_dissect(self, s):
-        # type: (bytes) -> bytes
+    def pre_dissect(self, s: bytes) -> bytes:
         if not all(isinstance(f, SignalField) or
                    (isinstance(f, ConditionalField) and
                     isinstance(f.fld, SignalField))
@@ -453,8 +437,7 @@ class SignalPacket(Packet):
             raise Scapy_Exception("Use only SignalFields in a SignalPacket")
         return s
 
-    def post_dissect(self, s):
-        # type: (bytes) -> bytes
+    def post_dissect(self, s: bytes) -> bytes:
         """SignalFields can be dissected on packets with unordered fields.
 
         The order of SignalFields is defined from the start parameter.
@@ -502,19 +485,17 @@ class SignalHeader(CAN):
 
     @classmethod
     def dispatch_hook(cls,
-                      _pkt=None,  # type: Optional[bytes]
-                      *args,  # type: Any
-                      **kargs  # type: Any
-                      ):  # type: (...) -> Type[Packet]
+                      _pkt: Optional[bytes] = None,
+                      *args: Any,
+                      **kargs: Any
+                      ) -> Type[Packet]:
         return SignalHeader
 
-    def extract_padding(self, s):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, s: bytes) -> Tuple[bytes, Optional[bytes]]:
         return s, None
 
 
-def rdcandump(filename, count=-1, interface=None):
-    # type: (str, int, Optional[str]) -> PacketList
+def rdcandump(filename: str, count: int = -1, interface: Optional[str] = None) -> PacketList:
     """ Read a candump log file and return a packet list.
 
     :param filename: Filename of the file to read from.
@@ -541,23 +522,20 @@ class CandumpReader:
 
     nonblocking_socket = True
 
-    def __init__(self, filename, interface=None):
-        # type: (str, Optional[Union[List[str], str]]) -> None
+    def __init__(self, filename: str, interface: Optional[Union[List[str], str]] = None) -> None:
         self.filename, self.f = self.open(filename)
-        self.ifilter = None  # type: Optional[List[str]]
+        self.ifilter: Optional[List[str]] = None
         if interface is not None:
             if isinstance(interface, str):
                 self.ifilter = [interface]
             else:
                 self.ifilter = interface
 
-    def __iter__(self):
-        # type: () -> CandumpReader
+    def __iter__(self) -> CandumpReader:
         return self
 
     @staticmethod
-    def open(filename):
-        # type: (Union[IO[bytes], str]) -> Tuple[str, _ByteStream]
+    def open(filename: Union[IO[bytes], str]) -> Tuple[str, _ByteStream]:
         """Open function to handle three types of input data.
 
         If filename of a regular candump log file is provided, this function
@@ -576,7 +554,7 @@ class CandumpReader:
         """Open (if necessary) filename."""
         if isinstance(filename, str):
             try:
-                fdesc = gzip.open(filename, "rb")  # type: _ByteStream
+                fdesc: _ByteStream = gzip.open(filename, "rb")
                 # try read to cause exception
                 fdesc.read(1)
                 fdesc.seek(0)
@@ -587,8 +565,7 @@ class CandumpReader:
             name = getattr(filename, "name", "No name")
             return name, filename
 
-    def next(self):
-        # type: () -> Packet
+    def next(self) -> Packet:
         """Implements the iterator protocol on a set of packets
 
         :return: Next readable CAN Packet from the specified file
@@ -603,8 +580,7 @@ class CandumpReader:
         return pkt
     __next__ = next
 
-    def read_packet(self, size=CAN_MTU):
-        # type: (int) -> Optional[Packet]
+    def read_packet(self, size: int = CAN_MTU) -> Optional[Packet]:
         """Read a packet from the specified file.
 
         This function will raise EOFError when no more packets are available.
@@ -629,7 +605,7 @@ class CandumpReader:
             else:
                 idn, data = f.split(b'#')
             le = None
-            t = float(t_b[1:-1])  # type: Optional[float]
+            t: Optional[float] = float(t_b[1:-1])
         else:
             h, data = line.split(b']')
             intf, idn, le = h.split()
@@ -661,8 +637,7 @@ class CandumpReader:
 
         return pkt
 
-    def dispatch(self, callback):
-        # type: (Callable[[Packet], None]) -> None
+    def dispatch(self, callback: Callable[[Packet], None]) -> None:
         """Call the specified callback routine for each packet read
 
         This is just a convenience function for the main loop
@@ -672,8 +647,7 @@ class CandumpReader:
         for p in self:
             callback(p)
 
-    def read_all(self, count=-1):
-        # type: (int) -> PacketList
+    def read_all(self, count: int = -1) -> PacketList:
         """Read a specific number or all packets from a candump file.
 
         :param count: Specify a specific number of packets to be read.
@@ -692,40 +666,34 @@ class CandumpReader:
             res.append(p)
         return PacketList(res, name=os.path.basename(self.filename))
 
-    def recv(self, size=CAN_MTU):
-        # type: (int) -> Optional[Packet]
+    def recv(self, size: int = CAN_MTU) -> Optional[Packet]:
         """Emulation of SuperSocket"""
         try:
             return self.read_packet(size=size)
         except EOFError:
             return None
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         """Emulation of SuperSocket"""
         return self.f.fileno()
 
     @property
-    def closed(self):
-        # type: () -> bool
+    def closed(self) -> bool:
         return self.f.closed
 
-    def close(self):
-        # type: () -> Any
+    def close(self) -> Any:
         """Emulation of SuperSocket"""
         return self.f.close()
 
-    def __enter__(self):
-        # type: () -> CandumpReader
+    def __enter__(self) -> CandumpReader:
         return self
 
-    def __exit__(self, exc_type, exc_value, tracback):
-        # type: (Optional[Type[BaseException]], Optional[BaseException], Optional[Any]) -> None  # noqa: E501
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], tracback: Optional[Any]) -> None:
+        # noqa: E501
         self.close()
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[int]) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[int] = None) -> List[SuperSocket]:
         """Emulation of SuperSocket"""
         return [s for s in sockets if isinstance(s, CandumpReader) and
                 not s.closed]

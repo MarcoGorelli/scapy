@@ -7,6 +7,8 @@
 Scapy BSD native support - constants
 """
 
+from __future__ import annotations
+
 import ctypes
 
 from scapy.libs.structures import bpf_program
@@ -29,20 +31,19 @@ IOC_OUT = 0x40000000
 IOC_IN = 0x80000000
 IOC_INOUT = IOC_IN | IOC_OUT
 
-_th = lambda x: x if isinstance(x, int) else ctypes.sizeof(x)  # type: Callable[[Any], int]  # noqa: E501
+_th: Callable[[Any], int] = lambda x: x if isinstance(x, int) else ctypes.sizeof(x)  # noqa: E501
 
 
-def _IOC(inout, group, num, len):
-    # type: (int, str, int, Any) -> int
+def _IOC(inout: int, group: str, num: int, len: Any) -> int:
     return (inout |
             ((_th(len) & IOCPARM_MASK) << 16) |
             (ord(group) << 8) | (num))
 
 
-_IO = lambda g, n: _IOC(IOC_VOID, g, n, 0)  # type: Callable[[str, int], int]
-_IOR = lambda g, n, t: _IOC(IOC_OUT, g, n, t)  # type: Callable[[str, int, Any], int]
-_IOW = lambda g, n, t: _IOC(IOC_IN, g, n, t)  # type: Callable[[str, int, Any], int]
-_IOWR = lambda g, n, t: _IOC(IOC_INOUT, g, n, t)  # type: Callable[[str, int, Any], int]
+_IO: Callable[[str, int], int] = lambda g, n: _IOC(IOC_VOID, g, n, 0)
+_IOR: Callable[[str, int, Any], int] = lambda g, n, t: _IOC(IOC_OUT, g, n, t)
+_IOW: Callable[[str, int, Any], int] = lambda g, n, t: _IOC(IOC_IN, g, n, t)
+_IOWR: Callable[[str, int, Any], int] = lambda g, n, t: _IOC(IOC_INOUT, g, n, t)
 
 # Length of some structures
 _bpf_stat = 8

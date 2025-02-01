@@ -6,6 +6,8 @@
 # scapy.contrib.description = ISO-TP (ISO 15765-2) Packet Definitions
 # scapy.contrib.status = library
 
+from __future__ import annotations
+
 import struct
 import logging
 
@@ -64,17 +66,15 @@ class ISOTP(Packet):
     ]
     __slots__ = Packet.__slots__ + ["tx_id", "rx_id", "ext_address", "rx_ext_address"]  # noqa: E501
 
-    def __init__(self, *args, **kwargs):
-        # type: (Any, Any) -> None
-        self.tx_id = kwargs.pop("tx_id", None)  # type: Optional[int]
-        self.rx_id = kwargs.pop("rx_id", None)  # type: Optional[int]
-        self.ext_address = kwargs.pop("ext_address", None)  # type: Optional[int]  # noqa: E501
-        self.rx_ext_address = kwargs.pop("rx_ext_address", None)  # type: Optional[int]  # noqa: E501
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.tx_id: Optional[int] = kwargs.pop("tx_id", None)
+        self.rx_id: Optional[int] = kwargs.pop("rx_id", None)
+        self.ext_address: Optional[int] = kwargs.pop("ext_address", None)  # noqa: E501
+        self.rx_ext_address: Optional[int] = kwargs.pop("rx_ext_address", None)  # noqa: E501
         Packet.__init__(self, *args, **kwargs)
         self.validate_fields()
 
-    def validate_fields(self):
-        # type: () -> None
+    def validate_fields(self) -> None:
         """Helper function to validate information in tx_id, rx_id,
         ext_address and rx_ext_address slots
         """
@@ -91,8 +91,7 @@ class ISOTP(Packet):
             if not 0 <= self.rx_ext_address <= 0xff:
                 raise Scapy_Exception("rx_ext_address is not a byte")
 
-    def fragment(self, *args, **kargs):
-        # type: (*Any, **Any) -> List[Packet]
+    def fragment(self, *args: Any, **kargs: Any) -> List[Packet]:
         """Helper function to fragment an ISOTP message into multiple
         CAN frames.
 
@@ -104,8 +103,7 @@ class ISOTP(Packet):
 
         fd = kargs.pop("fd", False)
 
-        def _get_data_len():
-            # type: () -> int
+        def _get_data_len() -> int:
             return CAN_MAX_DLEN if not fd else CAN_FD_MAX_DLEN
 
         data_bytes_in_frame = _get_data_len() - 1
@@ -164,8 +162,7 @@ class ISOTP(Packet):
         return cast(List[Packet], pkts)
 
     @staticmethod
-    def defragment(can_frames, use_extended_addressing=None):
-        # type: (List[Packet], Optional[bool]) -> Optional[ISOTP]
+    def defragment(can_frames: List[Packet], use_extended_addressing: Optional[bool] = None) -> Optional[ISOTP]:
         """Helper function to defragment a list of CAN frames to one ISOTP
         message
 
@@ -218,12 +215,10 @@ class ISOTPHeader(CAN):
         ThreeBytesField('reserved', 0)
     ]
 
-    def extract_padding(self, p):
-        # type: (bytes) -> Tuple[bytes, Optional[bytes]]
+    def extract_padding(self, p: bytes) -> Tuple[bytes, Optional[bytes]]:
         return p, None
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         """
         This will set the ByteField 'length' to the correct value.
         """
@@ -231,12 +226,11 @@ class ISOTPHeader(CAN):
             pkt = pkt[:4] + chb(len(pay)) + pkt[5:]
 
         if conf.contribs['CAN']['swap-bytes']:
-            data = CAN.inv_endianness(pkt)  # type: bytes
+            data: bytes = CAN.inv_endianness(pkt)
             return data + pay
         return pkt + pay
 
-    def guess_payload_class(self, payload):
-        # type: (bytes) -> Type[Packet]
+    def guess_payload_class(self, payload: bytes) -> Type[Packet]:
         """ISO-TP encodes the frame type in the first nibble of a frame. This
         is used to determine the payload_class
 
@@ -281,8 +275,7 @@ class ISOTPHeader_FD(ISOTPHeader):
         ShortField('reserved', 0),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
 
         data = super().post_build(pkt, pay)
 
@@ -314,8 +307,7 @@ class ISOTPHeaderEA(ISOTPHeader):
         XByteField('extended_address', 0)
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         """
         This will set the ByteField 'length' to the correct value.
         'chb(len(pay) + 1)' is required, because the field 'extended_address'
@@ -325,7 +317,7 @@ class ISOTPHeaderEA(ISOTPHeader):
             pkt = pkt[:4] + chb(len(pay) + 1) + pkt[5:]
 
         if conf.contribs['CAN']['swap-bytes']:
-            data = CAN.inv_endianness(pkt)  # type: bytes
+            data: bytes = CAN.inv_endianness(pkt)
             return data + pay
         return pkt + pay
 
@@ -345,8 +337,7 @@ class ISOTPHeaderEA_FD(ISOTPHeaderEA):
         XByteField('extended_address', 0)
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
 
         data = super().post_build(pkt, pay)
 

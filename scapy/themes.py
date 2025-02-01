@@ -11,6 +11,8 @@ Color themes for the interactive console.
 #  Color themes  #
 ##################
 
+from __future__ import annotations
+
 import html
 import sys
 
@@ -56,16 +58,13 @@ class ColorTable:
     }
     inv_map = {v[0]: v[1] for k, v in colors.items()}
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<ColorTable>"
 
-    def __getattr__(self, attr):
-        # type: (str) -> str
+    def __getattr__(self, attr: str) -> str:
         return self.colors.get(attr, [""])[0]
 
-    def ansi_to_pygments(self, x):
-        # type: (str) -> str
+    def ansi_to_pygments(self, x: str) -> str:
         """
         Transform ansi encoded text to Pygments text
         """
@@ -87,12 +86,11 @@ class _ColorFormatterType(Protocol):
         pass
 
 
-def create_styler(fmt=None,  # type: Optional[str]
-                  before="",  # type: str
-                  after="",  # type: str
-                  fmt2="%s"  # type: str
-                  ):
-    # type: (...) -> _ColorFormatterType
+def create_styler(fmt: Optional[str] = None,
+                  before: str = "",
+                  after: str = "",
+                  fmt2: str = "%s"
+                  ) -> _ColorFormatterType:
     def do_style(val: Any,
                  fmt: Optional[str] = fmt,
                  fmt2: str = fmt2,
@@ -132,23 +130,19 @@ class ColorTheme:
     style_right = ""
     style_logo = ""
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s>" % self.__class__.__name__
 
-    def __reduce__(self):
-        # type: () -> Tuple[type, Any, Any]
+    def __reduce__(self) -> Tuple[type, Any, Any]:
         return (self.__class__, (), ())
 
-    def __getattr__(self, attr):
-        # type: (str) -> _ColorFormatterType
+    def __getattr__(self, attr: str) -> _ColorFormatterType:
         if attr in ["__getstate__", "__setstate__", "__getinitargs__",
                     "__reduce_ex__"]:
             raise AttributeError()
         return create_styler()
 
-    def format(self, string, fmt):
-        # type: (str, str) -> str
+    def format(self, string: str, fmt: str) -> str:
         for style in fmt.split("+"):
             string = getattr(self, style)(string)
         return string
@@ -159,8 +153,7 @@ class NoTheme(ColorTheme):
 
 
 class AnsiColorTheme(ColorTheme):
-    def __getattr__(self, attr):
-        # type: (str) -> _ColorFormatterType
+    def __getattr__(self, attr: str) -> _ColorFormatterType:
         if attr.startswith("__"):
             raise AttributeError(attr)
         s = "style_%s" % attr
@@ -376,8 +369,7 @@ class HTMLTheme2(HTMLTheme):
     style_right = "#[#span class=right#]#%s#[#/span#]#"
 
 
-def apply_ipython_style(shell):
-    # type: (Any) -> None
+def apply_ipython_style(shell: Any) -> None:
     """Updates the specified IPython console shell with
     the conf.color_theme scapy theme."""
     try:
@@ -432,12 +424,10 @@ def apply_ipython_style(shell):
             )
 
         class ClassicPrompt(Prompts):
-            def in_prompt_tokens(self, cli=None):
-                # type: (Any) -> List[Tuple[Any, str]]
+            def in_prompt_tokens(self, cli: Any = None) -> List[Tuple[Any, str]]:
                 return [(Token.Prompt, prompt), ]
 
-            def out_prompt_tokens(self):
-                # type: () -> List[Tuple[Any, str]]
+            def out_prompt_tokens(self) -> List[Tuple[Any, str]]:
                 return [(Token.OutPrompt, ''), ]
         # Apply classic prompt style
         shell.prompts_class = ClassicPrompt

@@ -9,6 +9,8 @@ NetBIOS over TCP/IP
 [RFC 1001/1002]
 """
 
+from __future__ import annotations
+
 import struct
 from scapy.arch import get_if_addr
 from scapy.base_classes import Net
@@ -426,8 +428,7 @@ class NBNS_am(AnsweringMachine):
             req[NBNSQueryRequest].QUESTION_NAME.strip() == self.ServerName
         )
 
-    def make_reply(self, req):
-        # type: (Packet) -> Packet
+    def make_reply(self, req: Packet) -> Packet:
         resp = Ether(
             dst=req[Ether].src,
             src=None if req[Ether].dst == "ff:ff:ff:ff:ff:ff" else req[Ether].dst,

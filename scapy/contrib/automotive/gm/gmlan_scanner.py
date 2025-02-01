@@ -6,6 +6,8 @@
 # scapy.contrib.description = GMLAN AutomotiveTestCaseExecutor Utilities
 # scapy.contrib.status = loads
 
+from __future__ import annotations
+
 import abc
 import random
 import time
@@ -68,26 +70,21 @@ class GMLAN_Enumerator(ServiceEnumerator, metaclass=abc.ABCMeta):
     implements GMLAN specific functions.
     """
     @staticmethod
-    def _get_negative_response_code(resp):
-        # type: (Packet) -> int
+    def _get_negative_response_code(resp: Packet) -> int:
         return resp.returnCode
 
     @staticmethod
-    def _get_negative_response_desc(nrc):
-        # type: (int) -> str
+    def _get_negative_response_desc(nrc: int) -> str:
         return GMLAN_NR(returnCode=nrc).sprintf("%GMLAN_NR.returnCode%")
 
     @staticmethod
-    def _get_negative_response_label(response):
-        # type: (Packet) -> str
+    def _get_negative_response_label(response: Packet) -> str:
         return response.sprintf("NR: %GMLAN_NR.returnCode%")
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2])
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         raise NotImplementedError("Overwrite this method")
 
 
@@ -99,8 +96,7 @@ class GMLAN_ServiceEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator
     """
     _description = "Available services and negative response per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         services = set(x & ~0x40 for x in range(0x100))
         services.remove(0x10)  # Remove InitiateDiagnosticOperation service
         services.remove(0x3E)  # Remove TesterPresent service
@@ -108,8 +104,7 @@ class GMLAN_ServiceEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator
         services.remove(0x34)  # Remove RequestDownload
         return (GMLAN(service=x) for x in services)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%02x: %s" % (
             tup[1].service, tup[1].sprintf("%GMLAN.service%"))
 
@@ -121,16 +116,14 @@ class GMLAN_TPEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
     """
     _description = "TesterPresent supported"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         return [GMLAN(service=0x3E)]
 
     @staticmethod
-    def enter(socket,  # type: _SocketUnion
-              configuration,  # type: AutomotiveTestCaseExecutorConfiguration
-              kwargs  # type: Dict[str, Any]
-              ):
-        # type: (...) -> bool
+    def enter(socket: _SocketUnion,
+              configuration: AutomotiveTestCaseExecutorConfiguration,
+              kwargs: Dict[str, Any]
+              ) -> bool:
         if configuration.unittest:
             configuration["tps"] = None
             socket.sr1(GMLAN(service=0x3E), timeout=0.1, verbose=False)
@@ -143,8 +136,7 @@ class GMLAN_TPEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
         return True
 
     @staticmethod
-    def cleanup(_, configuration):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration) -> bool
+    def cleanup(_: _SocketUnion, configuration: AutomotiveTestCaseExecutorConfiguration) -> bool:
         try:
             if configuration["tps"]:
                 configuration["tps"].stop()
@@ -153,25 +145,21 @@ class GMLAN_TPEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
             pass
         return True
 
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         return self.enter, {"desc": "TP"}, self.cleanup
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "TesterPresent:"
 
 
 class GMLAN_IDOEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
     _description = "InitiateDiagnosticOperation supported"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         return [GMLAN() / GMLAN_IDO(subfunction=2)]
 
     @staticmethod
-    def enter_diagnostic_session(socket):
-        # type: (_SocketUnion) -> bool
+    def enter_diagnostic_session(socket: _SocketUnion) -> bool:
         ans = socket.sr1(
             GMLAN() / GMLAN_IDO(subfunction=2), timeout=5, verbose=False)
         if ans is not None and ans.service == 0x7f:
@@ -180,8 +168,8 @@ class GMLAN_IDOEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
                 "%s", repr(ans))
         return ans is not None and ans.service != 0x7f
 
-    def get_new_edge(self, socket, config):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]  # noqa: E501
+    def get_new_edge(self, socket: _SocketUnion, config: AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]:
+        # noqa: E501
         edge = super(GMLAN_IDOEnumerator, self).get_new_edge(socket, config)
         if edge:
             state, new_state = edge
@@ -190,8 +178,8 @@ class GMLAN_IDOEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
         return None
 
     @staticmethod
-    def enter_state_with_tp(sock, conf, kwargs):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration, Dict[str, Any]) -> bool  # noqa: E501
+    def enter_state_with_tp(sock: _SocketUnion, conf: AutomotiveTestCaseExecutorConfiguration, kwargs: Dict[str, Any]) -> bool:
+        # noqa: E501
         GMLAN_TPEnumerator.enter(sock, conf, kwargs)
         if GMLAN_IDOEnumerator.enter_diagnostic_session(sock):
             return True
@@ -199,36 +187,30 @@ class GMLAN_IDOEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
             GMLAN_TPEnumerator.cleanup(sock, conf)
             return False
 
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         return self.enter_state_with_tp, {"desc": "IDO_TP"}, GMLAN_TPEnumerator.cleanup  # noqa: E501
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "InitiateDiagnosticOperation:"
 
 
 class GMLAN_RDBIEnumerator(GMLAN_Enumerator):
     _description = "Readable data identifier per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x100))
         return (GMLAN() / GMLAN_RDBI(dataIdentifier=x) for x in scan_range)
 
     @staticmethod
-    def print_information(resp):
-        # type: (Packet) -> str
+    def print_information(resp: Packet) -> str:
         load = bytes(resp)[2:] if len(resp) > 3 else b"No data available"
         return "PR: %r" % ((load[:17] + b"...") if len(load) > 20 else load)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%04x: %s" % (tup[1].dataIdentifier,
                                tup[1].sprintf("%GMLAN_RDBI.dataIdentifier%"))
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2], self.print_information)
 
 
@@ -245,14 +227,12 @@ class GMLAN_WDBIEnumerator(GMLAN_Enumerator):
                                 identifiers.
         :type rdbi_enumerator: GMLAN_RDBIEnumerator"""
 
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         super(GMLAN_WDBIEnumerator, self).execute(socket, state, **kwargs)
 
     execute.__doc__ = _supported_kwargs_doc
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x100))
         rdbi_enumerator = kwargs.pop("rdbi_enumerator", None)
         if rdbi_enumerator is None:
@@ -266,24 +246,21 @@ class GMLAN_WDBIEnumerator(GMLAN_Enumerator):
             raise Scapy_Exception("rdbi_enumerator has to be an instance "
                                   "of GMLAN_RDBIEnumerator")
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%02x: %s" % (tup[1].dataIdentifier,
                                tup[1].sprintf("%GMLAN_WDBI.dataIdentifier%"))
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2], "PR: Writeable")
 
 
 class GMLAN_WDBISelectiveEnumerator(StagedAutomotiveTestCase):
     @staticmethod
-    def __connector_rdbi_to_wdbi(rdbi, _):
-        # type: (AutomotiveTestCaseABC, AutomotiveTestCaseABC) -> Dict[str, Any]  # noqa: E501
+    def __connector_rdbi_to_wdbi(rdbi: AutomotiveTestCaseABC, _: AutomotiveTestCaseABC) -> Dict[str, Any]:
+        # noqa: E501
         return {"rdbi_enumerator": rdbi}
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         super(GMLAN_WDBISelectiveEnumerator, self).__init__(
             [GMLAN_RDBIEnumerator(), GMLAN_WDBIEnumerator()],
             [None, self.__connector_rdbi_to_wdbi])
@@ -291,7 +268,7 @@ class GMLAN_WDBISelectiveEnumerator(StagedAutomotiveTestCase):
 
 class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
     _description = "SecurityAccess supported"
-    _transition_function_args = dict()  # type: Dict[_Edge, Tuple[int, Optional[Callable[[int], int]]]]  # noqa: E501
+    _transition_function_args: Dict[_Edge, Tuple[int, Optional[Callable[[int], int]]]] = dict()  # noqa: E501
     _supported_kwargs = copy.copy(GMLAN_Enumerator._supported_kwargs)
     _supported_kwargs.update({
         'keyfunction': (None, None)
@@ -302,27 +279,23 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
                             given seed.
         :type keyfunction: Callable[[int], int]"""
 
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         super(GMLAN_SAEnumerator, self).execute(socket, state, **kwargs)
 
     execute.__doc__ = _supported_kwargs_doc
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(1, 10, 2))
         return (GMLAN() / GMLAN_SA(subfunction=x) for x in scan_range)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "Subfunction %02d" % tup[1].subfunction
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2], lambda r: "PR: %s" % r.securitySeed)
 
-    def pre_execute(self, socket, state, global_configuration):
-        # type: (_SocketUnion, EcuState, AutomotiveTestCaseExecutorConfiguration) -> None  # noqa: E501
+    def pre_execute(self, socket: _SocketUnion, state: EcuState, global_configuration: AutomotiveTestCaseExecutorConfiguration) -> None:
+        # noqa: E501
         if cast(ServiceEnumerator, self)._retry_pkt[state] and \
                 not global_configuration.unittest:
             # this is a retry execute. Wait much longer than usual because
@@ -331,11 +304,11 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
             time.sleep(11)
 
     def _evaluate_retry(self,
-                        state,  # type: EcuState
-                        request,  # type: Packet
-                        response,  # type: Packet
-                        **kwargs  # type: Optional[Dict[str, Any]]
-                        ):  # type: (...) -> bool
+                        state: EcuState,
+                        request: Packet,
+                        response: Packet,
+                        **kwargs: Optional[Dict[str, Any]]
+                        ) -> bool:
 
         if super(GMLAN_SAEnumerator, self)._evaluate_retry(
                 state, request, response, **kwargs):
@@ -352,11 +325,11 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
         return False
 
     def _evaluate_response(self,
-                           state,  # type: EcuState
-                           request,  # type: Packet
-                           response,  # type: Optional[Packet]
-                           **kwargs  # type: Optional[Dict[str, Any]]
-                           ):  # type: (...) -> bool
+                           state: EcuState,
+                           request: Packet,
+                           response: Optional[Packet],
+                           **kwargs: Optional[Dict[str, Any]]
+                           ) -> bool:
         if super(GMLAN_SAEnumerator, self)._evaluate_response(
                 state, request, response, **kwargs):
             return True
@@ -368,8 +341,7 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
         return False
 
     @staticmethod
-    def get_seed_pkt(sock, level=1):
-        # type: (_SocketUnion, int) -> Optional[Packet]
+    def get_seed_pkt(sock: _SocketUnion, level: int = 1) -> Optional[Packet]:
         req = GMLAN() / GMLAN_SA(subfunction=level)
         for _ in range(10):
             seed = sock.sr1(req, timeout=5, verbose=False)
@@ -391,8 +363,7 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
         return None
 
     @staticmethod
-    def evaluate_security_access_response(res, seed, key):
-        # type: (Optional[Packet], Packet, Optional[Packet]) -> bool
+    def evaluate_security_access_response(res: Optional[Packet], seed: Packet, key: Optional[Packet]) -> bool:
         if res is None or res.service == 0x7f:
             log_automotive.debug(repr(seed))
             log_automotive.debug(repr(key))
@@ -404,8 +375,7 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
             return True
 
     @staticmethod
-    def get_key_pkt(seed, keyfunction, level=1):
-        # type: (Packet, Callable[[int], int], int) -> Optional[Packet]
+    def get_key_pkt(seed: Packet, keyfunction: Callable[[int], int], level: int = 1) -> Optional[Packet]:
         try:
             s = seed.securitySeed
         except AttributeError:
@@ -415,8 +385,8 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
                                                securityKey=keyfunction(s)))
 
     @staticmethod
-    def get_security_access(sock, level=1, seed_pkt=None, keyfunction=None):
-        # type: (_SocketUnion, int, Optional[Packet], Optional[Callable[[int], int]]) -> bool  # noqa: E501
+    def get_security_access(sock: _SocketUnion, level: int = 1, seed_pkt: Optional[Packet] = None, keyfunction: Optional[Callable[[int], int]] = None) -> bool:
+        # noqa: E501
         log_automotive.info(
             "Try bootloader security access for level %d" % level)
         if seed_pkt is None:
@@ -436,13 +406,13 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
             res, seed_pkt, key_pkt)
 
     @staticmethod
-    def transition_function(sock, _, kwargs):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration, Dict[str, Any]) -> bool  # noqa: E501
+    def transition_function(sock: _SocketUnion, _: AutomotiveTestCaseExecutorConfiguration, kwargs: Dict[str, Any]) -> bool:
+        # noqa: E501
         return GMLAN_SAEnumerator.get_security_access(
             sock, level=kwargs["sec_level"], keyfunction=kwargs["keyfunction"])
 
-    def get_new_edge(self, socket, config):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]  # noqa: E501
+    def get_new_edge(self, socket: _SocketUnion, config: AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]:
+        # noqa: E501
         last_resp = self._results[-1].resp
         last_state = self._results[-1].state
 
@@ -474,8 +444,7 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
 
         return None
 
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         return self.transition_function, {
             "sec_level": self._transition_function_args[edge][0],
             "keyfunction": self._transition_function_args[edge][1],
@@ -485,24 +454,20 @@ class GMLAN_SAEnumerator(GMLAN_Enumerator, StateGenerator):
 class GMLAN_RDEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
     _description = "RequestDownload supported"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         return [GMLAN() / GMLAN_RD(memorySize=0x10)]
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "RequestDownload:"
 
 
 class GMLAN_PMEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
     _description = "ProgrammingMode supported"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         raise NotImplementedError()
 
-    def execute(self, socket, state, timeout=1, execution_time=1200, **kwargs):
-        # type: (_SocketUnion, EcuState, int, int, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, timeout: int = 1, execution_time: int = 1200, **kwargs: Any) -> None:
         supported = GMLAN_InitDiagnostics(
             cast(SuperSocket, socket), timeout=20,
             unittest=kwargs.get("unittest", False))
@@ -517,8 +482,8 @@ class GMLAN_PMEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
 
         self._state_completed[state] = True
 
-    def get_new_edge(self, socket, config):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]  # noqa: E501
+    def get_new_edge(self, socket: _SocketUnion, config: AutomotiveTestCaseExecutorConfiguration) -> Optional[_Edge]:
+        # noqa: E501
         edge = super(GMLAN_PMEnumerator, self).get_new_edge(socket, config)
         if edge:
             state, new_state = edge
@@ -528,8 +493,8 @@ class GMLAN_PMEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
         return None
 
     @staticmethod
-    def enter_state_with_tp(sock, conf, kwargs):
-        # type: (_SocketUnion, AutomotiveTestCaseExecutorConfiguration, Dict[str, Any]) -> bool  # noqa: E501
+    def enter_state_with_tp(sock: _SocketUnion, conf: AutomotiveTestCaseExecutorConfiguration, kwargs: Dict[str, Any]) -> bool:
+        # noqa: E501
         GMLAN_TPEnumerator.enter(sock, conf, kwargs)
         res = GMLAN_InitDiagnostics(cast(SuperSocket, sock), timeout=20,
                                     unittest=conf.unittest)
@@ -539,32 +504,27 @@ class GMLAN_PMEnumerator(GMLAN_Enumerator, StateGeneratingServiceEnumerator):
         else:
             return True
 
-    def get_transition_function(self, socket, edge):
-        # type: (_SocketUnion, _Edge) -> Optional[_TransitionTuple]
+    def get_transition_function(self, socket: _SocketUnion, edge: _Edge) -> Optional[_TransitionTuple]:
         return self.enter_state_with_tp, {"desc": "PM_TP"}, \
             GMLAN_TPEnumerator.cleanup
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "ProgrammingMode:"
 
 
 class GMLAN_RDBPIEnumerator(GMLAN_Enumerator):
     _description = "Readable parameter identifier per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x10000))
         return (GMLAN() / GMLAN_RDBPI(identifiers=[x]) for x in scan_range)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%04x: %s" % (
             tup[1].identifiers[0],
             tup[1].sprintf("%GMLAN_RDBPI.identifiers%")[1:-1])
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2], GMLAN_RDBIEnumerator.print_information)
 
 
@@ -584,17 +544,15 @@ class GMLAN_RMBAEnumerator(GMLAN_Enumerator):
         :param int sequential_probes_len: Size of a memory block during
                                           sequential probing."""
 
-    def execute(self, socket, state, **kwargs):
-        # type: (_SocketUnion, EcuState, Any) -> None
+    def execute(self, socket: _SocketUnion, state: EcuState, **kwargs: Any) -> None:
         super(GMLAN_RMBAEnumerator, self).execute(socket, state, **kwargs)
 
     execute.__doc__ = _supported_kwargs_doc
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         super(GMLAN_RMBAEnumerator, self).__init__()
-        self.random_probe_finished = defaultdict(bool)  # type: Dict[EcuState, bool]  # noqa: E501
-        self.points_of_interest = defaultdict(list)  # type: Dict[EcuState, List[Tuple[int, bool]]]  # noqa: E501
+        self.random_probe_finished: Dict[EcuState, bool] = defaultdict(bool)  # noqa: E501
+        self.points_of_interest: Dict[EcuState, List[Tuple[int, bool]]] = defaultdict(list)  # noqa: E501
         self.probe_width = 0x10  # defines the memorySize of a request
         self.highest_possible_addr = \
             2 ** (8 * conf.contribs['GMLAN']['GMLAN_ECU_AddressingScheme']) - 1
@@ -604,8 +562,7 @@ class GMLAN_RMBAEnumerator(GMLAN_Enumerator):
         self.sequential_probes_len = \
             10 ** (conf.contribs['GMLAN']['GMLAN_ECU_AddressingScheme'])
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         self.probe_width = kwargs.pop("probe_width", self.probe_width)
         self.random_probes_len = \
             kwargs.pop("random_probes_len", self.random_probes_len)
@@ -619,8 +576,8 @@ class GMLAN_RMBAEnumerator(GMLAN_Enumerator):
                                      memorySize=self.probe_width)
                 for x in scan_range)
 
-    def post_execute(self, socket, state, global_configuration):
-        # type: (_SocketUnion, EcuState, AutomotiveTestCaseExecutorConfiguration) -> None  # noqa: E501
+    def post_execute(self, socket: _SocketUnion, state: EcuState, global_configuration: AutomotiveTestCaseExecutorConfiguration) -> None:
+        # noqa: E501
         if not self._state_completed[state]:
             return
 
@@ -681,8 +638,7 @@ class GMLAN_RMBAEnumerator(GMLAN_Enumerator):
                 "Created %d pkts for sequential probing" %
                 len(new_requests))
 
-    def show(self, dump=False, filtered=True, verbose=False):
-        # type: (bool, bool, bool) -> Optional[str]
+    def show(self, dump: bool = False, filtered: bool = True, verbose: bool = False) -> Optional[str]:
         s = super(GMLAN_RMBAEnumerator, self).show(dump, filtered, verbose)
         try:
             from intelhex import IntelHex
@@ -703,20 +659,17 @@ class GMLAN_RMBAEnumerator(GMLAN_Enumerator):
             print(s)
             return None
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%04x" % tup[1].memoryAddress
 
-    def _get_table_entry_z(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_z(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return self._get_label(tup[2], lambda r: "PR: %s" % r.dataRecord)
 
 
 class GMLAN_TDEnumerator(GMLAN_Enumerator):
     _description = "Transfer Data support and negative response per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x1ff))
         temp = conf.contribs["GMLAN"]['GMLAN_ECU_AddressingScheme']
         # Shift operations to eliminate addresses not aligned to 4
@@ -725,21 +678,18 @@ class GMLAN_TDEnumerator(GMLAN_Enumerator):
         return (GMLAN() / GMLAN_TD(subfunction=0, startingAddress=x)
                 for x in addresses)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%04x" % tup[1].startingAddress
 
 
 class GMLAN_DCEnumerator(GMLAN_Enumerator):
     _description = "DeviceControl supported per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x100))
         return (GMLAN() / GMLAN_DC(CPIDNumber=x) for x in scan_range)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%02x: %s" % \
                (tup[1].CPIDNumber, tup[1].sprintf("%GMLAN_DC.CPIDNumber%"))
 
@@ -748,8 +698,7 @@ class GMLAN_DCEnumerator(GMLAN_Enumerator):
 
 class GMLAN_Scanner(AutomotiveTestCaseExecutor):
     @property
-    def default_test_case_clss(self):
-        # type: () -> List[Type[AutomotiveTestCaseABC]]
+    def default_test_case_clss(self) -> List[Type[AutomotiveTestCaseABC]]:
         return [GMLAN_ServiceEnumerator, GMLAN_TPEnumerator,
                 GMLAN_IDOEnumerator, GMLAN_PMEnumerator,
                 GMLAN_RDEnumerator, GMLAN_SAEnumerator, GMLAN_TDEnumerator,

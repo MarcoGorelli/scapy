@@ -8,6 +8,7 @@ Routing and handling of network interfaces.
 """
 
 
+from __future__ import annotations
 from scapy.compat import plain_str
 from scapy.config import conf
 from scapy.error import Scapy_Exception, warning
@@ -29,26 +30,22 @@ from typing import (
 ##############################
 
 class Route:
-    def __init__(self):
-        # type: () -> None
-        self.routes = []  # type: List[Tuple[int, int, str, str, str, int]]
+    def __init__(self) -> None:
+        self.routes: List[Tuple[int, int, str, str, str, int]] = []
         self.invalidate_cache()
         if conf.route_autoload:
             self.resync()
 
-    def invalidate_cache(self):
-        # type: () -> None
-        self.cache = {}  # type: Dict[Tuple[str, Optional[str]], Tuple[str, str, str]]
+    def invalidate_cache(self) -> None:
+        self.cache: Dict[Tuple[str, Optional[str]], Tuple[str, str, str]] = {}
 
-    def resync(self):
-        # type: () -> None
+    def resync(self) -> None:
         from scapy.arch import read_routes
         self.invalidate_cache()
         self.routes = read_routes()
 
-    def __repr__(self):
-        # type: () -> str
-        rtlst = []  # type: List[Tuple[Union[str, List[str]], ...]]
+    def __repr__(self) -> str:
+        rtlst: List[Tuple[Union[str, List[str]], ...]] = []
         for net, msk, gw, iface, addr, metric in self.routes:
             if_repr = resolve_iface(iface).description
             rtlst.append((ltoa(net),
@@ -62,13 +59,12 @@ class Route:
                            [("Network", "Netmask", "Gateway", "Iface", "Output IP", "Metric")])  # noqa: E501
 
     def make_route(self,
-                   host=None,  # type: Optional[str]
-                   net=None,  # type: Optional[str]
-                   gw=None,  # type: Optional[str]
-                   dev=None,  # type: Optional[str]
-                   metric=1,  # type: int
-                   ):
-        # type: (...) -> Tuple[int, int, str, str, str, int]
+                   host: Optional[str] = None,
+                   net: Optional[str] = None,
+                   gw: Optional[str] = None,
+                   dev: Optional[str] = None,
+                   metric: int = 1,
+                   ) -> Tuple[int, int, str, str, str, int]:
         if host is not None:
             thenet, msk = host, 32
         elif net is not None:
@@ -88,8 +84,7 @@ class Route:
             ifaddr = "0.0.0.0"  # acts as a 'via' in `ip addr add`
         return (atol(thenet), itom(msk), gw, dev, ifaddr, metric)
 
-    def add(self, *args, **kargs):
-        # type: (*Any, **Any) -> None
+    def add(self, *args: Any, **kargs: Any) -> None:
         """Add a route to Scapy's IPv4 routing table.
         add(host|net, gw|dev)
 
@@ -113,8 +108,7 @@ class Route:
         self.invalidate_cache()
         self.routes.append(self.make_route(*args, **kargs))
 
-    def delt(self, *args, **kargs):
-        # type: (*Any, **Any) -> None
+    def delt(self, *args: Any, **kargs: Any) -> None:
         """Remove a route from Scapy's IPv4 routing table.
         delt(host|net, gw|dev)
 
@@ -128,8 +122,7 @@ class Route:
         except ValueError:
             raise ValueError("No matching route found!")
 
-    def ifchange(self, iff, addr):
-        # type: (str, str) -> None
+    def ifchange(self, iff: str, addr: str) -> None:
         self.invalidate_cache()
         the_addr, the_msk_b = (addr.split("/") + ["32"])[:2]
         the_msk = itom(int(the_msk_b))
@@ -146,8 +139,7 @@ class Route:
                 self.routes[i] = (net, msk, gw, iface, the_addr, metric)
         conf.netcache.flush()
 
-    def ifdel(self, iff):
-        # type: (str) -> None
+    def ifdel(self, iff: str) -> None:
         self.invalidate_cache()
         new_routes = []
         for rt in self.routes:
@@ -156,8 +148,7 @@ class Route:
             new_routes.append(rt)
         self.routes = new_routes
 
-    def ifadd(self, iff, addr):
-        # type: (str, str) -> None
+    def ifadd(self, iff: str, addr: str) -> None:
         self.invalidate_cache()
         the_addr, the_msk_b = (addr.split("/") + ["32"])[:2]
         the_msk = itom(int(the_msk_b))
@@ -165,8 +156,7 @@ class Route:
         the_net = the_rawaddr & the_msk
         self.routes.append((the_net, the_msk, '0.0.0.0', iff, the_addr, 1))
 
-    def route(self, dst=None, dev=None, verbose=conf.verb, _internal=False):
-        # type: (Optional[str], Optional[str], int, bool) -> Tuple[str, str, str]
+    def route(self, dst: Optional[str] = None, dev: Optional[str] = None, verbose: int = conf.verb, _internal: bool = False) -> Tuple[str, str, str]:
         """Returns the IPv4 routes to a host.
 
         :param dst: the IPv4 of the destination host
@@ -227,8 +217,7 @@ class Route:
         self.cache[(dst, dev)] = ret
         return ret
 
-    def get_if_bcast(self, iff):
-        # type: (str) -> List[str]
+    def get_if_bcast(self, iff: str) -> List[str]:
         bcast_list = []
         for net, msk, gw, iface, addr, metric in self.routes:
             if net == 0:

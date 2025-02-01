@@ -18,6 +18,8 @@ and HPack encoded headers
 
 # base_classes triggers an unwanted import warning
 
+from __future__ import annotations
+
 import abc
 import re
 from io import BytesIO
@@ -59,8 +61,7 @@ class HPackMagicBitField(fields.BitField):
 
     __slots__ = ['_magic']
 
-    def __init__(self, name, default, size):
-        # type: (str, int, int) -> None
+    def __init__(self, name: str, default: int, size: int) -> None:
         """
         :param str name: this field instance name.
         :param int default: this field only valid value.
@@ -74,8 +75,8 @@ class HPackMagicBitField(fields.BitField):
         self._magic = default
         super(HPackMagicBitField, self).__init__(name, default, size)
 
-    def addfield(self, pkt, s, val):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int, int]], int) -> Union[str, Tuple[str, int, int]]  # noqa: E501
+    def addfield(self, pkt: Optional[packet.Packet], s: Union[str, Tuple[str, int, int]], val: int) -> Union[str, Tuple[str, int, int]]:
+        # noqa: E501
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
         :param str|(str, int, long) s: either a str if 0 == size%8 or a tuple with the string to add this field to, the  # noqa: E501
@@ -87,8 +88,8 @@ class HPackMagicBitField(fields.BitField):
         assert val == self._magic, 'val parameter must value {}; received: {}'.format(self._magic, val)  # noqa: E501
         return super(HPackMagicBitField, self).addfield(pkt, s, self._magic)
 
-    def getfield(self, pkt, s):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int]]) -> Tuple[Union[Tuple[str, int], str], int]  # noqa: E501
+    def getfield(self, pkt: Optional[packet.Packet], s: Union[str, Tuple[str, int]]) -> Tuple[Union[Tuple[str, int], str], int]:
+        # noqa: E501
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
         :param str|(str, int) s: either a str if size%8==0 or a tuple with the string to parse from and the number of  # noqa: E501
@@ -106,8 +107,7 @@ class HPackMagicBitField(fields.BitField):
         assert r[1] == self._magic, 'Invalid value parsed from s; error in class guessing detected!'  # noqa: E501
         return r
 
-    def h2i(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def h2i(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused  # noqa: E501
         :param int x: unused; must be equal to default value
@@ -118,8 +118,7 @@ class HPackMagicBitField(fields.BitField):
             'EINVAL: x: This field is magic. Do not attempt to modify it. Expected value: {}'.format(self._magic)  # noqa: E501
         return super(HPackMagicBitField, self).h2i(pkt, self._magic)
 
-    def i2h(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def i2h(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused  # noqa: E501
         :param int x: unused; must be equal to default value
@@ -130,8 +129,7 @@ class HPackMagicBitField(fields.BitField):
             'EINVAL: x: This field is magic. Do not attempt to modify it. Expected value: {}'.format(self._magic)  # noqa: E501
         return super(HPackMagicBitField, self).i2h(pkt, self._magic)
 
-    def m2i(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def m2i(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused  # noqa: E501
         :param int x: must be the machine representatino of the default value
@@ -142,8 +140,7 @@ class HPackMagicBitField(fields.BitField):
         assert r == self._magic, 'Invalid value parsed from m2i; error in class guessing detected!'  # noqa: E501
         return r
 
-    def i2m(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def i2m(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused  # noqa: E501
         :param int x: unused; must be equal to default value
@@ -154,8 +151,7 @@ class HPackMagicBitField(fields.BitField):
             'EINVAL: x: This field is magic. Do not attempt to modify it. Expected value: {}'.format(self._magic)  # noqa: E501
         return super(HPackMagicBitField, self).i2m(pkt, self._magic)
 
-    def any2i(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def any2i(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused  # noqa: E501
         :param int x: unused; must be equal to default value
@@ -184,8 +180,7 @@ class AbstractUVarIntField(fields.Field):
         compatibility with Bitfields
     """
 
-    def __init__(self, name, default, size):
-        # type: (str, Optional[int], int) -> None
+    def __init__(self, name: str, default: Optional[int], size: int) -> None:
         """
         :param str name: the name of this field instance
         :param int|None default: positive, null or None default value for this field instance.  # noqa: E501
@@ -203,8 +198,7 @@ class AbstractUVarIntField(fields.Field):
         # but that is expected from BitFields
         self.rev = False
 
-    def h2i(self, pkt, x):
-        # type: (Optional[packet.Packet], Optional[int]) -> Optional[int]
+    def h2i(self, pkt: Optional[packet.Packet], x: Optional[int]) -> Optional[int]:
         """
         :param packet.Packet|None pkt: unused.
         :param int|None x: the value to convert.
@@ -214,8 +208,7 @@ class AbstractUVarIntField(fields.Field):
         assert not isinstance(x, int) or x >= 0
         return x
 
-    def i2h(self, pkt, x):
-        # type: (Optional[packet.Packet], Optional[int]) -> Optional[int]
+    def i2h(self, pkt: Optional[packet.Packet], x: Optional[int]) -> Optional[int]:
         """
         :param packet.Packet|None pkt: unused.
         :param int|None x: the value to convert.
@@ -223,8 +216,7 @@ class AbstractUVarIntField(fields.Field):
         """
         return x
 
-    def _detect_multi_byte(self, fb):
-        # type: (str) -> bool
+    def _detect_multi_byte(self, fb: str) -> bool:
         """ _detect_multi_byte returns whether the AbstractUVarIntField is represented on  # noqa: E501
           multiple bytes or not.
 
@@ -237,8 +229,7 @@ class AbstractUVarIntField(fields.Field):
         assert isinstance(fb, int) or len(fb) == 1
         return (orb(fb) & self._max_value) == self._max_value
 
-    def _parse_multi_byte(self, s):
-        # type: (str) -> int
+    def _parse_multi_byte(self, s: str) -> int:
         """ _parse_multi_byte parses x as a multibyte representation to get the
           int value of this AbstractUVarIntField.
 
@@ -273,8 +264,7 @@ class AbstractUVarIntField(fields.Field):
         assert value >= 0
         return value
 
-    def m2i(self, pkt, x):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int]]) -> int
+    def m2i(self, pkt: Optional[packet.Packet], x: Union[str, Tuple[str, int]]) -> int:
         """
           A tuple is expected for the "x" param only if "size" is different than 8. If a tuple is received, some bits  # noqa: E501
           were consumed by another field. This field consumes the remaining bits, therefore the int of the tuple must  # noqa: E501
@@ -301,8 +291,7 @@ class AbstractUVarIntField(fields.Field):
         assert ret >= 0
         return ret
 
-    def i2m(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> str
+    def i2m(self, pkt: Optional[packet.Packet], x: int) -> str:
         """
         :param packet.Packet|None pkt: unused.
         :param int x: the value to convert.
@@ -324,8 +313,8 @@ class AbstractUVarIntField(fields.Field):
             sl.append(chb(x))
             return b''.join(sl)
 
-    def any2i(self, pkt, x):
-        # type: (Optional[packet.Packet], Union[None, str, int]) -> Optional[int]  # noqa: E501
+    def any2i(self, pkt: Optional[packet.Packet], x: Union[None, str, int]) -> Optional[int]:
+        # noqa: E501
         """
           A "x" value as a string is parsed as a binary encoding of a UVarInt. An int is considered an internal value.  # noqa: E501
           None is returned as is.
@@ -348,8 +337,7 @@ class AbstractUVarIntField(fields.Field):
             return ret
         assert False, 'EINVAL: x: No idea what the parameter format is'
 
-    def i2repr(self, pkt, x):
-        # type: (Optional[packet.Packet], Optional[int]) -> str
+    def i2repr(self, pkt: Optional[packet.Packet], x: Optional[int]) -> str:
         """
         :param packet.Packet|None pkt: probably unused.
         :param x: int|None: the positive, null or none value to convert.
@@ -357,8 +345,8 @@ class AbstractUVarIntField(fields.Field):
         """
         return repr(self.i2h(pkt, x))
 
-    def addfield(self, pkt, s, val):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int, int]], int) -> str  # noqa: E501
+    def addfield(self, pkt: Optional[packet.Packet], s: Union[str, Tuple[str, int, int]], val: int) -> str:
+        # noqa: E501
         """
           An AbstractUVarIntField prefix always consumes the remaining bits
           of a BitField;if no current BitField is in use (no tuple in
@@ -395,8 +383,7 @@ class AbstractUVarIntField(fields.Field):
         return s[0] + chb((s[2] << self.size) + orb(self.i2m(pkt, val)))
 
     @staticmethod
-    def _detect_bytelen_from_str(s):
-        # type: (str) -> int
+    def _detect_bytelen_from_str(s: str) -> int:
         """ _detect_bytelen_from_str returns the length of the machine
           representation of an AbstractUVarIntField starting at the beginning
           of s and which is assumed to expand over multiple bytes
@@ -418,8 +405,7 @@ class AbstractUVarIntField(fields.Field):
         assert ret >= 0
         return ret
 
-    def i2len(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def i2len(self, pkt: Optional[packet.Packet], x: int) -> int:
         """
         :param packet.Packet|None pkt: unused.
         :param int x: the positive or null value whose binary size if requested.  # noqa: E501
@@ -442,8 +428,8 @@ class AbstractUVarIntField(fields.Field):
         assert ret >= 0
         return ret
 
-    def getfield(self, pkt, s):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int]]) -> Tuple[str, int]  # noqa: E501
+    def getfield(self, pkt: Optional[packet.Packet], s: Union[str, Tuple[str, int]]) -> Tuple[str, int]:
+        # noqa: E501
         """
         :param packet.Packet|None pkt: the packet instance containing this
           field; probably unused.
@@ -457,7 +443,7 @@ class AbstractUVarIntField(fields.Field):
         """
         if isinstance(s, tuple):
             assert len(s) == 2
-            temp = s  # type: Tuple[str, int]
+            temp: Tuple[str, int] = s
             ts, ti = temp
             assert ti >= 0
             assert 8 - ti == self.size, 'EINVAL: s: not enough bits remaining in current byte to read the prefix'  # noqa: E501
@@ -475,8 +461,7 @@ class AbstractUVarIntField(fields.Field):
         assert ret[1] >= 0
         return ret
 
-    def randval(self):
-        # type: () -> volatile.VolatileValue
+    def randval(self) -> volatile.VolatileValue:
         """
         :return: volatile.VolatileValue: a volatile value for this field "long"-compatible internal value.  # noqa: E501
         """
@@ -484,8 +469,7 @@ class AbstractUVarIntField(fields.Field):
 
 
 class UVarIntField(AbstractUVarIntField):
-    def __init__(self, name, default, size):
-        # type: (str, int, int) -> None
+    def __init__(self, name: str, default: int, size: int) -> None:
         """
         :param str name: the name of this field instance.
         :param default: the default value for this field instance. default must be positive or null.  # noqa: E501
@@ -502,8 +486,7 @@ class UVarIntField(AbstractUVarIntField):
         # expected from BitFields
         self.rev = False
 
-    def h2i(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def h2i(self, pkt: Optional[packet.Packet], x: int) -> int:
         """ h2i is overloaded to restrict the acceptable x values (not None)
 
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
@@ -515,8 +498,7 @@ class UVarIntField(AbstractUVarIntField):
         assert not isinstance(ret, type(None)) and ret >= 0
         return ret
 
-    def i2h(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> int
+    def i2h(self, pkt: Optional[packet.Packet], x: int) -> int:
         """ i2h is overloaded to restrict the acceptable x values (not None)
 
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
@@ -528,8 +510,7 @@ class UVarIntField(AbstractUVarIntField):
         assert not isinstance(ret, type(None)) and ret >= 0
         return ret
 
-    def any2i(self, pkt, x):
-        # type: (Optional[packet.Packet], Union[str, int]) -> int
+    def any2i(self, pkt: Optional[packet.Packet], x: Union[str, int]) -> int:
         """ any2i is overloaded to restrict the acceptable x values (not None)
 
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
@@ -541,8 +522,7 @@ class UVarIntField(AbstractUVarIntField):
         assert not isinstance(ret, type(None)) and ret >= 0
         return ret
 
-    def i2repr(self, pkt, x):
-        # type: (Optional[packet.Packet], int) -> str
+    def i2repr(self, pkt: Optional[packet.Packet], x: int) -> str:
         """ i2repr is overloaded to restrict the acceptable x values (not None)
 
         :param packet.Packet|None pkt: the packet instance containing this field instance; probably unused.  # noqa: E501
@@ -555,8 +535,7 @@ class UVarIntField(AbstractUVarIntField):
 class FieldUVarLenField(AbstractUVarIntField):
     __slots__ = ['_length_of', '_adjust']
 
-    def __init__(self, name, default, size, length_of, adjust=lambda x: x):
-        # type: (str, Optional[int], int, str, Callable[[int], int]) -> None
+    def __init__(self, name: str, default: Optional[int], size: int, length_of: str, adjust: Callable[[int], int] = lambda x: x) -> None:
         """ Initializes a FieldUVarLenField
 
         :param str name: The name of this field instance.
@@ -580,8 +559,8 @@ class FieldUVarLenField(AbstractUVarIntField):
         self._length_of = length_of
         self._adjust = adjust
 
-    def addfield(self, pkt, s, val):
-        # type: (Optional[packet.Packet], Union[str, Tuple[str, int, int]], Optional[int]) -> str  # noqa: E501
+    def addfield(self, pkt: Optional[packet.Packet], s: Union[str, Tuple[str, int, int]], val: Optional[int]) -> str:
+        # noqa: E501
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance. This parameter must not be  # noqa: E501
           None if the val parameter is.
@@ -599,8 +578,7 @@ class FieldUVarLenField(AbstractUVarIntField):
             val = self._compute_value(pkt)
         return super(FieldUVarLenField, self).addfield(pkt, s, val)
 
-    def i2m(self, pkt, x):
-        # type: (Optional[packet.Packet], Optional[int]) -> str
+    def i2m(self, pkt: Optional[packet.Packet], x: Optional[int]) -> str:
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance. This parameter must not be  # noqa: E501
           None if the x parameter is.
@@ -614,8 +592,7 @@ class FieldUVarLenField(AbstractUVarIntField):
             x = self._compute_value(pkt)
         return super(FieldUVarLenField, self).i2m(pkt, x)
 
-    def _compute_value(self, pkt):
-        # type: (packet.Packet) -> int
+    def _compute_value(self, pkt: packet.Packet) -> int:
         """ Computes the value of this field based on the provided packet and
         the length_of field and the adjust callback
 
@@ -661,20 +638,16 @@ class HPackLiteralString(HPackStringsInterface):
     """
     __slots__ = ['_s']
 
-    def __init__(self, s):
-        # type: (str) -> None
+    def __init__(self, s: str) -> None:
         self._s = s
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self._s
 
-    def origin(self):
-        # type: () -> str
+    def origin(self) -> str:
         return plain_str(self._s)
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self._s)
 
 
@@ -697,28 +670,24 @@ class HuffmanNode(object):
      EOS)
     """
 
-    def __init__(self, left, right):
-        # type: (Union[None, HuffmanNode, EOS, str], Union[None, HuffmanNode, EOS, str]) -> None  # noqa: E501
+    def __init__(self, left: Union[None, HuffmanNode, EOS, str], right: Union[None, HuffmanNode, EOS, str]) -> None:
+        # noqa: E501
         self.left = left
         self.right = right
 
-    def __getitem__(self, b):
-        # type: (int) -> Union[None, HuffmanNode, EOS, str]
+    def __getitem__(self, b: int) -> Union[None, HuffmanNode, EOS, str]:
         return self.right if b else self.left
 
-    def __setitem__(self, b, val):
-        # type: (int, Union[None, HuffmanNode, EOS, str]) -> None
+    def __setitem__(self, b: int, val: Union[None, HuffmanNode, EOS, str]) -> None:
         if b:
             self.right = val
         else:
             self.left = val
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self.__repr__()
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return '({}, {})'.format(self.left, self.right)
 
 
@@ -995,11 +964,10 @@ class HPackZString(HPackStringsInterface):
         (0x3fffffff, 30)
     ]
 
-    static_huffman_tree = None  # type: HuffmanNode
+    static_huffman_tree: HuffmanNode = None
 
     @classmethod
-    def _huffman_encode_char(cls, c):
-        # type: (Union[str, EOS]) -> Tuple[int, int]
+    def _huffman_encode_char(cls, c: Union[str, EOS]) -> Tuple[int, int]:
         """ huffman_encode_char assumes that the static_huffman_tree was
         previously initialized
 
@@ -1014,8 +982,7 @@ class HPackZString(HPackStringsInterface):
         return cls.static_huffman_code[orb(c)]
 
     @classmethod
-    def huffman_encode(cls, s):
-        # type: (str) -> Tuple[int, int]
+    def huffman_encode(cls, s: str) -> Tuple[int, int]:
         """ huffman_encode returns the bitstring and the bitlength of the
         bitstring representing the string provided as a parameter
 
@@ -1042,8 +1009,7 @@ class HPackZString(HPackStringsInterface):
         return ret
 
     @classmethod
-    def huffman_decode(cls, i, ibl):
-        # type: (int, int) -> str
+    def huffman_decode(cls, i: int, ibl: int) -> str:
         """ huffman_decode decodes the bitstring provided as parameters.
 
         :param int i: the bitstring to decode
@@ -1100,8 +1066,7 @@ class HPackZString(HPackStringsInterface):
         return b''.join(s)
 
     @classmethod
-    def huffman_conv2str(cls, bit_str, bit_len):
-        # type: (int, int) -> str
+    def huffman_conv2str(cls, bit_str: int, bit_len: int) -> str:
         """ huffman_conv2str converts a bitstring of bit_len bitlength into a
         binary string. It DOES NOT compress/decompress the bitstring!
 
@@ -1121,7 +1086,7 @@ class HPackZString(HPackStringsInterface):
 
         # As usual the list/join tricks is a performance trick to build
         # efficiently a Python string
-        s = []  # type: List[str]
+        s: List[str] = []
         i = 0
         while i < byte_len:
             s.insert(0, chb((bit_str >> (i * 8)) & 0xFF))
@@ -1129,8 +1094,7 @@ class HPackZString(HPackStringsInterface):
         return b''.join(s)
 
     @classmethod
-    def huffman_conv2bitstring(cls, s):
-        # type: (str) -> Tuple[int, int]
+    def huffman_conv2bitstring(cls, s: str) -> Tuple[int, int]:
         """ huffman_conv2bitstring converts a string into its bitstring
         representation. It returns a tuple: the bitstring and its bitlength.
         This function DOES NOT compress/decompress the string!
@@ -1150,8 +1114,7 @@ class HPackZString(HPackStringsInterface):
         return ret
 
     @classmethod
-    def huffman_compute_decode_tree(cls):
-        # type: () -> None
+    def huffman_compute_decode_tree(cls) -> None:
         """ huffman_compute_decode_tree initializes/builds the static_huffman_tree
 
         :return: None
@@ -1172,22 +1135,18 @@ class HPackZString(HPackStringsInterface):
                 parent = parent[b]
             i += 1
 
-    def __init__(self, s):
-        # type: (str) -> None
+    def __init__(self, s: str) -> None:
         self._s = s
         i, ibl = type(self).huffman_encode(s)
         self._encoded = type(self).huffman_conv2str(i, ibl)
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self._encoded
 
-    def origin(self):
-        # type: () -> str
+    def origin(self) -> str:
         return plain_str(self._s)
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self._encoded)
 
 
@@ -1198,19 +1157,17 @@ class HPackStrLenField(fields.Field):
     """
     __slots__ = ['_length_from', '_type_from']
 
-    def __init__(self, name, default, length_from, type_from):
-        # type: (str, HPackStringsInterface, Callable[[packet.Packet], int], str) -> None  # noqa: E501
+    def __init__(self, name: str, default: HPackStringsInterface, length_from: Callable[[packet.Packet], int], type_from: str) -> None:
+        # noqa: E501
         super(HPackStrLenField, self).__init__(name, default)
         self._length_from = length_from
         self._type_from = type_from
 
-    def addfield(self, pkt, s, val):
-        # type: (Optional[packet.Packet], str, HPackStringsInterface) -> str
+    def addfield(self, pkt: Optional[packet.Packet], s: str, val: HPackStringsInterface) -> str:
         return s + self.i2m(pkt, val)
 
     @staticmethod
-    def _parse(t, s):
-        # type: (bool, str) -> HPackStringsInterface
+    def _parse(t: bool, s: str) -> HPackStringsInterface:
         """
         :param bool t: whether this string is a huffman compressed string.
         :param str s: the string to parse.
@@ -1222,8 +1179,7 @@ class HPackStrLenField(fields.Field):
             return HPackZString(HPackZString.huffman_decode(i, ibl))
         return HPackLiteralString(s)
 
-    def getfield(self, pkt, s):
-        # type: (packet.Packet, str) -> Tuple[str, HPackStringsInterface]
+    def getfield(self, pkt: packet.Packet, s: str) -> Tuple[str, HPackStringsInterface]:
         """
         :param packet.Packet pkt: the packet instance containing this field instance.  # noqa: E501
         :param str s: the string to parse this field from.
@@ -1236,8 +1192,7 @@ class HPackStrLenField(fields.Field):
         t = pkt.getfieldval(self._type_from) == 1
         return s[tmp_len:], self._parse(t, s[:tmp_len])
 
-    def i2h(self, pkt, x):
-        # type: (Optional[packet.Packet], HPackStringsInterface) -> str
+    def i2h(self, pkt: Optional[packet.Packet], x: HPackStringsInterface) -> str:
         fmt = ''
         if isinstance(x, HPackLiteralString):
             fmt = "HPackLiteralString({})"
@@ -1245,12 +1200,10 @@ class HPackStrLenField(fields.Field):
             fmt = "HPackZString({})"
         return fmt.format(x.origin())
 
-    def h2i(self, pkt, x):
-        # type: (packet.Packet, str) -> HPackStringsInterface
+    def h2i(self, pkt: packet.Packet, x: str) -> HPackStringsInterface:
         return HPackLiteralString(x)
 
-    def m2i(self, pkt, x):
-        # type: (packet.Packet, str) -> HPackStringsInterface
+    def m2i(self, pkt: packet.Packet, x: str) -> HPackStringsInterface:
         """
         :param packet.Packet pkt: the packet instance containing this field instance.  # noqa: E501
         :param str x: the string to parse.
@@ -1266,8 +1219,8 @@ class HPackStrLenField(fields.Field):
 
         return self._parse(t == 1, x[:tmp_len])
 
-    def any2i(self, pkt, x):
-        # type: (Optional[packet.Packet], Union[str, HPackStringsInterface]) -> HPackStringsInterface  # noqa: E501
+    def any2i(self, pkt: Optional[packet.Packet], x: Union[str, HPackStringsInterface]) -> HPackStringsInterface:
+        # noqa: E501
         """
         :param packet.Packet|None pkt: the packet instance containing this field instance.  # noqa: E501
         :param str|HPackStringsInterface x: the value to convert
@@ -1280,16 +1233,13 @@ class HPackStrLenField(fields.Field):
         assert isinstance(x, HPackStringsInterface)
         return x
 
-    def i2m(self, pkt, x):
-        # type: (Optional[packet.Packet], HPackStringsInterface) -> str
+    def i2m(self, pkt: Optional[packet.Packet], x: HPackStringsInterface) -> str:
         return raw(x)
 
-    def i2len(self, pkt, x):
-        # type: (Optional[packet.Packet], HPackStringsInterface) -> int
+    def i2len(self, pkt: Optional[packet.Packet], x: HPackStringsInterface) -> int:
         return len(x)
 
-    def i2repr(self, pkt, x):
-        # type: (Optional[packet.Packet], HPackStringsInterface) -> str
+    def i2repr(self, pkt: Optional[packet.Packet], x: HPackStringsInterface) -> str:
         return repr(self.i2h(pkt, x))
 
 ###############################################################################
@@ -1312,15 +1262,13 @@ class HPackHdrString(packet.Packet):
         )
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         # Trick to tell scapy that the remaining bytes of the currently
         # dissected string is not a payload of this packet but of some other
         # underlayer packet
         return config.conf.padding_layer
 
-    def self_build(self, **kwargs):
-        # type: (Any) -> str
+    def self_build(self, **kwargs: Any) -> str:
         """self_build is overridden because type and len are determined at
         build time, based on the "data" field internal type
         """
@@ -1335,8 +1283,7 @@ class HPackHeaders(packet.Packet):
     to dissect is snooped on.
     """
     @classmethod
-    def dispatch_hook(cls, s=None, *_args, **_kwds):
-        # type: (Optional[str], *Any, **Any) -> Packet_metaclass
+    def dispatch_hook(cls, s: Optional[str] = None, *_args: Any, **_kwds: Any) -> Packet_metaclass:
         """dispatch_hook returns the subclass of HPackHeaders that must be used
         to dissect the string.
         """
@@ -1351,8 +1298,7 @@ class HPackHeaders(packet.Packet):
             return HPackDynamicSizeUpdate
         return HPackLitHdrFldWithoutIndexing
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         return config.conf.padding_layer
 
 
@@ -1458,8 +1404,7 @@ class H2PaddedDataFrame(H2DataFrame):
                            )
     ]
 
-    def get_data_len(self):
-        # type: () -> int
+    def get_data_len(self) -> int:
         """ get_data_len computes the length of the data field
 
         To do this computation, the length of the padlen field and the actual
@@ -1476,8 +1421,7 @@ class H2PaddedDataFrame(H2DataFrame):
         assert ret >= 0
         return ret
 
-    def pre_dissect(self, s):
-        # type: (str) -> str
+    def pre_dissect(self, s: str) -> str:
         """pre_dissect is filling the s_len property of this instance. This
         property is later used during the getfield call of the "data" field when  # noqa: E501
         trying to evaluate the length of the StrLenField! This "trick" works
@@ -1539,8 +1483,7 @@ class H2PaddedHeadersFrame(H2AbstractHeadersFrame):
                            )
     ]
 
-    def get_hdrs_len(self):
-        # type: () -> int
+    def get_hdrs_len(self) -> int:
         """ get_hdrs_len computes the length of the hdrs field
 
         To do this computation, the length of the padlen field and the actual
@@ -1557,8 +1500,7 @@ class H2PaddedHeadersFrame(H2AbstractHeadersFrame):
         assert ret >= 0
         return ret
 
-    def pre_dissect(self, s):
-        # type: (str) -> str
+    def pre_dissect(self, s: str) -> str:
         """pre_dissect is filling the s_len property of this instance. This
         property is later used during the parsing of the hdrs PacketListField
         when trying to evaluate the length of the PacketListField! This "trick"
@@ -1608,8 +1550,7 @@ class H2PaddedPriorityHeadersFrame(H2AbstractHeadersFrame):
                            )
     ]
 
-    def get_hdrs_len(self):
-        # type: () -> int
+    def get_hdrs_len(self) -> int:
         """ get_hdrs_len computes the length of the hdrs field
 
         To do this computation, the length of the padlen field, the priority
@@ -1635,8 +1576,7 @@ class H2PaddedPriorityHeadersFrame(H2AbstractHeadersFrame):
         assert ret >= 0
         return ret
 
-    def pre_dissect(self, s):
-        # type: (str) -> str
+    def pre_dissect(self, s: str) -> str:
         """pre_dissect is filling the s_len property of this instance. This
         property is later used during the parsing of the hdrs PacketListField
         when trying to evaluate the length of the PacketListField! This "trick"
@@ -1741,8 +1681,7 @@ class H2Setting(packet.Packet):
         fields.IntField('value', 0)
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         return config.conf.padding_layer
 
 
@@ -1823,8 +1762,7 @@ class H2PaddedPushPromiseFrame(H2PushPromiseFrame):
                            )
     ]
 
-    def get_hdrs_len(self):
-        # type: () -> int
+    def get_hdrs_len(self) -> int:
         """ get_hdrs_len computes the length of the hdrs field
 
         To do this computation, the length of the padlen field, reserved,
@@ -1846,8 +1784,7 @@ class H2PaddedPushPromiseFrame(H2PushPromiseFrame):
         assert ret >= 0
         return ret
 
-    def pre_dissect(self, s):
-        # type: (str) -> str
+    def pre_dissect(self, s: str) -> str:
         """pre_dissect is filling the s_len property of this instance. This
         property is later used during the parsing of the hdrs PacketListField
         when trying to evaluate the length of the PacketListField! This "trick"
@@ -1989,8 +1926,7 @@ class H2Frame(packet.Packet):
         fields.BitField('stream_id', 0, 31)
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         """ guess_payload_class returns the Class object to use for parsing a payload
         This function uses the H2Frame.type field value to decide which payload to parse. The implement cannot be  # noqa: E501
         performed using the simple bind_layers helper because sometimes the selection of which Class object to return  # noqa: E501
@@ -2046,8 +1982,7 @@ class H2Frame(packet.Packet):
 
         return config.conf.padding_layer
 
-    def extract_padding(self, s):
-        # type: (str) -> Tuple[str, str]
+    def extract_padding(self, s: str) -> Tuple[str, str]:
         """
         :param str s: the string from which to tell the padding and the payload data apart  # noqa: E501
         :return: (str, str): the padding and the payload data strings
@@ -2057,8 +1992,7 @@ class H2Frame(packet.Packet):
         assert len(s) >= self.len, 'Invalid length: string too short for this length'  # noqa: E501
         return s[:self.len], s[self.len:]
 
-    def post_build(self, p, pay):
-        # type: (str, str) -> str
+    def post_build(self, p: str, pay: str) -> str:
         """
         :param str p: the stringified packet
         :param str pay: the stringified payload
@@ -2083,8 +2017,7 @@ class H2Seq(packet.Packet):
         fields.PacketListField('frames', [], H2Frame)
     ]
 
-    def guess_payload_class(self, payload):
-        # type: (str) -> Packet_metaclass
+    def guess_payload_class(self, payload: str) -> Packet_metaclass:
         return config.conf.padding_layer
 
 
@@ -2122,8 +2055,7 @@ class HPackHdrEntry(Sized):
     """
     __slots__ = ['_name', '_len', '_value']
 
-    def __init__(self, name, value):
-        # type: (str, str) -> None
+    def __init__(self, name: str, value: str) -> None:
         """
         :raises: AssertionError
         """
@@ -2135,16 +2067,13 @@ class HPackHdrEntry(Sized):
         # 32 bytes is an RFC-hardcoded value: see RFC 7541 par4.1
         self._len = (32 + len(self._name) + len(self._value))
 
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         return self._name
 
-    def value(self):
-        # type: () -> str
+    def value(self) -> str:
         return self._value
 
-    def size(self):
-        # type: () -> int
+    def size(self) -> int:
         """ size returns the "length" of the header entry, as defined in
         RFC 7541 par4.1.
         """
@@ -2152,8 +2081,7 @@ class HPackHdrEntry(Sized):
 
     __len__ = size
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         """ __str__ returns the header as it would be formatted in textual format
         """
         if self._name.startswith(':'):
@@ -2256,33 +2184,30 @@ class HPackHdrTable(Sized):
 
     # The value of this variable cannot be determined at declaration time. It is  # noqa: E501
     # initialized by an init_static_table call
-    _static_entries_last_idx = None  # type: int
+    _static_entries_last_idx: int = None
 
     @classmethod
-    def init_static_table(cls):
-        # type: () -> None
+    def init_static_table(cls) -> None:
         cls._static_entries_last_idx = max(cls._static_entries)
 
-    def __init__(self, dynamic_table_max_size=4096, dynamic_table_cap_size=4096):  # noqa: E501
-        # type: (int, int) -> None
+    def __init__(self, dynamic_table_max_size: int = 4096, dynamic_table_cap_size: int = 4096) -> None:  # noqa: E501
         """
         :param int dynamic_table_max_size: the current maximum size of the dynamic entry table in bytes  # noqa: E501
         :param int dynamic_table_cap_size: the maximum-maximum size of the dynamic entry table in bytes  # noqa: E501
         :raises:s AssertionError
         """
-        self._regexp = None  # type: Pattern
+        self._regexp: Pattern = None
         if isinstance(type(self)._static_entries_last_idx, type(None)):
             type(self).init_static_table()
 
         assert dynamic_table_max_size <= dynamic_table_cap_size, \
             'EINVAL: dynamic_table_max_size too large; expected value is less or equal to dynamic_table_cap_size'  # noqa: E501
 
-        self._dynamic_table = []  # type: List[HPackHdrEntry]
+        self._dynamic_table: List[HPackHdrEntry] = []
         self._dynamic_table_max_size = dynamic_table_max_size
         self._dynamic_table_cap_size = dynamic_table_cap_size
 
-    def __getitem__(self, idx):
-        # type: (int) -> HPackHdrEntry
+    def __getitem__(self, idx: int) -> HPackHdrEntry:
         """Gets an element from the header tables (static or dynamic indifferently)
 
         :param int idx: the index number of the entry to retrieve. If the index
@@ -2303,8 +2228,7 @@ class HPackHdrTable(Sized):
             return self._dynamic_table[idx]
         return type(self)._static_entries[idx]
 
-    def resize(self, ns):
-        # type: (int) -> None
+    def resize(self, ns: int) -> None:
         """Resize the dynamic table. If the new size (ns) must be between 0 and
         the cap size. If the new size is lower than the current size of the
         dynamic table, entries are evicted.
@@ -2319,8 +2243,7 @@ class HPackHdrTable(Sized):
         if old_size > self._dynamic_table_max_size:
             self._reduce_dynamic_table()
 
-    def recap(self, nc):
-        # type: (int) -> None
+    def recap(self, nc: int) -> None:
         """recap changes the maximum size limit of the dynamic table. It also
         proceeds to a resize(), if the new size is lower than the previous one.
         :param int nc: the new cap of the dynamic table (that is the maximum-maximum size)  # noqa: E501
@@ -2335,8 +2258,7 @@ class HPackHdrTable(Sized):
             # we do it anyway
             self.resize(nc)
 
-    def _reduce_dynamic_table(self, new_entry_size=0):
-        # type: (int) -> None
+    def _reduce_dynamic_table(self, new_entry_size: int = 0) -> None:
         """_reduce_dynamic_table evicts entries from the dynamic table until it
         fits in less than the current size limit. The optional parameter,
         new_entry_size, allows the resize to happen so that a new entry of this
@@ -2354,8 +2276,8 @@ class HPackHdrTable(Sized):
             dyn_tbl_sz -= 1
             cur_sz -= last_elmt_sz
 
-    def register(self, hdrs):
-        # type: (Union[HPackLitHdrFldWithIncrIndexing, H2Frame, List[HPackHeaders]]) -> None  # noqa: E501
+    def register(self, hdrs: Union[HPackLitHdrFldWithIncrIndexing, H2Frame, List[HPackHeaders]]) -> None:
+        # noqa: E501
         """register adds to this table the instances of
         HPackLitHdrFldWithIncrIndexing provided as parameters.
 
@@ -2400,8 +2322,7 @@ class HPackHdrTable(Sized):
             assert new_entry_len <= self._dynamic_table_max_size
             self._dynamic_table.insert(0, entry)
 
-    def get_idx_by_name(self, name):
-        # type: (str) -> Optional[int]
+    def get_idx_by_name(self, name: str) -> Optional[int]:
         """ get_idx_by_name returns the index of a matching registered header
 
         This implementation will prefer returning a static entry index whenever
@@ -2419,8 +2340,7 @@ class HPackHdrTable(Sized):
                 return type(self)._static_entries_last_idx + idx + 1
         return None
 
-    def get_idx_by_name_and_value(self, name, value):
-        # type: (str, str) -> Optional[int]
+    def get_idx_by_name_and_value(self, name: str, value: str) -> Optional[int]:
         """ get_idx_by_name_and_value returns the index of a matching registered
         header
 
@@ -2438,14 +2358,12 @@ class HPackHdrTable(Sized):
                 return type(self)._static_entries_last_idx + idx + 1
         return None
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         """ __len__ returns the summed length of all dynamic entries
         """
         return sum(len(x) for x in self._dynamic_table)
 
-    def gen_txt_repr(self, hdrs, register=True):
-        # type: (Union[H2Frame, List[HPackHeaders]], Optional[bool]) -> str
+    def gen_txt_repr(self, hdrs: Union[H2Frame, List[HPackHeaders]], register: Optional[bool] = True) -> str:
         """
         gen_txt_repr returns a "textual" representation of the provided
         headers.
@@ -2497,15 +2415,14 @@ class HPackHdrTable(Sized):
         return '\n'.join(lst)
 
     @staticmethod
-    def _optimize_header_length_and_packetify(s):
-        # type: (str) -> HPackHdrString
+    def _optimize_header_length_and_packetify(s: str) -> HPackHdrString:
         zs = HPackZString(s)
         if len(zs) >= len(s):
             return HPackHdrString(data=HPackLiteralString(s))
         return HPackHdrString(data=zs)
 
-    def _convert_a_header_to_a_h2_header(self, hdr_name, hdr_value, is_sensitive, should_index):  # noqa: E501
-        # type: (str, str, Callable[[str, str], bool], Callable[[str], bool]) -> Tuple[HPackHeaders, int]  # noqa: E501
+    def _convert_a_header_to_a_h2_header(self, hdr_name: str, hdr_value: str, is_sensitive: Callable[[str, str], bool], should_index: Callable[[str], bool]) -> Tuple[HPackHeaders, int]:  # noqa: E501
+        # noqa: E501
         """ _convert_a_header_to_a_h2_header builds a HPackHeaders from a header
         name and a value. It returns a HPackIndexedHdr whenever possible. If not,  # noqa: E501
         it returns a HPackLitHdrFldWithoutIndexing or a
@@ -2599,8 +2516,7 @@ class HPackHdrTable(Sized):
             )
         )
 
-    def _parse_header_line(self, line):
-        # type: (str) -> Union[Tuple[None, None], Tuple[str, str]]
+    def _parse_header_line(self, line: str) -> Union[Tuple[None, None], Tuple[str, str]]:
 
         if self._regexp is None:
             self._regexp = re.compile(br'^(?::([a-z\-0-9]+)|([a-z\-0-9]+):)\s+(.+)$')  # noqa: E501
@@ -2618,16 +2534,15 @@ class HPackHdrTable(Sized):
         return plain_str(hdr_name.lower()), plain_str(grp.group(3))
 
     def parse_txt_hdrs(self,
-                       s,  # type: Union[bytes, str]
-                       stream_id=1,  # type: int
-                       body=None,  # type: Optional[str]
-                       max_frm_sz=4096,  # type: int
-                       max_hdr_lst_sz=0,  # type: int
-                       is_sensitive=lambda n, v: False,  # type: Callable[[str, str], bool]  # noqa: E501
-                       should_index=lambda x: False,  # type: Callable[[str], bool]  # noqa: E501
-                       register=True,  # type: bool
-                       ):
-        # type: (...) -> H2Seq
+                       s: Union[bytes, str],
+                       stream_id: int = 1,
+                       body: Optional[str] = None,
+                       max_frm_sz: int = 4096,
+                       max_hdr_lst_sz: int = 0,
+                       is_sensitive: Callable[[str, str], bool] = lambda n, v: False,  # noqa: E501
+                       should_index: Callable[[str], bool] = lambda x: False,  # noqa: E501
+                       register: bool = True,
+                       ) -> H2Seq:
         """
         parse_txt_hdrs parses headers expressed in text and converts them
         into a series of H2Frames with the "correct" flags. A body can be
@@ -2669,7 +2584,7 @@ class HPackHdrTable(Sized):
         base_frm_len = len(raw(H2Frame()))
 
         ret = H2Seq()
-        cur_frm = H2HeadersFrame()  # type: Union[H2HeadersFrame, H2ContinuationFrame]  # noqa: E501
+        cur_frm: Union[H2HeadersFrame, H2ContinuationFrame] = H2HeadersFrame()  # noqa: E501
         cur_hdr_sz = 0
 
         # For each line in the headers str to parse

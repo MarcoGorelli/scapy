@@ -16,6 +16,8 @@ Implements parts of:
     `GSSAPI <https://scapy.readthedocs.io/en/latest/layers/gssapi.html#spnego>`_
 """
 
+from __future__ import annotations
+
 import struct
 from uuid import UUID
 
@@ -295,8 +297,7 @@ class NEGOEX_MESSAGE_HEADER(Packet):
         return pkt + pay
 
 
-def _NEGOEX_post_build(self, p, pay_offset, fields):
-    # type: (Packet, bytes, int, Dict[str, Tuple[str, int]]) -> bytes
+def _NEGOEX_post_build(self: Packet, p: bytes, pay_offset: int, fields: Dict[str, Tuple[str, int]]) -> bytes:
     """Util function to build the offset and populate the lengths"""
     for field_name, value in self.fields["Payload"]:
         length = self.get_field("Payload").fields_map[field_name].i2len(self, value)
@@ -363,8 +364,7 @@ class NEGOEX_NEGO_MESSAGE(_NTLMPayloadPacket):
         # TODO: dissect extensions
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         return (
             _NEGOEX_post_build(
                 self,

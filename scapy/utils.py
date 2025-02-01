@@ -6,7 +6,7 @@
 """
 General utility functions.
 """
-
+from __future__ import annotations
 
 from decimal import Decimal
 from io import StringIO
@@ -91,10 +91,9 @@ _ByteStream = Union[IO[bytes], gzip.GzipFile]
 ###########
 
 
-def issubtype(x,  # type: Any
-              t,  # type: Union[type, str]
-              ):
-    # type: (...) -> bool
+def issubtype(x: Any,
+              t: Union[type, str],
+              ) -> bool:
     """issubtype(C, B) -> bool
 
     Return whether C is a class and if it is a subclass of class B.
@@ -118,83 +117,66 @@ class EDecimal(Decimal):
     backward compatibility
     """
 
-    def __add__(self, other, context=None):
-        # type: (_Decimal, Any) -> EDecimal
+    def __add__(self, other: _Decimal, context: Any = None) -> EDecimal:
         return EDecimal(Decimal.__add__(self, Decimal(other)))
 
-    def __radd__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __radd__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__add__(self, Decimal(other)))
 
-    def __sub__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __sub__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__sub__(self, Decimal(other)))
 
-    def __rsub__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __rsub__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__rsub__(self, Decimal(other)))
 
-    def __mul__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __mul__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__mul__(self, Decimal(other)))
 
-    def __rmul__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __rmul__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__mul__(self, Decimal(other)))
 
-    def __truediv__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __truediv__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__truediv__(self, Decimal(other)))
 
-    def __floordiv__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __floordiv__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__floordiv__(self, Decimal(other)))
 
-    def __divmod__(self, other):
-        # type: (_Decimal) -> Tuple[EDecimal, EDecimal]
+    def __divmod__(self, other: _Decimal) -> Tuple[EDecimal, EDecimal]:
         r = Decimal.__divmod__(self, Decimal(other))
         return EDecimal(r[0]), EDecimal(r[1])
 
-    def __mod__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __mod__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__mod__(self, Decimal(other)))
 
-    def __rmod__(self, other):
-        # type: (_Decimal) -> EDecimal
+    def __rmod__(self, other: _Decimal) -> EDecimal:
         return EDecimal(Decimal.__rmod__(self, Decimal(other)))
 
-    def __pow__(self, other, modulo=None):
-        # type: (_Decimal, Optional[_Decimal]) -> EDecimal
+    def __pow__(self, other: _Decimal, modulo: Optional[_Decimal] = None) -> EDecimal:
         return EDecimal(Decimal.__pow__(self, Decimal(other), modulo))
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Decimal):
             return super(EDecimal, self).__eq__(other)
         else:
             return bool(float(self) == other)
 
-    def normalize(self, precision):  # type: ignore
-        # type: (int) -> EDecimal
+    def normalize(self, precision: int) -> EDecimal:  # type: ignore
         with decimal.localcontext() as ctx:
             ctx.prec = precision
             return EDecimal(super(EDecimal, self).normalize(ctx))
 
 
 @overload
-def get_temp_file(keep, autoext, fd):
-    # type: (bool, str, Literal[True]) -> IO[bytes]
+def get_temp_file(keep: bool, autoext: str, fd: Literal[True]) -> IO[bytes]:
     pass
 
 
 @overload
-def get_temp_file(keep=False, autoext="", fd=False):
-    # type: (bool, str, Literal[False]) -> str
+def get_temp_file(keep: bool = False, autoext: str = "", fd: Literal[False] = False) -> str:
     pass
 
 
-def get_temp_file(keep=False, autoext="", fd=False):
-    # type: (bool, str, bool) -> Union[IO[bytes], str]
+def get_temp_file(keep: bool = False, autoext: str = "", fd: bool = False) -> Union[IO[bytes], str]:
     """Creates a temporary file.
 
     :param keep: If False, automatically delete the file when Scapy exits.
@@ -215,8 +197,7 @@ def get_temp_file(keep=False, autoext="", fd=False):
         return f.name
 
 
-def get_temp_dir(keep=False):
-    # type: (bool) -> str
+def get_temp_dir(keep: bool = False) -> str:
     """Creates a temporary file, and returns its name.
 
     :param keep: If False (default), the directory will be recursively
@@ -260,8 +241,7 @@ def _open_fifo(fd: Any, mode: str = "rb") -> IO[bytes]:
         return open(fd, mode)
 
 
-def sane(x, color=False):
-    # type: (AnyStr, bool) -> str
+def sane(x: AnyStr, color: bool = False) -> str:
     r = ""
     for i in x:
         j = orb(i)
@@ -276,8 +256,7 @@ def sane(x, color=False):
 
 
 @conf.commands.register
-def restart():
-    # type: () -> None
+def restart() -> None:
     """Restarts scapy"""
     if not conf.interactive or not os.path.isfile(sys.argv[0]):
         raise OSError("Scapy was not started from console")
@@ -290,8 +269,7 @@ def restart():
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
-def lhex(x):
-    # type: (Any) -> str
+def lhex(x: Any) -> str:
     from scapy.volatile import VolatileValue
     if isinstance(x, VolatileValue):
         return repr(x)
@@ -305,8 +283,7 @@ def lhex(x):
 
 
 @conf.commands.register
-def hexdump(p, dump=False):
-    # type: (Union[Packet, AnyStr], bool) -> Optional[str]
+def hexdump(p: Union[Packet, AnyStr], dump: bool = False) -> Optional[str]:
     """Build a tcpdump like hexadecimal view
 
     :param p: a Packet
@@ -336,8 +313,7 @@ def hexdump(p, dump=False):
 
 
 @conf.commands.register
-def linehexdump(p, onlyasc=0, onlyhex=0, dump=False):
-    # type: (Union[Packet, AnyStr], int, int, bool) -> Optional[str]
+def linehexdump(p: Union[Packet, AnyStr], onlyasc: int = 0, onlyhex: int = 0, dump: bool = False) -> Optional[str]:
     """Build an equivalent view of hexdump() on a single line
 
     Note that setting both onlyasc and onlyhex to 1 results in a empty output
@@ -358,8 +334,7 @@ def linehexdump(p, onlyasc=0, onlyhex=0, dump=False):
 
 
 @conf.commands.register
-def chexdump(p, dump=False):
-    # type: (Union[Packet, AnyStr], bool) -> Optional[str]
+def chexdump(p: Union[Packet, AnyStr], dump: bool = False) -> Optional[str]:
     """Build a per byte hexadecimal representation
 
     Example:
@@ -380,8 +355,7 @@ def chexdump(p, dump=False):
 
 
 @conf.commands.register
-def hexstr(p, onlyasc=0, onlyhex=0, color=False):
-    # type: (Union[Packet, AnyStr], int, int, bool) -> str
+def hexstr(p: Union[Packet, AnyStr], onlyasc: int = 0, onlyhex: int = 0, color: bool = False) -> str:
     """Build a fancy tcpdump like hex from bytes."""
     x = bytes_encode(p)
     s = []
@@ -392,8 +366,7 @@ def hexstr(p, onlyasc=0, onlyhex=0, color=False):
     return "  ".join(s)
 
 
-def repr_hex(s):
-    # type: (bytes) -> str
+def repr_hex(s: bytes) -> str:
     """ Convert provided bitstring to a simple string of hex digits """
     return "".join("%02x" % orb(x) for x in s)
 
@@ -586,13 +559,12 @@ def hexdiff(
 
 
 if struct.pack("H", 1) == b"\x00\x01":  # big endian
-    checksum_endian_transform = lambda chk: chk  # type: Callable[[int], int]
+    checksum_endian_transform: Callable[[int], int] = lambda chk: chk
 else:
     checksum_endian_transform = lambda chk: ((chk >> 8) & 0xff) | chk << 8
 
 
-def checksum(pkt):
-    # type: (bytes) -> int
+def checksum(pkt: bytes) -> int:
     if len(pkt) % 2 == 1:
         pkt += b"\0"
     s = sum(array.array("H", pkt))
@@ -602,8 +574,7 @@ def checksum(pkt):
     return checksum_endian_transform(s) & 0xffff
 
 
-def _fletcher16(charbuf):
-    # type: (bytes) -> Tuple[int, int]
+def _fletcher16(charbuf: bytes) -> Tuple[int, int]:
     # This is based on the GPLed C implementation in Zebra <http://www.zebra.org/>  # noqa: E501
     c0 = c1 = 0
     for char in charbuf:
@@ -616,8 +587,7 @@ def _fletcher16(charbuf):
 
 
 @conf.commands.register
-def fletcher16_checksum(binbuf):
-    # type: (bytes) -> int
+def fletcher16_checksum(binbuf: bytes) -> int:
     """Calculates Fletcher-16 checksum of the given buffer.
 
        Note:
@@ -629,8 +599,7 @@ def fletcher16_checksum(binbuf):
 
 
 @conf.commands.register
-def fletcher16_checkbytes(binbuf, offset):
-    # type: (bytes, int) -> bytes
+def fletcher16_checkbytes(binbuf: bytes, offset: int) -> bytes:
     """Calculates the Fletcher-16 checkbytes returned as 2 byte binary-string.
 
        Including the bytes into the buffer (at the position marked by offset) the  # noqa: E501
@@ -659,13 +628,11 @@ def fletcher16_checkbytes(binbuf, offset):
     return chb(x) + chb(y)
 
 
-def mac2str(mac):
-    # type: (str) -> bytes
+def mac2str(mac: str) -> bytes:
     return b"".join(chb(int(x, 16)) for x in plain_str(mac).split(':'))
 
 
-def valid_mac(mac):
-    # type: (str) -> bool
+def valid_mac(mac: str) -> bool:
     try:
         return len(mac2str(mac)) == 6
     except ValueError:
@@ -673,15 +640,13 @@ def valid_mac(mac):
     return False
 
 
-def str2mac(s):
-    # type: (bytes) -> str
+def str2mac(s: bytes) -> str:
     if isinstance(s, str):
         return ("%02x:" * len(s))[:-1] % tuple(map(ord, s))
     return ("%02x:" * len(s))[:-1] % tuple(s)
 
 
-def randstring(length):
-    # type: (int) -> bytes
+def randstring(length: int) -> bytes:
     """
     Returns a random string of length (length >= 0)
     """
@@ -689,8 +654,7 @@ def randstring(length):
                     for _ in range(length))
 
 
-def zerofree_randstring(length):
-    # type: (int) -> bytes
+def zerofree_randstring(length: int) -> bytes:
     """
     Returns a random string of length (length >= 0) without zero in it.
     """
@@ -698,8 +662,7 @@ def zerofree_randstring(length):
                     for _ in range(length))
 
 
-def stror(s1, s2):
-    # type: (bytes, bytes) -> bytes
+def stror(s1: bytes, s2: bytes) -> bytes:
     """
     Returns the binary OR of the 2 provided strings s1 and s2. s1 and s2
     must be of same length.
@@ -707,8 +670,7 @@ def stror(s1, s2):
     return b"".join(map(lambda x, y: struct.pack("!B", x | y), s1, s2))
 
 
-def strxor(s1, s2):
-    # type: (bytes, bytes) -> bytes
+def strxor(s1: bytes, s2: bytes) -> bytes:
     """
     Returns the binary XOR of the 2 provided strings s1 and s2. s1 and s2
     must be of same length.
@@ -716,8 +678,7 @@ def strxor(s1, s2):
     return b"".join(map(lambda x, y: struct.pack("!B", x ^ y), s1, s2))
 
 
-def strand(s1, s2):
-    # type: (bytes, bytes) -> bytes
+def strand(s1: bytes, s2: bytes) -> bytes:
     """
     Returns the binary AND of the 2 provided strings s1 and s2. s1 and s2
     must be of same length.
@@ -725,8 +686,7 @@ def strand(s1, s2):
     return b"".join(map(lambda x, y: struct.pack("!B", x & y), s1, s2))
 
 
-def strrot(s1, count, right=True):
-    # type: (bytes, int, bool) -> bytes
+def strrot(s1: bytes, count: int, right: bool = True) -> bytes:
     """
     Rotate the binary by 'count' bytes
     """
@@ -741,8 +701,7 @@ def strrot(s1, count, right=True):
 try:
     socket.inet_aton("255.255.255.255")
 except socket.error:
-    def inet_aton(ip_string):
-        # type: (str) -> bytes
+    def inet_aton(ip_string: str) -> bytes:
         if ip_string == "255.255.255.255":
             return b"\xff" * 4
         else:
@@ -753,8 +712,7 @@ else:
 inet_ntoa = socket.inet_ntoa
 
 
-def atol(x):
-    # type: (str) -> int
+def atol(x: str) -> int:
     try:
         ip = inet_aton(x)
     except socket.error:
@@ -762,8 +720,7 @@ def atol(x):
     return cast(int, struct.unpack("!I", ip)[0])
 
 
-def valid_ip(addr):
-    # type: (str) -> bool
+def valid_ip(addr: str) -> bool:
     try:
         addr = plain_str(addr)
     except UnicodeDecodeError:
@@ -775,8 +732,7 @@ def valid_ip(addr):
     return True
 
 
-def valid_net(addr):
-    # type: (str) -> bool
+def valid_net(addr: str) -> bool:
     try:
         addr = plain_str(addr)
     except UnicodeDecodeError:
@@ -787,8 +743,7 @@ def valid_net(addr):
     return valid_ip(addr)
 
 
-def valid_ip6(addr):
-    # type: (str) -> bool
+def valid_ip6(addr: str) -> bool:
     try:
         addr = plain_str(addr)
     except UnicodeDecodeError:
@@ -800,8 +755,7 @@ def valid_ip6(addr):
     return True
 
 
-def valid_net6(addr):
-    # type: (str) -> bool
+def valid_net6(addr: str) -> bool:
     try:
         addr = plain_str(addr)
     except UnicodeDecodeError:
@@ -812,18 +766,15 @@ def valid_net6(addr):
     return valid_ip6(addr)
 
 
-def ltoa(x):
-    # type: (int) -> str
+def ltoa(x: int) -> str:
     return inet_ntoa(struct.pack("!I", x & 0xffffffff))
 
 
-def itom(x):
-    # type: (int) -> int
+def itom(x: int) -> int:
     return (0xffffffff00000000 >> x) & 0xffffffff
 
 
-def in4_cidr2mask(m):
-    # type: (int) -> bytes
+def in4_cidr2mask(m: int) -> bytes:
     """
     Return the mask (bitstring) associated with provided length
     value. For instance if function is called on 20, return value is
@@ -838,8 +789,7 @@ def in4_cidr2mask(m):
     )
 
 
-def in4_isincluded(addr, prefix, mask):
-    # type: (str, str, int) -> bool
+def in4_isincluded(addr: str, prefix: str, mask: int) -> bool:
     """
     Returns True when 'addr' belongs to prefix/mask. False otherwise.
     """
@@ -849,8 +799,7 @@ def in4_isincluded(addr, prefix, mask):
     return zero == strand(temp, pref)
 
 
-def in4_ismaddr(str):
-    # type: (str) -> bool
+def in4_ismaddr(str: str) -> bool:
     """
     Returns True if provided address in printable format belongs to
     allocated Multicast address space (224.0.0.0/4).
@@ -858,8 +807,7 @@ def in4_ismaddr(str):
     return in4_isincluded(str, "224.0.0.0", 4)
 
 
-def in4_ismlladdr(str):
-    # type: (str) -> bool
+def in4_ismlladdr(str: str) -> bool:
     """
     Returns True if address belongs to link-local multicast address
     space (224.0.0.0/24)
@@ -867,8 +815,7 @@ def in4_ismlladdr(str):
     return in4_isincluded(str, "224.0.0.0", 24)
 
 
-def in4_ismgladdr(str):
-    # type: (str) -> bool
+def in4_ismgladdr(str: str) -> bool:
     """
     Returns True if address belongs to global multicast address
     space (224.0.1.0-238.255.255.255).
@@ -880,8 +827,7 @@ def in4_ismgladdr(str):
     )
 
 
-def in4_ismlsaddr(str):
-    # type: (str) -> bool
+def in4_ismlsaddr(str: str) -> bool:
     """
     Returns True if address belongs to limited scope multicast address
     space (239.0.0.0/8).
@@ -889,8 +835,7 @@ def in4_ismlsaddr(str):
     return in4_isincluded(str, "239.0.0.0", 8)
 
 
-def in4_isaddrllallnodes(str):
-    # type: (str) -> bool
+def in4_isaddrllallnodes(str: str) -> bool:
     """
     Returns True if address is the link-local all-nodes multicast
     address (224.0.0.1).
@@ -899,8 +844,7 @@ def in4_isaddrllallnodes(str):
             inet_pton(socket.AF_INET, str))
 
 
-def in4_getnsmac(a):
-    # type: (bytes) -> str
+def in4_getnsmac(a: bytes) -> str:
     """
     Return the multicast mac address associated with provided
     IPv4 address. Passed address must be in network format.
@@ -909,8 +853,7 @@ def in4_getnsmac(a):
     return "01:00:5e:%.2x:%.2x:%.2x" % (a[1] & 0x7f, a[2], a[3])
 
 
-def decode_locale_str(x):
-    # type: (bytes) -> str
+def decode_locale_str(x: bytes) -> str:
     """
     Decode bytes into a string using the system locale.
     Useful on Windows where it can be unusual (e.g. cp1252)
@@ -930,21 +873,18 @@ class ContextManagerSubprocess(object):
 
     """
 
-    def __init__(self, prog, suppress=True):
-        # type: (str, bool) -> None
+    def __init__(self, prog: str, suppress: bool = True) -> None:
         self.prog = prog
         self.suppress = suppress
 
-    def __enter__(self):
-        # type: () -> None
+    def __enter__(self) -> None:
         pass
 
     def __exit__(self,
-                 exc_type,  # type: Optional[type]
-                 exc_value,  # type: Optional[Exception]
-                 traceback,  # type: Optional[Any]
-                 ):
-        # type: (...) -> Optional[bool]
+                 exc_type: Optional[type],
+                 exc_value: Optional[Exception],
+                 traceback: Optional[Any],
+                 ) -> Optional[bool]:
         if exc_value is None or exc_type is None:
             return None
         # Errored
@@ -971,16 +911,13 @@ class ContextManagerCaptureOutput(object):
     ...     assert cmco.get_output() == "hey"
     """
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         self.result_export_object = ""
 
-    def __enter__(self):
-        # type: () -> ContextManagerCaptureOutput
+    def __enter__(self) -> ContextManagerCaptureOutput:
         from unittest import mock
 
-        def write(s, decorator=self):
-            # type: (str, ContextManagerCaptureOutput) -> None
+        def write(s: str, decorator: ContextManagerCaptureOutput = self) -> None:
             decorator.result_export_object += s
         mock_stdout = mock.Mock()
         mock_stdout.write = write
@@ -988,28 +925,25 @@ class ContextManagerCaptureOutput(object):
         sys.stdout = mock_stdout
         return self
 
-    def __exit__(self, *exc):
-        # type: (*Any) -> Literal[False]
+    def __exit__(self, *exc: Any) -> Literal[False]:
         sys.stdout = self.bck_stdout
         return False
 
-    def get_output(self, eval_bytes=False):
-        # type: (bool) -> str
+    def get_output(self, eval_bytes: bool = False) -> str:
         if self.result_export_object.startswith("b'") and eval_bytes:
             return plain_str(eval(self.result_export_object))
         return self.result_export_object
 
 
 def do_graph(
-    graph,  # type: str
-    prog=None,  # type: Optional[str]
-    format=None,  # type: Optional[str]
-    target=None,  # type: Optional[Union[IO[bytes], str]]
-    type=None,  # type: Optional[str]
-    string=None,  # type: Optional[bool]
-    options=None  # type: Optional[List[str]]
-):
-    # type: (...) -> Optional[str]
+    graph: str,
+    prog: Optional[str] = None,
+    format: Optional[str] = None,
+    target: Optional[Union[IO[bytes], str]] = None,
+    type: Optional[str] = None,
+    string: Optional[bool] = None,
+    options: Optional[List[str]] = None
+) -> Optional[str]:
     """Processes graph description using an external software.
     This method is used to convert a graphviz format to an image.
 
@@ -1104,18 +1038,16 @@ _TEX_TR = {
 }
 
 
-def tex_escape(x):
-    # type: (str) -> str
+def tex_escape(x: str) -> str:
     s = ""
     for c in x:
         s += _TEX_TR.get(c, c)
     return s
 
 
-def colgen(*lstcol,  # type: Any
-           **kargs  # type: Any
-           ):
-    # type: (...) -> Iterator[Any]
+def colgen(*lstcol: Any,
+           **kargs: Any
+           ) -> Iterator[Any]:
     """Returns a generator that mixes provided quantities forever
     trans: a function to convert the three arguments into a color. lambda x,y,z:(x,y,z) by default"""  # noqa: E501
     if len(lstcol) < 2:
@@ -1129,20 +1061,17 @@ def colgen(*lstcol,  # type: Any
                         yield trans(lstcol[(i + j) % len(lstcol)], lstcol[(j + k) % len(lstcol)], lstcol[(k + i) % len(lstcol)])  # noqa: E501
 
 
-def incremental_label(label="tag%05i", start=0):
-    # type: (str, int) -> Iterator[str]
+def incremental_label(label: str = "tag%05i", start: int = 0) -> Iterator[str]:
     while True:
         yield label % start
         start += 1
 
 
-def binrepr(val):
-    # type: (int) -> str
+def binrepr(val: int) -> str:
     return bin(val)[2:]
 
 
-def long_converter(s):
-    # type: (str) -> int
+def long_converter(s: str) -> int:
     return int(s.replace('\n', '').replace(' ', ''), 16)
 
 #########################
@@ -1151,49 +1080,39 @@ def long_converter(s):
 
 
 class EnumElement:
-    def __init__(self, key, value):
-        # type: (str, int) -> None
+    def __init__(self, key: str, value: int) -> None:
         self._key = key
         self._value = value
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s %s[%r]>" % (self.__dict__.get("_name", self.__class__.__name__), self._key, self._value)  # noqa: E501
 
-    def __getattr__(self, attr):
-        # type: (str) -> Any
+    def __getattr__(self, attr: str) -> Any:
         return getattr(self._value, attr)
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self._key
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         return bytes_encode(self.__str__())
 
-    def __hash__(self):
-        # type: () -> int
+    def __hash__(self) -> int:
         return self._value
 
-    def __int__(self):
-        # type: () -> int
+    def __int__(self) -> int:
         return int(self._value)
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         return self._value == int(other)
 
-    def __neq__(self, other):
-        # type: (Any) -> bool
+    def __neq__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
 
 class Enum_metaclass(type):
     element_class = EnumElement
 
-    def __new__(cls, name, bases, dct):
-        # type: (Any, str, Any, Dict[str, Any]) -> Any
+    def __new__(cls: Any, name: str, bases: Any, dct: Dict[str, Any]) -> Any:
         rdict = {}
         for k, v in dct.items():
             if isinstance(v, int):
@@ -1203,20 +1122,16 @@ class Enum_metaclass(type):
         dct["__rdict__"] = rdict
         return super(Enum_metaclass, cls).__new__(cls, name, bases, dct)
 
-    def __getitem__(self, attr):
-        # type: (int) -> Any
+    def __getitem__(self, attr: int) -> Any:
         return self.__rdict__[attr]  # type: ignore
 
-    def __contains__(self, val):
-        # type: (int) -> bool
+    def __contains__(self, val: int) -> bool:
         return val in self.__rdict__  # type: ignore
 
-    def get(self, attr, val=None):
-        # type: (str, Optional[Any]) -> Any
+    def get(self, attr: str, val: Optional[Any] = None) -> Any:
         return self.__rdict__.get(attr, val)  # type: ignore
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s>" % self.__dict__.get("name", self.__name__)
 
 
@@ -1225,22 +1140,19 @@ class Enum_metaclass(type):
 ###################
 
 
-def export_object(obj):
-    # type: (Any) -> None
+def export_object(obj: Any) -> None:
     import zlib
     print(base64.b64encode(zlib.compress(pickle.dumps(obj, 2), 9)).decode())
 
 
-def import_object(obj=None):
-    # type: (Optional[str]) -> Any
+def import_object(obj: Optional[str] = None) -> Any:
     import zlib
     if obj is None:
         obj = sys.stdin.read()
     return pickle.loads(zlib.decompress(base64.b64decode(obj.strip())))
 
 
-def save_object(fname, obj):
-    # type: (str, Any) -> None
+def save_object(fname: str, obj: Any) -> None:
     """Pickle a Python object"""
 
     fd = gzip.open(fname, "wb")
@@ -1248,15 +1160,13 @@ def save_object(fname, obj):
     fd.close()
 
 
-def load_object(fname):
-    # type: (str) -> Any
+def load_object(fname: str) -> Any:
     """unpickle a Python object"""
     return pickle.load(gzip.open(fname, "rb"))
 
 
 @conf.commands.register
-def corrupt_bytes(data, p=0.01, n=None):
-    # type: (str, float, Optional[int]) -> bytes
+def corrupt_bytes(data: str, p: float = 0.01, n: Optional[int] = None) -> bytes:
     """
     Corrupt a given percentage (at least one byte) or number of bytes
     from a string
@@ -1271,8 +1181,7 @@ def corrupt_bytes(data, p=0.01, n=None):
 
 
 @conf.commands.register
-def corrupt_bits(data, p=0.01, n=None):
-    # type: (str, float, Optional[int]) -> bytes
+def corrupt_bits(data: str, p: float = 0.01, n: Optional[int] = None) -> bytes:
     """
     Flip a given percentage (at least one bit) or number of bits
     from a string
@@ -1291,12 +1200,11 @@ def corrupt_bits(data, p=0.01, n=None):
 #############################
 
 @conf.commands.register
-def wrpcap(filename,  # type: Union[IO[bytes], str]
-           pkt,  # type: _PacketIterable
-           *args,  # type: Any
-           **kargs  # type: Any
-           ):
-    # type: (...) -> None
+def wrpcap(filename: Union[IO[bytes], str],
+           pkt: _PacketIterable,
+           *args: Any,
+           **kargs: Any
+           ) -> None:
     """Write a list of packets to a pcap file
 
     :param filename: the name of the file to write packets to, or an open,
@@ -1314,10 +1222,9 @@ def wrpcap(filename,  # type: Union[IO[bytes], str]
 
 
 @conf.commands.register
-def wrpcapng(filename,  # type: str
-             pkt,  # type: _PacketIterable
-             ):
-    # type: (...) -> None
+def wrpcapng(filename: str,
+             pkt: _PacketIterable,
+             ) -> None:
     """Write a list of packets to a pcapng file
 
     :param filename: the name of the file to write packets to, or an open,
@@ -1332,8 +1239,7 @@ def wrpcapng(filename,  # type: str
 
 
 @conf.commands.register
-def rdpcap(filename, count=-1):
-    # type: (Union[IO[bytes], str], int) -> PacketList
+def rdpcap(filename: Union[IO[bytes], str], count: int = -1) -> PacketList:
     """Read a pcap or pcapng file and return a packet list
 
     :param count: read only <count> packets
@@ -1357,8 +1263,7 @@ def rdpcap(filename, count=-1):
 class PcapReader_metaclass(type):
     """Metaclass for (Raw)Pcap(Ng)Readers"""
 
-    def __new__(cls, name, bases, dct):
-        # type: (Any, str, Any, Dict[str, Any]) -> Any
+    def __new__(cls: Any, name: str, bases: Any, dct: Dict[str, Any]) -> Any:
         """The `alternative` class attribute is declared in the PcapNg
         variant, and set here to the Pcap variant.
 
@@ -1370,8 +1275,7 @@ class PcapReader_metaclass(type):
             dct['alternative'].alternative = newcls
         return newcls
 
-    def __call__(cls, filename):
-        # type: (Union[IO[bytes], str]) -> Any
+    def __call__(cls, filename: Union[IO[bytes], str]) -> Any:
         """Creates a cls instance, use the `alternative` if that
         fails.
 
@@ -1410,13 +1314,12 @@ class PcapReader_metaclass(type):
         raise Scapy_Exception("Not a supported capture file")
 
     @staticmethod
-    def open(fname  # type: Union[IO[bytes], str]
-             ):
-        # type: (...) -> Tuple[str, _ByteStream, bytes]
+    def open(fname: Union[IO[bytes], str]
+             ) -> Tuple[str, _ByteStream, bytes]:
         """Open (if necessary) filename, and read the magic."""
         if isinstance(fname, str):
             filename = fname
-            fdesc = open(filename, "rb")  # type: _ByteStream
+            fdesc: _ByteStream = open(filename, "rb")
             magic = fdesc.read(2)
             if magic == b"\x1f\x8b":
                 # GZIP header detected.
@@ -1442,8 +1345,7 @@ class RawPcapReader(metaclass=PcapReader_metaclass):
     PacketMetadata = collections.namedtuple("PacketMetadata",
                                             ["sec", "usec", "wirelen", "caplen"])  # noqa: E501
 
-    def __init__(self, filename, fdesc=None, magic=None):  # type: ignore
-        # type: (str, _ByteStream, bytes) -> None
+    def __init__(self, filename: str, fdesc: _ByteStream = None, magic: bytes = None) -> None:  # type: ignore
         self.filename = filename
         self.f = fdesc
         if magic == b"\xa1\xb2\xc3\xd4":  # big endian
@@ -1471,16 +1373,13 @@ class RawPcapReader(metaclass=PcapReader_metaclass):
         self.linktype = linktype
         self.snaplen = snaplen
 
-    def __enter__(self):
-        # type: () -> RawPcapReader
+    def __enter__(self) -> RawPcapReader:
         return self
 
-    def __iter__(self):
-        # type: () -> RawPcapReader
+    def __iter__(self) -> RawPcapReader:
         return self
 
-    def __next__(self):
-        # type: () -> Tuple[bytes, RawPcapReader.PacketMetadata]
+    def __next__(self) -> Tuple[bytes, RawPcapReader.PacketMetadata]:
         """
         implement the iterator protocol on a set of packets in a pcap file
         """
@@ -1489,8 +1388,7 @@ class RawPcapReader(metaclass=PcapReader_metaclass):
         except EOFError:
             raise StopIteration
 
-    def _read_packet(self, size=MTU):
-        # type: (int) -> Tuple[bytes, RawPcapReader.PacketMetadata]
+    def _read_packet(self, size: int = MTU) -> Tuple[bytes, RawPcapReader.PacketMetadata]:
         """return a single packet read from the file as a tuple containing
         (pkt_data, pkt_metadata)
 
@@ -1511,17 +1409,15 @@ class RawPcapReader(metaclass=PcapReader_metaclass):
                 RawPcapReader.PacketMetadata(sec=sec, usec=usec,
                                              wirelen=wirelen, caplen=caplen))
 
-    def read_packet(self, size=MTU):
-        # type: (int) -> Packet
+    def read_packet(self, size: int = MTU) -> Packet:
         raise Exception(
             "Cannot call read_packet() in RawPcapReader. Use "
             "_read_packet()"
         )
 
     def dispatch(self,
-                 callback  # type: Callable[[Tuple[bytes, RawPcapReader.PacketMetadata]], Any]  # noqa: E501
-                 ):
-        # type: (...) -> None
+                 callback: Callable[[Tuple[bytes, RawPcapReader.PacketMetadata]], Any]  # noqa: E501
+                 ) -> None:
         """call the specified callback routine for each packet read
 
         This is just a convenience function for the main loop
@@ -1531,57 +1427,50 @@ class RawPcapReader(metaclass=PcapReader_metaclass):
         for p in self:
             callback(p)
 
-    def _read_all(self, count=-1):
-        # type: (int) -> List[Packet]
+    def _read_all(self, count: int = -1) -> List[Packet]:
         """return a list of all packets in the pcap file
         """
-        res = []  # type: List[Packet]
+        res: List[Packet] = []
         while count != 0:
             count -= 1
             try:
-                p = self.read_packet()  # type: Packet
+                p: Packet = self.read_packet()
             except EOFError:
                 break
             res.append(p)
         return res
 
-    def recv(self, size=MTU):
-        # type: (int) -> bytes
+    def recv(self, size: int = MTU) -> bytes:
         """ Emulate a socket
         """
         return self._read_packet(size=size)[0]
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return -1 if WINDOWS else self.f.fileno()
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         if isinstance(self.f, gzip.GzipFile):
             self.f.fileobj.close()  # type: ignore
         self.f.close()
 
-    def __exit__(self, exc_type, exc_value, tracback):
-        # type: (Optional[Any], Optional[Any], Optional[Any]) -> None
+    def __exit__(self, exc_type: Optional[Any], exc_value: Optional[Any], tracback: Optional[Any]) -> None:
         self.close()
 
     # emulate SuperSocket
     @staticmethod
-    def select(sockets,  # type: List[SuperSocket]
-               remain=None,  # type: Optional[float]
-               ):
-        # type: (...) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket],
+               remain: Optional[float] = None,
+               ) -> List[SuperSocket]:
         return sockets
 
 
 class PcapReader(RawPcapReader):
-    def __init__(self, filename, fdesc=None, magic=None):  # type: ignore
-        # type: (str, IO[bytes], bytes) -> None
+    def __init__(self, filename: str, fdesc: IO[bytes] = None, magic: bytes = None) -> None:  # type: ignore
         RawPcapReader.__init__(self, filename, fdesc, magic)
         try:
-            self.LLcls = conf.l2types.num2layer[
+            self.LLcls: Type[Packet] = conf.l2types.num2layer[
                 self.linktype
-            ]  # type: Type[Packet]
+            ]
         except KeyError:
             warning("PcapReader: unknown LL type [%i]/[%#x]. Using Raw packets" % (self.linktype, self.linktype))  # noqa: E501
             if conf.raw_layer is None:
@@ -1589,19 +1478,17 @@ class PcapReader(RawPcapReader):
                 import scapy.packet  # noqa: F401
             self.LLcls = conf.raw_layer
 
-    def __enter__(self):
-        # type: () -> PcapReader
+    def __enter__(self) -> PcapReader:
         return self
 
-    def read_packet(self, size=MTU, **kwargs):
-        # type: (int, **Any) -> Packet
+    def read_packet(self, size: int = MTU, **kwargs: Any) -> Packet:
         rp = super(PcapReader, self)._read_packet(size=size)
         if rp is None:
             raise EOFError
         s, pkt_info = rp
 
         try:
-            p = self.LLcls(s, **kwargs)  # type: Packet
+            p: Packet = self.LLcls(s, **kwargs)
         except KeyboardInterrupt:
             raise
         except Exception:
@@ -1618,19 +1505,16 @@ class PcapReader(RawPcapReader):
         p.wirelen = pkt_info.wirelen
         return p
 
-    def recv(self, size=MTU, **kwargs):  # type: ignore
-        # type: (int, **Any) -> Packet
+    def recv(self, size: int = MTU, **kwargs: Any) -> Packet:  # type: ignore
         return self.read_packet(size=size, **kwargs)
 
-    def __next__(self):  # type: ignore
-        # type: () -> Packet
+    def __next__(self) -> Packet:  # type: ignore
         try:
             return self.read_packet()
         except EOFError:
             raise StopIteration
 
-    def read_all(self, count=-1):
-        # type: (int) -> PacketList
+    def read_all(self, count: int = -1) -> PacketList:
         res = self._read_all(count)
         from scapy import plist
         return plist.PacketList(res, name=os.path.basename(self.filename))
@@ -1642,7 +1526,7 @@ class RawPcapNgReader(RawPcapReader):
 
     """
 
-    alternative = RawPcapReader  # type: Type[Any]
+    alternative: Type[Any] = RawPcapReader
 
     PacketMetadata = collections.namedtuple("PacketMetadataNg",  # type: ignore
                                             ["linktype", "tsresol",
@@ -1650,12 +1534,11 @@ class RawPcapNgReader(RawPcapReader):
                                              "comment", "ifname", "direction",
                                              "process_information"])
 
-    def __init__(self, filename, fdesc=None, magic=None):  # type: ignore
-        # type: (str, IO[bytes], bytes) -> None
+    def __init__(self, filename: str, fdesc: IO[bytes] = None, magic: bytes = None) -> None:  # type: ignore
         self.filename = filename
         self.f = fdesc
         # A list of (linktype, snaplen, tsresol); will be populated by IDBs.
-        self.interfaces = []  # type: List[Tuple[int, int, Dict[str, Any]]]
+        self.interfaces: List[Tuple[int, int, Dict[str, Any]]] = []
         self.default_options = {
             "tsresol": 1000000
         }
@@ -1673,7 +1556,7 @@ class RawPcapNgReader(RawPcapReader):
                 0x80000001: self._read_block_pib,
         }
         self.endian = "!"  # Will be overwritten by first SHB
-        self.process_information = []  # type: List[Dict[str, Any]]
+        self.process_information: List[Dict[str, Any]] = []
 
         if magic != b"\x0a\x0d\x0d\x0a":  # PcapNg:
             raise Scapy_Exception(
@@ -1687,8 +1570,8 @@ class RawPcapNgReader(RawPcapReader):
                 "The first SHB of the pcapng file is malformed !"
             )
 
-    def _read_block(self, size=MTU):
-        # type: (int) -> Optional[Tuple[bytes, RawPcapNgReader.PacketMetadata]]  # noqa: E501
+    def _read_block(self, size: int = MTU) -> Optional[Tuple[bytes, RawPcapNgReader.PacketMetadata]]:
+        # noqa: E501
         try:
             blocktype = struct.unpack(self.endian + "I", self.f.read(4))[0]
         except struct.error:
@@ -1716,8 +1599,7 @@ class RawPcapNgReader(RawPcapReader):
             return self.blocktypes[blocktype](block, size)
         return None
 
-    def _read_block_tail(self, blocklen):
-        # type: (int) -> None
+    def _read_block_tail(self, blocklen: int) -> None:
         if blocklen % 4:
             pad = self.f.read(-blocklen % 4)
             warning("PcapNg: bad blocklen %d (MUST be a multiple of 4. "
@@ -1730,8 +1612,7 @@ class RawPcapNgReader(RawPcapReader):
             warning("PcapNg: Could not read blocklen after block body")
             raise EOFError
 
-    def _read_block_shb(self):
-        # type: () -> None
+    def _read_block_shb(self) -> None:
         """Section Header Block"""
         _blocklen = self.f.read(4)
         endian = self.f.read(4)
@@ -1778,8 +1659,7 @@ class RawPcapNgReader(RawPcapReader):
         self._read_block_tail(blocklen)
         self._read_options(options)
 
-    def _read_packet(self, size=MTU):  # type: ignore
-        # type: (int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]
+    def _read_packet(self, size: int = MTU) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]:  # type: ignore
         """Read blocks until it reaches either EOF or a packet, and
         returns None or (packet, (linktype, sec, usec, wirelen)),
         where packet is a string.
@@ -1790,8 +1670,7 @@ class RawPcapNgReader(RawPcapReader):
             if res is not None:
                 return res
 
-    def _read_options(self, options):
-        # type: (bytes) -> Dict[int, bytes]
+    def _read_options(self, options: bytes) -> Dict[int, bytes]:
         opts = dict()
         while len(options) >= 4:
             try:
@@ -1812,13 +1691,12 @@ class RawPcapNgReader(RawPcapReader):
             options = options[4 + length:]
         return opts
 
-    def _read_block_idb(self, block, _):
-        # type: (bytes, int) -> None
+    def _read_block_idb(self, block: bytes, _: int) -> None:
         """Interface Description Block"""
         # 2 bytes LinkType + 2 bytes Reserved
         # 4 bytes Snaplen
         options_raw = self._read_options(block[8:])
-        options = self.default_options.copy()  # type: Dict[str, Any]
+        options: Dict[str, Any] = self.default_options.copy()
         for c, v in options_raw.items():
             if c == 9:
                 length = len(v)
@@ -1844,16 +1722,14 @@ class RawPcapNgReader(RawPcapReader):
             raise EOFError
         self.interfaces.append(interface)
 
-    def _check_interface_id(self, intid):
-        # type: (int) -> None
+    def _check_interface_id(self, intid: int) -> None:
         """Check the interface id value and raise EOFError if invalid."""
         tmp_len = len(self.interfaces)
         if intid >= tmp_len:
             warning("PcapNg: invalid interface id %d/%d" % (intid, tmp_len))
             raise EOFError
 
-    def _read_block_epb(self, block, size):
-        # type: (bytes, int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]
+    def _read_block_epb(self, block: bytes, size: int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]:
         """Enhanced Packet Block"""
         try:
             intid, tshigh, tslow, caplen, wirelen = struct.unpack(
@@ -1917,8 +1793,7 @@ class RawPcapNgReader(RawPcapReader):
                                                direction=direction,
                                                process_information=process_information))
 
-    def _read_block_spb(self, block, size):
-        # type: (bytes, int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]
+    def _read_block_spb(self, block: bytes, size: int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]:
         """Simple Packet Block"""
         # "it MUST be assumed that all the Simple Packet Blocks have
         # been captured on the interface previously specified in the
@@ -1944,8 +1819,7 @@ class RawPcapNgReader(RawPcapReader):
                                                direction=None,
                                                process_information={}))
 
-    def _read_block_pkt(self, block, size):
-        # type: (bytes, int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]
+    def _read_block_pkt(self, block: bytes, size: int) -> Tuple[bytes, RawPcapNgReader.PacketMetadata]:
         """(Obsolete) Packet Block"""
         try:
             intid, drops, tshigh, tslow, caplen, wirelen = struct.unpack(
@@ -1968,8 +1842,7 @@ class RawPcapNgReader(RawPcapReader):
                                                direction=None,
                                                process_information={}))
 
-    def _read_block_dsb(self, block, size):
-        # type: (bytes, int) -> None
+    def _read_block_dsb(self, block: bytes, size: int) -> None:
         """Decryption Secrets Block"""
 
         # Parse the secrets type and length fields
@@ -2020,8 +1893,7 @@ class RawPcapNgReader(RawPcapReader):
         else:
             warning("PcapNg: Unknown DSB secrets type (0x%x)!", secrets_type)
 
-    def _read_block_pib(self, block, _):
-        # type: (bytes, int) -> None
+    def _read_block_pib(self, block: bytes, _: int) -> None:
         """Apple Process Information Block"""
 
         # Get the Process ID
@@ -2054,23 +1926,20 @@ class PcapNgReader(RawPcapNgReader, PcapReader):
 
     alternative = PcapReader
 
-    def __init__(self, filename, fdesc=None, magic=None):  # type: ignore
-        # type: (str, IO[bytes], bytes) -> None
+    def __init__(self, filename: str, fdesc: IO[bytes] = None, magic: bytes = None) -> None:  # type: ignore
         RawPcapNgReader.__init__(self, filename, fdesc, magic)
 
-    def __enter__(self):
-        # type: () -> PcapNgReader
+    def __enter__(self) -> PcapNgReader:
         return self
 
-    def read_packet(self, size=MTU, **kwargs):
-        # type: (int, **Any) -> Packet
+    def read_packet(self, size: int = MTU, **kwargs: Any) -> Packet:
         rp = super(PcapNgReader, self)._read_packet(size=size)
         if rp is None:
             raise EOFError
         s, (linktype, tsresol, tshigh, tslow, wirelen, comment, ifname, direction, process_information) = rp  # noqa: E501
         try:
-            cls = conf.l2types.num2layer[linktype]  # type: Type[Packet]
-            p = cls(s, **kwargs)  # type: Packet
+            cls: Type[Packet] = conf.l2types.num2layer[linktype]
+            p: Packet = cls(s, **kwargs)
         except KeyboardInterrupt:
             raise
         except Exception:
@@ -2098,30 +1967,27 @@ class GenericPcapWriter(object):
     nano = False
     linktype: int
 
-    def _write_header(self, pkt):
-        # type: (Optional[Union[Packet, bytes]]) -> None
+    def _write_header(self, pkt: Optional[Union[Packet, bytes]]) -> None:
         raise NotImplementedError
 
     def _write_packet(self,
-                      packet,  # type: Union[bytes, Packet]
-                      linktype,  # type: int
-                      sec=None,  # type: Optional[float]
-                      usec=None,  # type: Optional[int]
-                      caplen=None,  # type: Optional[int]
-                      wirelen=None,  # type: Optional[int]
-                      comment=None,  # type: Optional[bytes]
-                      ifname=None,  # type: Optional[bytes]
-                      direction=None,  # type: Optional[int]
-                      ):
-        # type: (...) -> None
+                      packet: Union[bytes, Packet],
+                      linktype: int,
+                      sec: Optional[float] = None,
+                      usec: Optional[int] = None,
+                      caplen: Optional[int] = None,
+                      wirelen: Optional[int] = None,
+                      comment: Optional[bytes] = None,
+                      ifname: Optional[bytes] = None,
+                      direction: Optional[int] = None,
+                      ) -> None:
         raise NotImplementedError
 
     def _get_time(self,
-                  packet,  # type: Union[bytes, Packet]
-                  sec,  # type: Optional[float]
-                  usec  # type: Optional[int]
-                  ):
-        # type: (...) -> Tuple[float, int]
+                  packet: Union[bytes, Packet],
+                  sec: Optional[float],
+                  usec: Optional[int]
+                  ) -> Tuple[float, int]:
         if hasattr(packet, "time"):
             if sec is None:
                 packet_time = packet.time
@@ -2133,8 +1999,7 @@ class GenericPcapWriter(object):
             usec = 0
         return sec, usec  # type: ignore
 
-    def write_header(self, pkt):
-        # type: (Optional[Union[Packet, bytes]]) -> None
+    def write_header(self, pkt: Optional[Union[Packet, bytes]]) -> None:
         if not hasattr(self, 'linktype'):
             try:
                 if pkt is None or isinstance(pkt, bytes):
@@ -2150,13 +2015,12 @@ class GenericPcapWriter(object):
         self._write_header(pkt)
 
     def write_packet(self,
-                     packet,  # type: Union[bytes, Packet]
-                     sec=None,  # type: Optional[float]
-                     usec=None,  # type: Optional[int]
-                     caplen=None,  # type: Optional[int]
-                     wirelen=None,  # type: Optional[int]
-                     ):
-        # type: (...) -> None
+                     packet: Union[bytes, Packet],
+                     sec: Optional[float] = None,
+                     usec: Optional[int] = None,
+                     caplen: Optional[int] = None,
+                     wirelen: Optional[int] = None,
+                     ) -> None:
         """
         Writes a single packet to the pcap file.
 
@@ -2218,33 +2082,27 @@ class GenericRawPcapWriter(GenericPcapWriter):
     header_present = False
     nano = False
     sync = False
-    f = None  # type: Union[IO[bytes], gzip.GzipFile]
+    f: Union[IO[bytes], gzip.GzipFile]
 
-    def fileno(self):
-        # type: () -> int
+    def fileno(self) -> int:
         return -1 if WINDOWS else self.f.fileno()
 
-    def flush(self):
-        # type: () -> Optional[Any]
+    def flush(self) -> Optional[Any]:
         return self.f.flush()
 
-    def close(self):
-        # type: () -> Optional[Any]
+    def close(self) -> Optional[Any]:
         if not self.header_present:
             self.write_header(None)
         return self.f.close()
 
-    def __enter__(self):
-        # type: () -> GenericRawPcapWriter
+    def __enter__(self) -> GenericRawPcapWriter:
         return self
 
-    def __exit__(self, exc_type, exc_value, tracback):
-        # type: (Optional[Any], Optional[Any], Optional[Any]) -> None
+    def __exit__(self, exc_type: Optional[Any], exc_value: Optional[Any], tracback: Optional[Any]) -> None:
         self.flush()
         self.close()
 
-    def write(self, pkt):
-        # type: (Union[_PacketIterable, bytes]) -> None
+    def write(self, pkt: Union[_PacketIterable, bytes]) -> None:
         """
         Writes a Packet, a SndRcvList object, or bytes to a pcap file.
 
@@ -2277,17 +2135,16 @@ class RawPcapWriter(GenericRawPcapWriter):
     """A stream PCAP writer with more control than wrpcap()"""
 
     def __init__(self,
-                 filename,  # type: Union[IO[bytes], str]
-                 linktype=None,  # type: Optional[int]
-                 gz=False,  # type: bool
-                 endianness="",  # type: str
-                 append=False,  # type: bool
-                 sync=False,  # type: bool
-                 nano=False,  # type: bool
-                 snaplen=MTU,  # type: int
-                 bufsz=4096,  # type: int
-                 ):
-        # type: (...) -> None
+                 filename: Union[IO[bytes], str],
+                 linktype: Optional[int] = None,
+                 gz: bool = False,
+                 endianness: str = "",
+                 append: bool = False,
+                 sync: bool = False,
+                 nano: bool = False,
+                 snaplen: int = MTU,
+                 bufsz: int = 4096,
+                 ) -> None:
         """
         :param filename: the name of the file to write packets to, or an open,
             writable file-like object.
@@ -2326,8 +2183,7 @@ class RawPcapWriter(GenericRawPcapWriter):
             self.f = filename
             self.filename = getattr(filename, "name", "No name")
 
-    def _write_header(self, pkt):
-        # type: (Optional[Union[Packet, bytes]]) -> None
+    def _write_header(self, pkt: Optional[Union[Packet, bytes]]) -> None:
         self.header_present = True
 
         if self.append:
@@ -2336,7 +2192,7 @@ class RawPcapWriter(GenericRawPcapWriter):
             # because we have to handle compressed streams that
             # are not as flexible as basic files
             if self.gz:
-                g = gzip.open(self.filename, "rb")  # type: _ByteStream
+                g: _ByteStream = gzip.open(self.filename, "rb")
             else:
                 g = open(self.filename, "rb")
             try:
@@ -2356,17 +2212,16 @@ class RawPcapWriter(GenericRawPcapWriter):
         self.f.flush()
 
     def _write_packet(self,
-                      packet,  # type: Union[bytes, Packet]
-                      linktype,  # type: int
-                      sec=None,  # type: Optional[float]
-                      usec=None,  # type: Optional[int]
-                      caplen=None,  # type: Optional[int]
-                      wirelen=None,  # type: Optional[int]
-                      comment=None,  # type: Optional[bytes]
-                      ifname=None,  # type: Optional[bytes]
-                      direction=None,  # type: Optional[int]
-                      ):
-        # type: (...) -> None
+                      packet: Union[bytes, Packet],
+                      linktype: int,
+                      sec: Optional[float] = None,
+                      usec: Optional[int] = None,
+                      caplen: Optional[int] = None,
+                      wirelen: Optional[int] = None,
+                      comment: Optional[bytes] = None,
+                      ifname: Optional[bytes] = None,
+                      direction: Optional[int] = None,
+                      ) -> None:
         """
         Writes a single packet to the pcap file.
 
@@ -2414,9 +2269,8 @@ class RawPcapNgWriter(GenericRawPcapWriter):
     """A stream pcapng writer with more control than wrpcapng()"""
 
     def __init__(self,
-                 filename,  # type: str
-                 ):
-        # type: (...) -> None
+                 filename: str,
+                 ) -> None:
 
         self.header_present = False
         self.tsresol = 1000000
@@ -2432,11 +2286,10 @@ class RawPcapNgWriter(GenericRawPcapWriter):
         self.f = open(filename, "wb", 4096)
 
     def _get_time(self,
-                  packet,  # type: Union[bytes, Packet]
-                  sec,  # type: Optional[float]
-                  usec  # type: Optional[int]
-                  ):
-        # type: (...) -> Tuple[float, int]
+                  packet: Union[bytes, Packet],
+                  sec: Optional[float],
+                  usec: Optional[int]
+                  ) -> Tuple[float, int]:
         if hasattr(packet, "time"):
             if sec is None:
                 sec = float(packet.time)
@@ -2446,13 +2299,11 @@ class RawPcapNgWriter(GenericRawPcapWriter):
 
         return sec, usec  # type: ignore
 
-    def _add_padding(self, raw_data):
-        # type: (bytes) -> bytes
+    def _add_padding(self, raw_data: bytes) -> bytes:
         raw_data += ((-len(raw_data)) % 4) * b"\x00"
         return raw_data
 
-    def build_block(self, block_type, block_body, options=None):
-        # type: (bytes, bytes, Optional[bytes]) -> bytes
+    def build_block(self, block_type: bytes, block_body: bytes, options: Optional[bytes] = None) -> bytes:
 
         # Pad Block Body to 32 bits
         block_body = self._add_padding(block_body)
@@ -2474,15 +2325,13 @@ class RawPcapNgWriter(GenericRawPcapWriter):
 
         return block
 
-    def _write_header(self, pkt):
-        # type: (Optional[Union[Packet, bytes]]) -> None
+    def _write_header(self, pkt: Optional[Union[Packet, bytes]]) -> None:
         if not self.header_present:
             self.header_present = True
             self._write_block_shb()
             self._write_block_idb(linktype=self.linktype)
 
-    def _write_block_shb(self):
-        # type: () -> None
+    def _write_block_shb(self) -> None:
 
         # Block Type
         block_type = b"\x0A\x0D\x0D\x0A"
@@ -2498,10 +2347,9 @@ class RawPcapNgWriter(GenericRawPcapWriter):
         self.f.write(self.build_block(block_type, block_shb))
 
     def _write_block_idb(self,
-                         linktype,  # type: int
-                         ifname=None  # type: Optional[bytes]
-                         ):
-        # type: (...) -> None
+                         linktype: int,
+                         ifname: Optional[bytes] = None
+                         ) -> None:
 
         # Block Type
         block_type = struct.pack(self.endian + "I", 1)
@@ -2522,8 +2370,7 @@ class RawPcapNgWriter(GenericRawPcapWriter):
 
         self.f.write(self.build_block(block_type, block_idb, options=opts))
 
-    def _write_block_spb(self, raw_pkt):
-        # type: (bytes) -> None
+    def _write_block_spb(self, raw_pkt: bytes) -> None:
 
         # Block Type
         block_type = struct.pack(self.endian + "I", 3)
@@ -2535,15 +2382,14 @@ class RawPcapNgWriter(GenericRawPcapWriter):
         self.f.write(self.build_block(block_type, block_spb))
 
     def _write_block_epb(self,
-                         raw_pkt,  # type: bytes
-                         ifid,  # type: int
-                         timestamp=None,  # type: Optional[Union[EDecimal, float]]  # noqa: E501
-                         caplen=None,  # type: Optional[int]
-                         orglen=None,  # type: Optional[int]
-                         comment=None,  # type: Optional[bytes]
-                         flags=None,  # type: Optional[int]
-                         ):
-        # type: (...) -> None
+                         raw_pkt: bytes,
+                         ifid: int,
+                         timestamp: Optional[Union[EDecimal, float]] = None,  # noqa: E501
+                         caplen: Optional[int] = None,
+                         orglen: Optional[int] = None,
+                         comment: Optional[bytes] = None,
+                         flags: Optional[int] = None,
+                         ) -> None:
 
         if timestamp:
             tmp_ts = int(timestamp * self.tsresol)
@@ -2590,17 +2436,16 @@ class RawPcapNgWriter(GenericRawPcapWriter):
                                       options=opts))
 
     def _write_packet(self,  # type: ignore
-                      packet,  # type: bytes
-                      linktype,  # type: int
-                      sec=None,  # type: Optional[float]
-                      usec=None,  # type: Optional[int]
-                      caplen=None,  # type: Optional[int]
-                      wirelen=None,  # type: Optional[int]
-                      comment=None,  # type: Optional[bytes]
-                      ifname=None,  # type: Optional[bytes]
-                      direction=None,  # type: Optional[int]
-                      ):
-        # type: (...) -> None
+                      packet: bytes,
+                      linktype: int,
+                      sec: Optional[float] = None,
+                      usec: Optional[int] = None,
+                      caplen: Optional[int] = None,
+                      wirelen: Optional[int] = None,
+                      comment: Optional[bytes] = None,
+                      ifname: Optional[bytes] = None,
+                      direction: Optional[int] = None,
+                      ) -> None:
         """
         Writes a single packet to the pcap file.
 
@@ -2668,11 +2513,10 @@ class PcapNgWriter(RawPcapNgWriter):
     """A stream pcapng writer with more control than wrpcapng()"""
 
     def _get_time(self,
-                  packet,  # type: Union[bytes, Packet]
-                  sec,  # type: Optional[float]
-                  usec  # type: Optional[int]
-                  ):
-        # type: (...) -> Tuple[float, int]
+                  packet: Union[bytes, Packet],
+                  sec: Optional[float],
+                  usec: Optional[int]
+                  ) -> Tuple[float, int]:
         if hasattr(packet, "time"):
             if sec is None:
                 sec = float(packet.time)
@@ -2684,8 +2528,7 @@ class PcapNgWriter(RawPcapNgWriter):
 
 
 @conf.commands.register
-def rderf(filename, count=-1):
-    # type: (Union[IO[bytes], str], int) -> PacketList
+def rderf(filename: Union[IO[bytes], str], count: int = -1) -> PacketList:
     """Read a ERF file and return a packet list
 
     :param count: read only <count> packets
@@ -2695,8 +2538,7 @@ def rderf(filename, count=-1):
 
 
 class ERFEthernetReader_metaclass(PcapReader_metaclass):
-    def __call__(cls, filename):
-        # type: (Union[IO[bytes], str]) -> Any
+    def __call__(cls, filename: Union[IO[bytes], str]) -> Any:
         i = cls.__new__(cls, cls.__name__, cls.__bases__, cls.__dict__)  # type: ignore
         filename, fdesc = cls.open(filename)
         try:
@@ -2723,15 +2565,14 @@ class ERFEthernetReader_metaclass(PcapReader_metaclass):
 
     @staticmethod
     def open(fname  # type: ignore
-             ):
-        # type: (...) -> Tuple[str, _ByteStream]
+             ) -> Tuple[str, _ByteStream]:
         """Open (if necessary) filename"""
         if isinstance(fname, str):
             filename = fname
             try:
                 with gzip.open(filename, "rb") as tmp:
                     tmp.read(1)
-                fdesc = gzip.open(filename, "rb")  # type: _ByteStream
+                fdesc: _ByteStream = gzip.open(filename, "rb")
             except IOError:
                 fdesc = open(filename, "rb")
 
@@ -2744,16 +2585,14 @@ class ERFEthernetReader_metaclass(PcapReader_metaclass):
 class ERFEthernetReader(PcapReader,
                         metaclass=ERFEthernetReader_metaclass):
 
-    def __init__(self, filename, fdesc=None):  # type: ignore
-        # type: (Union[IO[bytes], str], IO[bytes]) -> None
+    def __init__(self, filename: Union[IO[bytes], str], fdesc: IO[bytes] = None) -> None:  # type: ignore
         self.filename = filename  # type: ignore
         self.f = fdesc
         self.power = Decimal(10) ** Decimal(-9)
 
     # time is in 64-bits Endace's format which can be see here:
     # https://www.endace.com/erf-extensible-record-format-types.pdf
-    def _convert_erf_timestamp(self, t):
-        # type: (int) -> EDecimal
+    def _convert_erf_timestamp(self, t: int) -> EDecimal:
         sec = t >> 32
         frac_sec = t & 0xffffffff
         frac_sec *= 10**9
@@ -2763,8 +2602,7 @@ class ERFEthernetReader(PcapReader,
 
     # The details of ERF Packet format can be see here:
     # https://www.endace.com/erf-extensible-record-format-types.pdf
-    def read_packet(self, size=MTU, **kwargs):
-        # type: (int, **Any) -> Packet
+    def read_packet(self, size: int = MTU, **kwargs: Any) -> Packet:
 
         # General ERF Header have exactly 16 bytes
         hdr = self.f.read(16)
@@ -2794,7 +2632,7 @@ class ERFEthernetReader(PcapReader,
         pb = s[2:size]
         from scapy.layers.l2 import Ether
         try:
-            p = Ether(pb, **kwargs)  # type: Packet
+            p: Packet = Ether(pb, **kwargs)
         except KeyboardInterrupt:
             raise
         except Exception:
@@ -2814,12 +2652,11 @@ class ERFEthernetReader(PcapReader,
 
 
 @conf.commands.register
-def wrerf(filename,  # type: Union[IO[bytes], str]
-          pkt,  # type: _PacketIterable
-          *args,  # type: Any
-          **kargs  # type: Any
-          ):
-    # type: (...) -> None
+def wrerf(filename: Union[IO[bytes], str],
+          pkt: _PacketIterable,
+          *args: Any,
+          **kargs: Any
+          ) -> None:
     """Write a list of packets to a ERF file
 
     :param filename: the name of the file to write packets to, or an open,
@@ -2840,12 +2677,11 @@ class ERFEthernetWriter(PcapWriter):
     """A stream ERF Ethernet writer with more control than wrerf()"""
 
     def __init__(self,
-                 filename,  # type: Union[IO[bytes], str]
-                 gz=False,  # type: bool
-                 append=False,  # type: bool
-                 sync=False,  # type: bool
-                 ):
-        # type: (...) -> None
+                 filename: Union[IO[bytes], str],
+                 gz: bool = False,
+                 append: bool = False,
+                 sync: bool = False,
+                 ) -> None:
         """
         :param filename: the name of the file to write packets to, or an open,
             writable file-like object.
@@ -2859,8 +2695,7 @@ class ERFEthernetWriter(PcapWriter):
                                                 append=append,
                                                 sync=sync)
 
-    def write(self, pkt):  # type: ignore
-        # type: (_PacketIterable) -> None
+    def write(self, pkt: _PacketIterable) -> None:  # type: ignore
         """
         Writes a Packet, a SndRcvList object, or bytes to a ERF file.
 
@@ -2872,8 +2707,7 @@ class ERFEthernetWriter(PcapWriter):
         for p in IterSocket(pkt).iter:
             self.write_packet(p)
 
-    def write_packet(self, pkt):  # type: ignore
-        # type: (Packet) -> None
+    def write_packet(self, pkt: Packet) -> None:  # type: ignore
 
         if hasattr(pkt, "time"):
             sec = int(pkt.time)
@@ -2896,14 +2730,12 @@ class ERFEthernetWriter(PcapWriter):
         self.f.write(bytes(pkt))
         self.f.flush()
 
-    def close(self):
-        # type: () -> Optional[Any]
+    def close(self) -> Optional[Any]:
         return self.f.close()
 
 
 @conf.commands.register
-def import_hexcap(input_string=None):
-    # type: (Optional[str]) -> bytes
+def import_hexcap(input_string: Optional[str] = None) -> bytes:
     """Imports a tcpdump like hexadecimal view
 
     e.g: exported via hexdump() or tcpdump or wireshark's "export as hex"
@@ -2935,8 +2767,7 @@ def import_hexcap(input_string=None):
 
 
 @conf.commands.register
-def wireshark(pktlist, wait=False, **kwargs):
-    # type: (List[Packet], bool, **Any) -> Optional[Any]
+def wireshark(pktlist: List[Packet], wait: bool = False, **kwargs: Any) -> Optional[Any]:
     """
     Runs Wireshark on a list of packets.
 
@@ -2949,11 +2780,10 @@ def wireshark(pktlist, wait=False, **kwargs):
 
 @conf.commands.register
 def tdecode(
-    pktlist,  # type: Union[IO[bytes], None, str, _PacketIterable]
-    args=None,  # type: Optional[List[str]]
-    **kwargs  # type: Any
-):
-    # type: (...) -> Any
+    pktlist: Union[IO[bytes], None, str, _PacketIterable],
+    args: Optional[List[str]] = None,
+    **kwargs: Any
+) -> Any:
     """
     Run tshark on a list of packets.
 
@@ -2966,15 +2796,13 @@ def tdecode(
     return tcpdump(pktlist, prog=conf.prog.tshark, args=args, **kwargs)
 
 
-def _guess_linktype_name(value):
-    # type: (int) -> str
+def _guess_linktype_name(value: int) -> str:
     """Guess the DLT name from its value."""
     from scapy.libs.winpcapy import pcap_datalink_val_to_name
     return cast(bytes, pcap_datalink_val_to_name(value)).decode()
 
 
-def _guess_linktype_value(name):
-    # type: (str) -> int
+def _guess_linktype_value(name: str) -> int:
     """Guess the value of a DLT name."""
     from scapy.libs.winpcapy import pcap_datalink_name_to_val
     val = cast(int, pcap_datalink_name_to_val(name.encode()))
@@ -2986,21 +2814,20 @@ def _guess_linktype_value(name):
 
 @conf.commands.register
 def tcpdump(
-    pktlist=None,  # type: Union[IO[bytes], None, str, _PacketIterable]
-    dump=False,  # type: bool
-    getfd=False,  # type: bool
-    args=None,  # type: Optional[List[str]]
-    flt=None,  # type: Optional[str]
-    prog=None,  # type: Optional[Any]
-    getproc=False,  # type: bool
-    quiet=False,  # type: bool
-    use_tempfile=None,  # type: Optional[Any]
-    read_stdin_opts=None,  # type: Optional[Any]
-    linktype=None,  # type: Optional[Any]
-    wait=True,  # type: bool
-    _suppress=False  # type: bool
-):
-    # type: (...) -> Any
+    pktlist: Union[IO[bytes], None, str, _PacketIterable] = None,
+    dump: bool = False,
+    getfd: bool = False,
+    args: Optional[List[str]] = None,
+    flt: Optional[str] = None,
+    prog: Optional[Any] = None,
+    getproc: bool = False,
+    quiet: bool = False,
+    use_tempfile: Optional[Any] = None,
+    read_stdin_opts: Optional[Any] = None,
+    linktype: Optional[Any] = None,
+    wait: bool = True,
+    _suppress: bool = False
+) -> Any:
     """Run tcpdump or tshark on a list of packets.
 
     When using ``tcpdump`` on OSX (``prog == conf.prog.tcpdump``), this uses a
@@ -3186,10 +3013,10 @@ def tcpdump(
                 stderr=stderr,
             )
     elif use_tempfile:
-        tmpfile = get_temp_file(  # type: ignore
+        tmpfile: IO[bytes] = get_temp_file(  # type: ignore
             autoext=".pcap",
             fd=True
-        )  # type: IO[bytes]
+        )
         try:
             tmpfile.writelines(
                 iter(lambda: pktlist.read(1048576), b"")  # type: ignore
@@ -3257,8 +3084,7 @@ def tcpdump(
 
 
 @conf.commands.register
-def hexedit(pktlist):
-    # type: (_PacketIterable) -> PacketList
+def hexedit(pktlist: _PacketIterable) -> PacketList:
     """Run hexedit on a list of packets, then return the edited packets."""
     f = get_temp_file()
     wrpcap(f, pktlist)
@@ -3269,8 +3095,7 @@ def hexedit(pktlist):
     return rpktlist
 
 
-def get_terminal_width():
-    # type: () -> Optional[int]
+def get_terminal_width() -> Optional[int]:
     """Get terminal width (number of characters) if in a window.
 
     Notice: this will try several methods in order to
@@ -3314,12 +3139,11 @@ def get_terminal_width():
     return sizex
 
 
-def pretty_list(rtlst,  # type: List[Tuple[Union[str, List[str]], ...]]
-                header,  # type: List[Tuple[str, ...]]
-                sortBy=0,  # type: Optional[int]
-                borders=False,  # type: bool
-                ):
-    # type: (...) -> str
+def pretty_list(rtlst: List[Tuple[Union[str, List[str]], ...]],
+                header: List[Tuple[str, ...]],
+                sortBy: Optional[int] = 0,
+                borders: bool = False,
+                ) -> str:
     """
     Pretty list to fit the terminal, and add header.
 
@@ -3342,8 +3166,8 @@ def pretty_list(rtlst,  # type: List[Tuple[Union[str, List[str]], ...]]
         rtlst.sort(key=lambda x: x[sortBy])
     # Resolve multi-values
     for i, line in enumerate(rtlst):
-        ids = []  # type: List[int]
-        values = []  # type: List[Union[str, List[str]]]
+        ids: List[int] = []
+        values: List[Union[str, List[str]]] = []
         for j, val in enumerate(line):
             if isinstance(val, list):
                 ids.append(j)
@@ -3396,8 +3220,7 @@ def pretty_list(rtlst,  # type: List[Tuple[Union[str, List[str]], ...]]
     return "\n".join(fmt % x for x in rtslst)
 
 
-def human_size(x, fmt=".1f"):
-    # type: (int, str) -> str
+def human_size(x: int, fmt: str = ".1f") -> str:
     """
     Convert a size in octets to a human string representation
     """
@@ -3411,22 +3234,21 @@ def human_size(x, fmt=".1f"):
 
 
 def __make_table(
-    yfmtfunc,  # type: Callable[[int], str]
-    fmtfunc,  # type: Callable[[int], str]
-    endline,  # type: str
-    data,  # type: List[Tuple[Packet, Packet]]
-    fxyz,  # type: Callable[[Packet, Packet], Tuple[Any, Any, Any]]
-    sortx=None,  # type: Optional[Callable[[str], Tuple[Any, ...]]]
-    sorty=None,  # type: Optional[Callable[[str], Tuple[Any, ...]]]
-    seplinefunc=None,  # type: Optional[Callable[[int, List[int]], str]]
-    dump=False  # type: bool
-):
-    # type: (...) -> Optional[str]
+    yfmtfunc: Callable[[int], str],
+    fmtfunc: Callable[[int], str],
+    endline: str,
+    data: List[Tuple[Packet, Packet]],
+    fxyz: Callable[[Packet, Packet], Tuple[Any, Any, Any]],
+    sortx: Optional[Callable[[str], Tuple[Any, ...]]] = None,
+    sorty: Optional[Callable[[str], Tuple[Any, ...]]] = None,
+    seplinefunc: Optional[Callable[[int, List[int]], str]] = None,
+    dump: bool = False
+) -> Optional[str]:
     """Core function of the make_table suite, which generates the table"""
-    vx = {}  # type: Dict[str, int]
-    vy = {}  # type: Dict[str, Optional[int]]
-    vz = {}  # type: Dict[Tuple[str, str], str]
-    vxf = {}  # type: Dict[str, str]
+    vx: Dict[str, int] = {}
+    vy: Dict[str, Optional[int]] = {}
+    vz: Dict[Tuple[str, str], str] = {}
+    vxf: Dict[str, str] = {}
 
     tmp_len = 0
     for e in data:
@@ -3491,8 +3313,7 @@ def __make_table(
         return None
 
 
-def make_table(*args, **kargs):
-    # type: (*Any, **Any) -> Optional[Any]
+def make_table(*args: Any, **kargs: Any) -> Optional[Any]:
     return __make_table(
         lambda l: "%%-%is" % l,
         lambda l: "%%-%is" % l,
@@ -3502,8 +3323,7 @@ def make_table(*args, **kargs):
     )
 
 
-def make_lined_table(*args, **kargs):
-    # type: (*Any, **Any) -> Optional[str]
+def make_lined_table(*args: Any, **kargs: Any) -> Optional[str]:
     return __make_table(  # type: ignore
         lambda l: "%%-%is |" % l,
         lambda l: "%%-%is |" % l,
@@ -3516,8 +3336,7 @@ def make_lined_table(*args, **kargs):
     )
 
 
-def make_tex_table(*args, **kargs):
-    # type: (*Any, **Any) -> Optional[str]
+def make_tex_table(*args: Any, **kargs: Any) -> Optional[str]:
     return __make_table(  # type: ignore
         lambda l: "%s",
         lambda l: "& %s",
@@ -3532,8 +3351,7 @@ def make_tex_table(*args, **kargs):
 ####################
 
 
-def whois(ip_address):
-    # type: (str) -> bytes
+def whois(ip_address: str) -> bytes:
     """Whois client for Python"""
     whois_ip = str(ip_address)
     try:
@@ -3950,8 +3768,7 @@ def AutoArgparse(func: DecoratorCallable) -> None:
 
 
 class PeriodicSenderThread(threading.Thread):
-    def __init__(self, sock, pkt, interval=0.5, ignore_exceptions=True):
-        # type: (Any, _PacketIterable, float, bool) -> None
+    def __init__(self, sock: Any, pkt: _PacketIterable, interval: float = 0.5, ignore_exceptions: bool = True) -> None:
         """ Thread to send packets periodically
 
         Args:
@@ -3960,7 +3777,7 @@ class PeriodicSenderThread(threading.Thread):
             interval: interval between two packets
         """
         if not isinstance(pkt, list):
-            self._pkts = [cast("Packet", pkt)]  # type: _PacketIterable
+            self._pkts: _PacketIterable = [cast("Packet", pkt)]
         else:
             self._pkts = pkt
         self._socket = sock
@@ -3971,16 +3788,13 @@ class PeriodicSenderThread(threading.Thread):
         self._ignore_exceptions = ignore_exceptions
         threading.Thread.__init__(self)
 
-    def enable(self):
-        # type: () -> None
+    def enable(self) -> None:
         self._enabled.set()
 
-    def disable(self):
-        # type: () -> None
+    def disable(self) -> None:
         self._enabled.clear()
 
-    def run(self):
-        # type: () -> None
+    def run(self) -> None:
         while not self._stopped.is_set() and not self._socket.closed:
             for p in self._pkts:
                 try:
@@ -3995,15 +3809,13 @@ class PeriodicSenderThread(threading.Thread):
                 if self._stopped.is_set() or self._socket.closed:
                     break
 
-    def stop(self):
-        # type: () -> None
+    def stop(self) -> None:
         self._stopped.set()
         self.join(self._interval * 2)
 
 
 class SingleConversationSocket(object):
-    def __init__(self, o):
-        # type: (Any) -> None
+    def __init__(self, o: Any) -> None:
         self._inner = o
         self._tx_mutex = threading.RLock()
 
@@ -4011,22 +3823,18 @@ class SingleConversationSocket(object):
     def __dict__(self):  # type: ignore
         return self._inner.__dict__
 
-    def __getattr__(self, name):
-        # type: (str) -> Any
+    def __getattr__(self, name: str) -> Any:
         return getattr(self._inner, name)
 
-    def sr1(self, *args, **kargs):
-        # type: (*Any, **Any) -> Any
+    def sr1(self, *args: Any, **kargs: Any) -> Any:
         with self._tx_mutex:
             return self._inner.sr1(*args, **kargs)
 
-    def sr(self, *args, **kargs):
-        # type: (*Any, **Any) -> Any
+    def sr(self, *args: Any, **kargs: Any) -> Any:
         with self._tx_mutex:
             return self._inner.sr(*args, **kargs)
 
-    def send(self, x):
-        # type: (Packet) -> Any
+    def send(self, x: Packet) -> Any:
         with self._tx_mutex:
             try:
                 return self._inner.send(x)

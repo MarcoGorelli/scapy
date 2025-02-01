@@ -10,6 +10,8 @@
 Python-CAN CANSocket Wrapper.
 """
 
+from __future__ import annotations
+
 import time
 import struct
 import threading
@@ -45,8 +47,7 @@ class SocketMapper(object):
     """Internal Helper class to map a python-can bus object to
     a list of SocketWrapper instances
     """
-    def __init__(self, bus, sockets):
-        # type: (can_BusABC, List[SocketWrapper]) -> None
+    def __init__(self, bus: can_BusABC, sockets: List[SocketWrapper]) -> None:
         """Initializes the SocketMapper helper class
 
         :param bus: A python-can Bus object
@@ -56,8 +57,7 @@ class SocketMapper(object):
         self.bus = bus
         self.sockets = sockets
 
-    def mux(self):
-        # type: () -> None
+    def mux(self) -> None:
         """Multiplexer function. Tries to receive from its python-can bus
         object. If a message is received, this message gets forwarded to
         all receive queues of the SocketWrapper objects.
@@ -82,14 +82,12 @@ class SocketMapper(object):
 
 class _SocketsPool(object):
     """Helper class to organize all SocketWrapper and SocketMapper objects"""
-    def __init__(self):
-        # type: () -> None
-        self.pool = dict()  # type: Dict[str, SocketMapper]
+    def __init__(self) -> None:
+        self.pool: Dict[str, SocketMapper] = dict()
         self.pool_mutex = threading.Lock()
         self.last_call = 0.0
 
-    def internal_send(self, sender, msg):
-        # type: (SocketWrapper, can_Message) -> None
+    def internal_send(self, sender: SocketWrapper, msg: can_Message) -> None:
         """Internal send function.
 
         A given SocketWrapper wants to send a CAN message. The python-can
@@ -122,8 +120,7 @@ class _SocketsPool(object):
             except can_CanError as e:
                 warning("[SND] python-can exception caught: %s" % e)
 
-    def multiplex_rx_packets(self):
-        # type: () -> None
+    def multiplex_rx_packets(self) -> None:
         """This calls the mux() function of all SocketMapper
         objects in this SocketPool
         """
@@ -137,8 +134,7 @@ class _SocketsPool(object):
                 t.mux()
         self.last_call = time.monotonic()
 
-    def register(self, socket, *args, **kwargs):
-        # type: (SocketWrapper, Tuple[Any, ...], Dict[str, Any]) -> None
+    def register(self, socket: SocketWrapper, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> None:
         """Registers a SocketWrapper object. Every SocketWrapper describes to
         a python-can bus object. This python-can bus object can only exist
         once. In case this object already exists in this SocketsPool, organized
@@ -171,8 +167,7 @@ class _SocketsPool(object):
                 socket.name = k
                 self.pool[k] = SocketMapper(bus, [socket])
 
-    def unregister(self, socket):
-        # type: (SocketWrapper) -> None
+    def unregister(self, socket: SocketWrapper) -> None:
         """Unregisters a SocketWrapper from its subscription to a SocketMapper.
 
         If a SocketMapper doesn't have any subscribers, the python-can Bus
@@ -200,8 +195,7 @@ SocketsPool = _SocketsPool()
 class SocketWrapper(can_BusABC):
     """Helper class to wrap a python-can Bus object as socket"""
 
-    def __init__(self, *args, **kwargs):
-        # type: (Tuple[Any, ...], Dict[str, Any]) -> None
+    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> None:
         """Initializes a new python-can based socket, described by the provided
         arguments and keyword arguments. This SocketWrapper gets automatically
         registered in the SocketsPool.
@@ -211,12 +205,11 @@ class SocketWrapper(can_BusABC):
         """
         super(SocketWrapper, self).__init__(*args, **kwargs)
         self.lock = threading.Lock()
-        self.rx_queue = deque()  # type: deque[can_Message]
-        self.name = None  # type: Optional[str]
+        self.rx_queue: deque[can_Message] = deque()
+        self.name: Optional[str] = None
         SocketsPool.register(self, *args, **kwargs)
 
-    def _recv_internal(self, timeout):
-        # type: (int) -> Tuple[Optional[can_Message], bool]
+    def _recv_internal(self, timeout: int) -> Tuple[Optional[can_Message], bool]:
         """Internal blocking receive method,
         following the ``can_BusABC`` interface of python-can.
 
@@ -239,8 +232,7 @@ class SocketWrapper(can_BusABC):
             msg = self.rx_queue.popleft()
             return msg, True
 
-    def send(self, msg, timeout=None):
-        # type: (can_Message, Optional[int]) -> None
+    def send(self, msg: can_Message, timeout: Optional[int] = None) -> None:
         """Send function, following the ``can_BusABC`` interface of python-can.
 
         :param msg: Message to be sent.
@@ -248,8 +240,7 @@ class SocketWrapper(can_BusABC):
         """
         SocketsPool.internal_send(self, msg)
 
-    def shutdown(self):
-        # type: () -> None
+    def shutdown(self) -> None:
         """Shutdown function, following the ``can_BusABC`` interface of
         python-can.
         """
@@ -271,13 +262,12 @@ class PythonCANSocket(SuperSocket):
            "using a python-can bus object"
     nonblocking_socket = True
 
-    def __init__(self, **kwargs):
-        # type: (Dict[str, Any]) -> None
+    def __init__(self, **kwargs: Dict[str, Any]) -> None:
         self.basecls = cast(Optional[Type[Packet]], kwargs.pop("basecls", CAN))
         self.can_iface = SocketWrapper(**kwargs)
 
-    def recv_raw(self, x=0xffff):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = 0xffff) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """Returns a tuple containing (cls, pkt_data, time)"""
         msg = self.can_iface.recv()
 
@@ -292,8 +282,7 @@ class PythonCANSocket(SuperSocket):
         pkt_data = struct.pack("!II", hdr, dlc) + bytes(msg.data)
         return self.basecls, pkt_data, msg.timestamp
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         bx = bytes(x)
         msg = can_Message(is_remote_frame=x.flags == 0x2,
                           is_extended_id=x.flags == 0x4,
@@ -313,8 +302,7 @@ class PythonCANSocket(SuperSocket):
         return len(x)
 
     @staticmethod
-    def select(sockets, remain=conf.recv_poll_rate):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = conf.recv_poll_rate) -> List[SuperSocket]:
         """This function is called during sendrecv() routine to select
         the available sockets.
 
@@ -336,8 +324,7 @@ class PythonCANSocket(SuperSocket):
         SocketsPool.multiplex_rx_packets()
         return cast(List[SuperSocket], ready_sockets)
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         """Closes this socket"""
         if self.closed:
             return

@@ -8,6 +8,8 @@
 
 """Packet-processing utilities implementing RFC5925 and RFC5926"""
 
+from __future__ import annotations
+
 import logging
 from scapy.compat import orb
 from scapy.layers.inet import IP, TCP
@@ -25,16 +27,14 @@ from typing import (
 logger = logging.getLogger(__name__)
 
 
-def _hmac_sha1_digest(key, msg):
-    # type: (bytes, bytes) -> bytes
+def _hmac_sha1_digest(key: bytes, msg: bytes) -> bytes:
     import hmac
     import hashlib
 
     return hmac.new(key, msg, hashlib.sha1).digest()
 
 
-def _cmac_aes_digest(key, msg):
-    # type: (bytes, bytes) -> bytes
+def _cmac_aes_digest(key: bytes, msg: bytes) -> bytes:
     from cryptography.hazmat.primitives import cmac
     from cryptography.hazmat.primitives.ciphers import algorithms
     from cryptography.hazmat.backends import default_backend
@@ -47,13 +47,11 @@ def _cmac_aes_digest(key, msg):
 
 class TCPAOAlg:
     @classmethod
-    def kdf(cls, master_key, context):
-        # type: (bytes, bytes) -> bytes
+    def kdf(cls, master_key: bytes, context: bytes) -> bytes:
         raise NotImplementedError()
 
     @classmethod
-    def mac(cls, traffic_key, context):
-        # type: (bytes, bytes) -> bytes
+    def mac(cls, traffic_key: bytes, context: bytes) -> bytes:
         raise NotImplementedError()
 
     maclen = -1
@@ -61,14 +59,12 @@ class TCPAOAlg:
 
 class TCPAOAlg_HMAC_SHA1(TCPAOAlg):
     @classmethod
-    def kdf(cls, master_key, context):
-        # type: (bytes, bytes) -> bytes
+    def kdf(cls, master_key: bytes, context: bytes) -> bytes:
         input = b"\x01" + b"TCP-AO" + context + b"\x00\xa0"
         return _hmac_sha1_digest(master_key, input)
 
     @classmethod
-    def mac(cls, traffic_key, message):
-        # type: (bytes, bytes) -> bytes
+    def mac(cls, traffic_key: bytes, message: bytes) -> bytes:
         return _hmac_sha1_digest(traffic_key, message)[:12]
 
     maclen = 12
@@ -76,8 +72,7 @@ class TCPAOAlg_HMAC_SHA1(TCPAOAlg):
 
 class TCPAOAlg_CMAC_AES(TCPAOAlg):
     @classmethod
-    def kdf(self, master_key, context):
-        # type: (bytes, bytes) -> bytes
+    def kdf(self, master_key: bytes, context: bytes) -> bytes:
         if len(master_key) == 16:
             key = master_key
         else:
@@ -85,15 +80,13 @@ class TCPAOAlg_CMAC_AES(TCPAOAlg):
         return _cmac_aes_digest(key, b"\x01TCP-AO" + context + b"\x00\x80")
 
     @classmethod
-    def mac(self, traffic_key, message):
-        # type: (bytes, bytes) -> bytes
+    def mac(self, traffic_key: bytes, message: bytes) -> bytes:
         return _cmac_aes_digest(traffic_key, message)[:12]
 
     maclen = 12
 
 
-def get_alg(name):
-    # type: (str) -> TCPAOAlg
+def get_alg(name: str) -> TCPAOAlg:
     if name.upper() == "HMAC-SHA-1-96":
         return TCPAOAlg_HMAC_SHA1()
     elif name.upper() == "AES-128-CMAC-96":
@@ -102,8 +95,7 @@ def get_alg(name):
         raise ValueError("Bad TCP AuthOpt algorithms {}".format(name))
 
 
-def _get_ipvx_src(u):
-    # type: (Union[IP, IPv6]) -> bytes
+def _get_ipvx_src(u: Union[IP, IPv6]) -> bytes:
     if isinstance(u, IP):
         return inet_pton(socket.AF_INET, u.src)
     elif isinstance(u, IPv6):
@@ -112,8 +104,7 @@ def _get_ipvx_src(u):
         raise Exception("Neither IP nor IPv6 found on packet")
 
 
-def _get_ipvx_dst(u):
-    # type: (Union[IP, IPv6]) -> bytes
+def _get_ipvx_dst(u: Union[IP, IPv6]) -> bytes:
     if isinstance(u, IP):
         return inet_pton(socket.AF_INET, u.dst)
     elif isinstance(u, IPv6):
@@ -123,14 +114,13 @@ def _get_ipvx_dst(u):
 
 
 def build_context(
-    saddr,  # type: bytes
-    daddr,  # type: bytes
-    sport,  # type: int
-    dport,  # type: int
-    src_isn,  # type: int
-    dst_isn,  # type: int
-):
-    # type: (...) -> bytes
+    saddr: bytes,
+    daddr: bytes,
+    sport: int,
+    dport: int,
+    src_isn: int,
+    dst_isn: int,
+) -> bytes:
     """Build context bytes as specified by RFC5925 section 5.2"""
     if len(saddr) != len(daddr) or (len(saddr) != 4 and len(saddr) != 16):
         raise ValueError("saddr and daddr must be 4-byte or 16-byte addresses")
@@ -148,11 +138,10 @@ def build_context(
 
 
 def build_context_from_packet(
-    p,  # type: Packet
-    src_isn,  # type: int
-    dst_isn,  # type: int
-):
-    # type: (...) -> bytes
+    p: Packet,
+    src_isn: int,
+    dst_isn: int,
+) -> bytes:
     """Build context bytes as specified by RFC5925 section 5.2"""
     tcp = p[TCP]
     return build_context(
@@ -165,8 +154,7 @@ def build_context_from_packet(
     )
 
 
-def build_message_from_packet(p, include_options=True, sne=0):
-    # type: (Packet, bool, int) -> bytes
+def build_message_from_packet(p: Packet, include_options: bool = True, sne: int = 0) -> bytes:
     """Build message bytes as described by RFC5925 section 5.1"""
     result = bytearray()
     result += struct.pack("!I", sne)
@@ -218,8 +206,7 @@ def build_message_from_packet(p, include_options=True, sne=0):
     return result
 
 
-def calc_tcpao_traffic_key(p, alg, master_key, sisn, disn):
-    # type: (Packet, TCPAOAlg, bytes, int, int) -> bytes
+def calc_tcpao_traffic_key(p: Packet, alg: TCPAOAlg, master_key: bytes, sisn: int, disn: int) -> bytes:
     """Calculate TCP-AO traffic-key from packet and initial sequence numbers
 
     This is constant for an established connection.
@@ -227,8 +214,7 @@ def calc_tcpao_traffic_key(p, alg, master_key, sisn, disn):
     return alg.kdf(master_key, build_context_from_packet(p, sisn, disn))
 
 
-def calc_tcpao_mac(p, alg, traffic_key, include_options=True, sne=0):
-    # type: (Packet, TCPAOAlg, bytes, bool, int) -> bytes
+def calc_tcpao_mac(p: Packet, alg: TCPAOAlg, traffic_key: bytes, include_options: bool = True, sne: int = 0) -> bytes:
     """Calculate TCP-AO MAC from packet and traffic key"""
     return alg.mac(traffic_key, build_message_from_packet(
         p, include_options=include_options, sne=sne
@@ -236,15 +222,14 @@ def calc_tcpao_mac(p, alg, traffic_key, include_options=True, sne=0):
 
 
 def sign_tcpao(
-    p,
-    alg,
-    traffic_key,
-    keyid=0,
-    rnextkeyid=0,
-    include_options=True,
-    sne=0,
-):
-    # type: (Packet, TCPAOAlg, bytes, int, int, bool, int) -> None
+    p: Packet,
+    alg: TCPAOAlg,
+    traffic_key: bytes,
+    keyid: int = 0,
+    rnextkeyid: int = 0,
+    include_options: bool = True,
+    sne: int = 0,
+) -> None:
     """Calculate TCP-AO option value and insert into packet"""
     th = p[TCP]
     keyids = struct.pack("BB", keyid, rnextkeyid)

@@ -6,6 +6,8 @@
 # scapy.contrib.description = ISO-TP (ISO 15765-2) Native Socket Library
 # scapy.contrib.status = library
 
+from __future__ import annotations
+
 import ctypes
 from ctypes.util import find_library
 import struct
@@ -127,13 +129,12 @@ class ISOTPNativeSocket(SuperSocket):
 
     def __build_can_isotp_options(
             self,
-            flags=CAN_ISOTP_DEFAULT_FLAGS,
-            frame_txtime=CAN_ISOTP_DEFAULT_FRAME_TXTIME,
-            ext_address=CAN_ISOTP_DEFAULT_EXT_ADDRESS,
-            txpad_content=CAN_ISOTP_DEFAULT_PAD_CONTENT,
-            rxpad_content=CAN_ISOTP_DEFAULT_PAD_CONTENT,
-            rx_ext_address=CAN_ISOTP_DEFAULT_EXT_ADDRESS):
-        # type: (int, int, int, int, int, int) -> bytes
+            flags: int = CAN_ISOTP_DEFAULT_FLAGS,
+            frame_txtime: int = CAN_ISOTP_DEFAULT_FRAME_TXTIME,
+            ext_address: int = CAN_ISOTP_DEFAULT_EXT_ADDRESS,
+            txpad_content: int = CAN_ISOTP_DEFAULT_PAD_CONTENT,
+            rxpad_content: int = CAN_ISOTP_DEFAULT_PAD_CONTENT,
+            rx_ext_address: int = CAN_ISOTP_DEFAULT_EXT_ADDRESS) -> bytes:
         return struct.pack(self.can_isotp_options_fmt,
                            flags,
                            frame_txtime,
@@ -164,10 +165,9 @@ class ISOTPNativeSocket(SuperSocket):
     # };
 
     def __build_can_isotp_fc_options(self,
-                                     bs=CAN_ISOTP_DEFAULT_RECV_BS,
-                                     stmin=CAN_ISOTP_DEFAULT_RECV_STMIN,
-                                     wftmax=CAN_ISOTP_DEFAULT_RECV_WFTMAX):
-        # type: (int, int, int) -> bytes
+                                     bs: int = CAN_ISOTP_DEFAULT_RECV_BS,
+                                     stmin: int = CAN_ISOTP_DEFAULT_RECV_STMIN,
+                                     wftmax: int = CAN_ISOTP_DEFAULT_RECV_WFTMAX) -> bytes:
         return struct.pack(self.can_isotp_fc_options_fmt,
                            bs,
                            stmin,
@@ -191,11 +191,10 @@ class ISOTPNativeSocket(SuperSocket):
     # };
 
     def __build_can_isotp_ll_options(self,
-                                     mtu=CAN_ISOTP_DEFAULT_LL_MTU,
-                                     tx_dl=CAN_ISOTP_DEFAULT_LL_TX_DL,
-                                     tx_flags=CAN_ISOTP_DEFAULT_LL_TX_FLAGS
-                                     ):
-        # type: (int, int, int) -> bytes
+                                     mtu: int = CAN_ISOTP_DEFAULT_LL_MTU,
+                                     tx_dl: int = CAN_ISOTP_DEFAULT_LL_TX_DL,
+                                     tx_flags: int = CAN_ISOTP_DEFAULT_LL_TX_FLAGS
+                                     ) -> bytes:
         return struct.pack(self.can_isotp_ll_options_fmt,
                            mtu,
                            tx_dl,
@@ -220,8 +219,7 @@ class ISOTPNativeSocket(SuperSocket):
     #                         /* by the CAN netdriver configuration   */
     # };
 
-    def __get_sock_ifreq(self, sock, iface):
-        # type: (socket.socket, str) -> ifreq
+    def __get_sock_ifreq(self, sock: socket.socket, iface: str) -> ifreq:
         socket_id = ctypes.c_int(sock.fileno())
         ifr = ifreq()
         ifr.ifr_name = iface.encode('ascii')
@@ -233,8 +231,7 @@ class ISOTPNativeSocket(SuperSocket):
             raise Scapy_Exception(m)
         return ifr
 
-    def __bind_socket(self, sock, iface, tx_id, rx_id):
-        # type: (socket.socket, str, int, int) -> None
+    def __bind_socket(self, sock: socket.socket, iface: str, tx_id: int, rx_id: int) -> None:
         socket_id = ctypes.c_int(sock.fileno())
         ifr = self.__get_sock_ifreq(sock, iface)
 
@@ -256,14 +253,13 @@ class ISOTPNativeSocket(SuperSocket):
             log_isotp.warning("Couldn't bind socket")
 
     def __set_option_flags(self,
-                           sock,  # type: socket.socket
-                           extended_addr=None,  # type: Optional[int]
-                           extended_rx_addr=None,  # type: Optional[int]
-                           listen_only=False,  # type: bool
-                           padding=False,  # type: bool
-                           transmit_time=100  # type: int
-                           ):
-        # type: (...) -> None
+                           sock: socket.socket,
+                           extended_addr: Optional[int] = None,
+                           extended_rx_addr: Optional[int] = None,
+                           listen_only: bool = False,
+                           padding: bool = False,
+                           transmit_time: int = 100
+                           ) -> None:
         option_flags = CAN_ISOTP_DEFAULT_FLAGS
         if extended_addr is not None:
             option_flags = option_flags | CAN_ISOTP_EXTEND_ADDR
@@ -290,20 +286,19 @@ class ISOTPNativeSocket(SuperSocket):
                             rx_ext_address=extended_rx_addr))
 
     def __init__(self,
-                 iface=None,  # type: Optional[Union[str, SuperSocket]]
-                 tx_id=0,  # type: int
-                 rx_id=0,  # type: int
-                 ext_address=None,  # type: Optional[int]
-                 rx_ext_address=None,  # type: Optional[int]
-                 bs=CAN_ISOTP_DEFAULT_RECV_BS,  # type: int
-                 stmin=CAN_ISOTP_DEFAULT_RECV_STMIN,  # type: int
-                 padding=False,  # type: bool
-                 listen_only=False,  # type: bool
-                 frame_txtime=CAN_ISOTP_DEFAULT_FRAME_TXTIME,  # type: int
-                 fd=False,  # type: bool
-                 basecls=ISOTP  # type: Type[Packet]
-                 ):
-        # type: (...) -> None
+                 iface: Optional[Union[str, SuperSocket]] = None,
+                 tx_id: int = 0,
+                 rx_id: int = 0,
+                 ext_address: Optional[int] = None,
+                 rx_ext_address: Optional[int] = None,
+                 bs: int = CAN_ISOTP_DEFAULT_RECV_BS,
+                 stmin: int = CAN_ISOTP_DEFAULT_RECV_STMIN,
+                 padding: bool = False,
+                 listen_only: bool = False,
+                 frame_txtime: int = CAN_ISOTP_DEFAULT_FRAME_TXTIME,
+                 fd: bool = False,
+                 basecls: Type[Packet] = ISOTP
+                 ) -> None:
 
         if not isinstance(iface, str):
             # This is for interoperability with ISOTPSoftSockets.
@@ -373,8 +368,8 @@ class ISOTPNativeSocket(SuperSocket):
         self.outs = can_socket
         self.closed = False
 
-    def recv_raw(self, x=0xffff):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = 0xffff) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """
         Receives a packet, then returns a tuple containing
         (cls, pkt_data, time)
@@ -409,8 +404,7 @@ class ISOTPNativeSocket(SuperSocket):
             ts = get_last_packet_timestamp(self.ins)
         return self.basecls, pkt, ts
 
-    def recv(self, x=0xffff, **kwargs):
-        # type: (int, **Any) -> Optional[Packet]
+    def recv(self, x: int = 0xffff, **kwargs: Any) -> Optional[Packet]:
         msg = SuperSocket.recv(self, x, **kwargs)
         if msg is None:
             return msg

@@ -8,6 +8,8 @@ Resolve Autonomous Systems (AS).
 """
 
 
+from __future__ import annotations
+
 import socket
 from scapy.config import conf
 from scapy.compat import plain_str
@@ -22,30 +24,26 @@ from typing import (
 
 class AS_resolver:
     server = None
-    options = "-k"  # type: Optional[str]
+    options: Optional[str] = "-k"
 
-    def __init__(self, server=None, port=43, options=None):
-        # type: (Optional[str], int, Optional[str]) -> None
+    def __init__(self, server: Optional[str] = None, port: int = 43, options: Optional[str] = None) -> None:
         if server is not None:
             self.server = server
         self.port = port
         if options is not None:
             self.options = options
 
-    def _start(self):
-        # type: () -> None
+    def _start(self) -> None:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((self.server, self.port))
         if self.options:
             self.s.send(self.options.encode("utf8") + b"\n")
             self.s.recv(8192)
 
-    def _stop(self):
-        # type: () -> None
+    def _stop(self) -> None:
         self.s.close()
 
-    def _parse_whois(self, txt):
-        # type: (bytes) -> Tuple[Optional[str], str]
+    def _parse_whois(self, txt: bytes) -> Tuple[Optional[str], str]:
         asn, desc = None, b""
         for line in txt.splitlines():
             if not asn and line.startswith(b"origin:"):
@@ -58,8 +56,7 @@ class AS_resolver:
                 break
         return asn, plain_str(desc.strip())
 
-    def _resolve_one(self, ip):
-        # type: (str) -> Tuple[str, Optional[str], str]
+    def _resolve_one(self, ip: str) -> Tuple[str, Optional[str], str]:
         self.s.send(("%s\n" % ip).encode("utf8"))
         x = b""
         while not (b"%" in x or b"source" in x):
@@ -71,11 +68,10 @@ class AS_resolver:
         return ip, asn, desc
 
     def resolve(self,
-                *ips  # type: str
-                ):
-        # type: (...) -> List[Tuple[str, Optional[str], str]]
+                *ips: str
+                ) -> List[Tuple[str, Optional[str], str]]:
         self._start()
-        ret = []  # type: List[Tuple[str, Optional[str], str]]
+        ret: List[Tuple[str, Optional[str], str]] = []
         for ip in ips:
             ip, asn, desc = self._resolve_one(ip)
             if asn is not None:
@@ -99,9 +95,8 @@ class AS_resolver_cymru(AS_resolver):
     options = None
 
     def resolve(self,
-                *ips  # type: str
-                ):
-        # type: (...) -> List[Tuple[str, Optional[str], str]]
+                *ips: str
+                ) -> List[Tuple[str, Optional[str], str]]:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.server, self.port))
         s.send(
@@ -119,11 +114,10 @@ class AS_resolver_cymru(AS_resolver):
 
         return self.parse(r)
 
-    def parse(self, data):
-        # type: (bytes) -> List[Tuple[str, Optional[str], str]]
+    def parse(self, data: bytes) -> List[Tuple[str, Optional[str], str]]:
         """Parse bulk cymru data"""
 
-        ASNlist = []  # type: List[Tuple[str, Optional[str], str]]
+        ASNlist: List[Tuple[str, Optional[str], str]] = []
         for line in plain_str(data).splitlines()[1:]:
             if "|" not in line:
                 continue
@@ -136,8 +130,7 @@ class AS_resolver_cymru(AS_resolver):
 
 
 class AS_resolver_multi(AS_resolver):
-    def __init__(self, *reslist):
-        # type: (*AS_resolver) -> None
+    def __init__(self, *reslist: AS_resolver) -> None:
         AS_resolver.__init__(self)
         if reslist:
             self.resolvers_list = reslist
@@ -145,8 +138,7 @@ class AS_resolver_multi(AS_resolver):
             self.resolvers_list = (AS_resolver_radb(),
                                    AS_resolver_cymru())
 
-    def resolve(self, *ips):
-        # type: (*Any) -> List[Tuple[str, Optional[str], str]]
+    def resolve(self, *ips: Any) -> List[Tuple[str, Optional[str], str]]:
         todo = ips
         ret = []
         for ASres in self.resolvers_list:

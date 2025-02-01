@@ -7,6 +7,8 @@
 IPv4 (Internet Protocol v4).
 """
 
+from __future__ import annotations
+
 import time
 import struct
 import re
@@ -340,8 +342,7 @@ class TCPAOValue(Packet):
     ]
 
 
-def get_tcpao(tcphdr):
-    # type: (TCP) -> Optional[TCPAOValue]
+def get_tcpao(tcphdr: TCP) -> Optional[TCPAOValue]:
     """Get the TCP-AO option from the header"""
     for optid, optval in tcphdr.options:
         if optid == 'AO':
@@ -634,8 +635,7 @@ class IP(Packet, IPTools):
         return fragment(self, fragsize=fragsize)
 
 
-def in4_pseudoheader(proto, u, plen):
-    # type: (int, IP, int) -> bytes
+def in4_pseudoheader(proto: int, u: IP, plen: int) -> bytes:
     """IPv4 Pseudo Header as defined in RFC793 as bytes
 
     :param proto: value of upper layer protocol
@@ -673,8 +673,7 @@ def in4_pseudoheader(proto, u, plen):
                        ln)
 
 
-def in4_chksum(proto, u, p):
-    # type: (int, IP, bytes) -> int
+def in4_chksum(proto: int, u: IP, p: bytes) -> int:
     """IPv4 Pseudo Header checksum as defined in RFC793
 
     :param proto: value of upper layer protocol
@@ -688,14 +687,12 @@ def in4_chksum(proto, u, p):
     return checksum(psdhdr + p)
 
 
-def _is_ipv6_layer(p):
-    # type: (Packet) -> bytes
+def _is_ipv6_layer(p: Packet) -> bytes:
     return (isinstance(p, scapy.layers.inet6.IPv6) or
             isinstance(p, scapy.layers.inet6._IPv6ExtHdr))
 
 
-def tcp_pseudoheader(tcp):
-    # type: (TCP) -> bytes
+def tcp_pseudoheader(tcp: TCP) -> bytes:
     """Pseudoheader of a TCP packet as bytes
 
     Requires underlayer to be either IP or IPv6
@@ -711,8 +708,7 @@ def tcp_pseudoheader(tcp):
         raise ValueError("TCP packet does not have IP or IPv6 underlayer")
 
 
-def calc_tcp_md5_hash(tcp, key):
-    # type: (TCP, bytes) -> bytes
+def calc_tcp_md5_hash(tcp: TCP, key: bytes) -> bytes:
     """Calculate TCP-MD5 hash from packet and return a 16-byte string"""
     import hashlib
 
@@ -727,8 +723,7 @@ def calc_tcp_md5_hash(tcp, key):
     return h.digest()
 
 
-def sign_tcp_md5(tcp, key):
-    # type: (TCP, bytes) -> None
+def sign_tcp_md5(tcp: TCP, key: bytes) -> None:
     """Append TCP-MD5 signature to tcp packet"""
     sig = calc_tcp_md5_hash(tcp, key)
     tcp.options = tcp.options + [('MD5', sig)]

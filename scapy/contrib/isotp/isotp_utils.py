@@ -8,6 +8,8 @@
 # scapy.contrib.description = ISO-TP (ISO 15765-2) Utilities
 # scapy.contrib.status = library
 
+from __future__ import annotations
+
 import struct
 
 from scapy.config import conf
@@ -39,16 +41,13 @@ class ISOTPMessageBuilderIter(object):
     """
     slots = ["builder"]
 
-    def __init__(self, builder):
-        # type: (ISOTPMessageBuilder) -> None
+    def __init__(self, builder: ISOTPMessageBuilder) -> None:
         self.builder = builder
 
-    def __iter__(self):
-        # type: () -> ISOTPMessageBuilderIter
+    def __iter__(self) -> ISOTPMessageBuilderIter:
         return self
 
-    def __next__(self):
-        # type: () -> ISOTP
+    def __next__(self) -> ISOTP:
         while self.builder.count:
             p = self.builder.pop()
             if p is None:
@@ -89,19 +88,17 @@ class ISOTPMessageBuilder(object):
         Helper class to store not finished ISOTP messages while building.
         """
 
-        def __init__(self, total_len, first_piece, ts):
-            # type: (int, bytes, Union[EDecimal, float]) -> None
-            self.pieces = list()  # type: List[bytes]
+        def __init__(self, total_len: int, first_piece: bytes, ts: Union[EDecimal, float]) -> None:
+            self.pieces: List[bytes] = list()
             self.total_len = total_len
             self.current_len = 0
-            self.ready = None  # type: Optional[bytes]
-            self.tx_id = None  # type: Optional[int]
-            self.ext_address = None  # type: Optional[int]
-            self.time = ts  # type: Union[float, EDecimal]
+            self.ready: Optional[bytes] = None
+            self.tx_id: Optional[int] = None
+            self.ext_address: Optional[int] = None
+            self.time: Union[float, EDecimal] = ts
             self.push(first_piece)
 
-        def push(self, piece):
-            # type: (bytes) -> None
+        def push(self, piece: bytes) -> None:
             self.pieces.append(piece)
             self.current_len += len(piece)
             if self.current_len >= self.total_len:
@@ -110,18 +107,17 @@ class ISOTPMessageBuilder(object):
 
     def __init__(
             self,
-            use_ext_address=None,  # type: Optional[bool]
-            rx_id=None,  # type: Optional[Union[int, List[int], Iterable[int]]]
-            basecls=ISOTP  # type: Type[ISOTP]
-    ):
-        # type: (...) -> None
-        self.ready = []  # type: List[Tuple[int, Optional[int], ISOTPMessageBuilder.Bucket]]  # noqa: E501
-        self.buckets = {}  # type: Dict[Tuple[Optional[int], int, int], ISOTPMessageBuilder.Bucket]  # noqa: E501
+            use_ext_address: Optional[bool] = None,
+            rx_id: Optional[Union[int, List[int], Iterable[int]]] = None,
+            basecls: Type[ISOTP] = ISOTP
+    ) -> None:
+        self.ready: List[Tuple[int, Optional[int], ISOTPMessageBuilder.Bucket]] = []  # noqa: E501
+        self.buckets: Dict[Tuple[Optional[int], int, int], ISOTPMessageBuilder.Bucket] = {}  # noqa: E501
         self.use_ext_addr = use_ext_address
         self.basecls = basecls
-        self.rx_ids = None  # type: Optional[Iterable[int]]
-        self.last_ff = None  # type: Optional[Tuple[Optional[int], int, int]]
-        self.last_ff_ex = None  # type: Optional[Tuple[Optional[int], int, int]]  # noqa: E501
+        self.rx_ids: Optional[Iterable[int]] = None
+        self.last_ff: Optional[Tuple[Optional[int], int, int]] = None
+        self.last_ff_ex: Optional[Tuple[Optional[int], int, int]] = None  # noqa: E501
         if rx_id is not None:
             if isinstance(rx_id, list):
                 self.rx_ids = rx_id
@@ -132,8 +128,7 @@ class ISOTPMessageBuilder(object):
             else:
                 raise TypeError("Invalid type for argument rx_id!")
 
-    def feed(self, can):
-        # type: (Union[Iterable[Packet], Packet]) -> None
+    def feed(self, can: Union[Iterable[Packet], Packet]) -> None:
         """Attempt to feed an incoming CAN frame into the state machine"""
         if not isinstance(can, Packet) and hasattr(can, "__iter__"):
             for p in can:
@@ -155,8 +150,7 @@ class ISOTPMessageBuilder(object):
             self._try_feed(can.identifier, ea, data[1:], can.time)
 
     @property
-    def count(self):
-        # type: () -> int
+    def count(self) -> int:
         """Returns the number of ready ISOTP messages built from the provided
         can frames
 
@@ -164,12 +158,10 @@ class ISOTPMessageBuilder(object):
         """
         return len(self.ready)
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return self.count
 
-    def pop(self, identifier=None, ext_addr=None):
-        # type: (Optional[int], Optional[int]) -> Optional[ISOTP]
+    def pop(self, identifier: Optional[int] = None, ext_addr: Optional[int] = None) -> Optional[ISOTP]:
         """Returns a built ISOTP message
 
         :param identifier: if not None, only return isotp messages with this
@@ -193,16 +185,14 @@ class ISOTPMessageBuilder(object):
             return ISOTPMessageBuilder._build(self.ready.pop(0), self.basecls)
         return None
 
-    def __iter__(self):
-        # type: () -> ISOTPMessageBuilderIter
+    def __iter__(self) -> ISOTPMessageBuilderIter:
         return ISOTPMessageBuilderIter(self)
 
     @staticmethod
     def _build(
-            t,  # type: Tuple[int, Optional[int], ISOTPMessageBuilder.Bucket]
-            basecls=ISOTP  # type: Type[ISOTP]
-    ):
-        # type: (...) -> ISOTP
+            t: Tuple[int, Optional[int], ISOTPMessageBuilder.Bucket],
+            basecls: Type[ISOTP] = ISOTP
+    ) -> ISOTP:
         bucket = t[2]
         data = bucket.ready or b""
         try:
@@ -224,8 +214,7 @@ class ISOTPMessageBuilder(object):
             p.time = bucket.time
         return p
 
-    def _feed_first_frame(self, identifier, ea, data, ts):
-        # type: (int, Optional[int], bytes, Union[EDecimal, float]) -> bool
+    def _feed_first_frame(self, identifier: int, ea: Optional[int], data: bytes, ts: Union[EDecimal, float]) -> bool:
         if len(data) < 3:
             # At least 3 bytes are necessary: 2 for length and 1 for data
             return False
@@ -245,8 +234,7 @@ class ISOTPMessageBuilder(object):
         self.buckets[key] = self.Bucket(expected_length, isotp_data, ts)
         return True
 
-    def _feed_single_frame(self, identifier, ea, data, ts):
-        # type: (int, Optional[int], bytes, Union[EDecimal, float]) -> bool
+    def _feed_single_frame(self, identifier: int, ea: Optional[int], data: bytes, ts: Union[EDecimal, float]) -> bool:
         if len(data) < 2:
             # At least 2 bytes are necessary: 1 for length and 1 for data
             return False
@@ -262,8 +250,7 @@ class ISOTPMessageBuilder(object):
                            self.Bucket(length, isotp_data, ts)))
         return True
 
-    def _feed_consecutive_frame(self, identifier, ea, data):
-        # type: (int, Optional[int], bytes) -> bool
+    def _feed_consecutive_frame(self, identifier: int, ea: Optional[int], data: bytes) -> bool:
         if len(data) < 2:
             # At least 2 bytes are necessary: 1 for sequence number and
             # 1 for data
@@ -292,8 +279,7 @@ class ISOTPMessageBuilder(object):
 
         return True
 
-    def _feed_flow_control_frame(self, identifier, ea, data):
-        # type: (int, Optional[int], bytes) -> bool
+    def _feed_flow_control_frame(self, identifier: int, ea: Optional[int], data: bytes) -> bool:
         if len(data) < 3:
             # At least 2 bytes are necessary: 1 for sequence number and
             # 1 for data
@@ -317,8 +303,7 @@ class ISOTPMessageBuilder(object):
             self.buckets[key] = bucket
         return True
 
-    def _try_feed(self, identifier, ea, data, ts):
-        # type: (int, Optional[int], bytes, Union[EDecimal, float]) -> None
+    def _try_feed(self, identifier: int, ea: Optional[int], data: bytes, ts: Union[EDecimal, float]) -> None:
         first_byte = data[0]
         if len(data) > 1 and first_byte & 0xf0 == N_PCI_SF:
             self._feed_single_frame(identifier, ea, data, ts)
@@ -337,8 +322,7 @@ class ISOTPSession(DefaultSession):
         >>> sniff(session=ISOTPSession)
     """
 
-    def __init__(self, *args, **kwargs):
-        # type: (Any, Any) -> None
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.m = ISOTPMessageBuilder(
             use_ext_address=kwargs.pop("use_ext_address", None),
             rx_id=kwargs.pop("rx_id", None),

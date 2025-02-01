@@ -17,6 +17,8 @@ https://learn.microsoft.com/en-us/windows/win32/winsock/tcp-ip-raw-sockets-2
     it at all cost.
 """
 
+from __future__ import annotations
+
 import io
 import socket
 import struct
@@ -68,13 +70,12 @@ class L3WinSocket(SuperSocket):
     __slots__ = ["promisc", "cls", "ipv6"]
 
     def __init__(self,
-                 iface=None,  # type: Optional[_GlobInterfaceType]
-                 ttl=128,  # type: int
-                 ipv6=False,  # type: bool
-                 promisc=True,  # type: bool
-                 **kwargs  # type: Any
-                 ):
-        # type: (...) -> None
+                 iface: Optional[_GlobInterfaceType] = None,
+                 ttl: int = 128,
+                 ipv6: bool = False,
+                 promisc: bool = True,
+                 **kwargs: Any
+                 ) -> None:
         from scapy.layers.inet import IP
         from scapy.layers.inet6 import IPv6
         for kwarg in kwargs:
@@ -154,8 +155,7 @@ class L3WinSocket(SuperSocket):
             # IOCTL Receive all packets
             self.ins.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         data = raw(x)
         if self.cls not in x:
             raise Scapy_Exception("L3WinSocket can only send IP/IPv6 packets !"
@@ -171,8 +171,7 @@ class L3WinSocket(SuperSocket):
         dst_ip = str(x[self.cls].dst)
         return self.outs.sendto(data, (dst_ip, 0))
 
-    def nonblock_recv(self, x=MTU):
-        # type: (int) -> Optional[Packet]
+    def nonblock_recv(self, x: int = MTU) -> Optional[Packet]:
         try:
             return self.recv()
         except IOError:
@@ -187,8 +186,7 @@ class L3WinSocket(SuperSocket):
     # regardless of the IPV6_HDRINCL socket option. The application does
     # not receive any IPv6 headers using a raw socket.
 
-    def recv_raw(self, x=MTU):
-        # type: (int) -> Tuple[Type[Packet], bytes, float]
+    def recv_raw(self, x: int = MTU) -> Tuple[Type[Packet], bytes, float]:
         try:
             data, address = self.ins.recvfrom(x)
         except io.BlockingIOError:
@@ -220,23 +218,20 @@ class L3WinSocket(SuperSocket):
             from scapy.layers.inet import IP
             return IP, data, time.time()
 
-    def close(self):
-        # type: () -> None
+    def close(self) -> None:
         if not self.closed and self.promisc:
             self.ins.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
         super(L3WinSocket, self).close()
 
     @staticmethod
-    def select(sockets, remain=None):
-        # type: (List[SuperSocket], Optional[float]) -> List[SuperSocket]
+    def select(sockets: List[SuperSocket], remain: Optional[float] = None) -> List[SuperSocket]:
         return select_objects(sockets, remain)
 
 
 class L3WinSocket6(L3WinSocket):
     desc = "a native Layer 3 (IPv6) raw socket under Windows"
 
-    def __init__(self, **kwargs):
-        # type: (**Any) -> None
+    def __init__(self, **kwargs: Any) -> None:
         super(L3WinSocket6, self).__init__(
             ipv6=True,
             **kwargs,

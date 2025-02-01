@@ -18,6 +18,8 @@ Note: to mimic Microsoft Windows LDAP packets, you must set::
     `LDAP <https://scapy.readthedocs.io/en/latest/layers/ldap.html>`_
 """
 
+from __future__ import annotations
+
 import collections
 import re
 import socket
@@ -1383,8 +1385,7 @@ class LdapPing_am(AnsweringMachine):
             )
         )
 
-    def make_mailslot_ping_reply(self, req):
-        # type: (Packet) -> Packet
+    def make_mailslot_ping_reply(self, req: Packet) -> Packet:
         from scapy.layers.smb import (
             SMBMailslot_Write,
             SMB_Header,
@@ -1896,7 +1897,7 @@ class LDAP_Client(object):
         """
         # Store and check consistency
         self.mech = mech
-        self.ssp = ssp  # type: SSP
+        self.ssp: SSP = ssp
         self.sign = sign
         self.encrypt = encrypt
         self.sspcontext = None

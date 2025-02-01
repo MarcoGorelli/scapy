@@ -7,6 +7,8 @@
 Operating system specific functionality.
 """
 
+from __future__ import annotations
+
 import socket
 import sys
 
@@ -69,30 +71,26 @@ from scapy.interfaces import (
 # We build the utils functions BEFORE importing the underlying handlers
 # because they might be themselves imported within the arch/ folder.
 
-def str2mac(s):
+def str2mac(s: bytes) -> str:
     # Duplicated from scapy/utils.py for import reasons
-    # type: (bytes) -> str
     return ("%02x:" * 6)[:-1] % tuple(orb(x) for x in s)
 
 
-def get_if_addr(iff):
-    # type: (_GlobInterfaceType) -> str
+def get_if_addr(iff: _GlobInterfaceType) -> str:
     """
     Returns the IPv4 of an interface or "0.0.0.0" if not available
     """
     return inet_ntop(socket.AF_INET, get_if_raw_addr(iff))  # noqa: F405
 
 
-def get_if_hwaddr(iff):
-    # type: (_GlobInterfaceType) -> str
+def get_if_hwaddr(iff: _GlobInterfaceType) -> str:
     """
     Returns the MAC (hardware) address of an interface
     """
     return resolve_iface(iff).mac or "00:00:00:00:00:00"
 
 
-def get_if_addr6(niff):
-    # type: (_GlobInterfaceType) -> Optional[str]
+def get_if_addr6(niff: _GlobInterfaceType) -> Optional[str]:
     """
     Returns the main global unicast address associated with provided
     interface, in human readable form. If no global address is found,
@@ -106,8 +104,7 @@ def get_if_addr6(niff):
                  if x[2] == iff and x[1] == scope), None)
 
 
-def get_if_raw_addr6(iff):
-    # type: (_GlobInterfaceType) -> Optional[bytes]
+def get_if_raw_addr6(iff: _GlobInterfaceType) -> Optional[bytes]:
     """
     Returns the main global unicast address associated with provided
     interface, in network format. If no global address is found, None

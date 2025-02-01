@@ -10,6 +10,8 @@ These functions are missing when python is compiled
 without IPv6 support, on Windows for instance.
 """
 
+from __future__ import annotations
+
 import socket
 import re
 import binascii
@@ -22,8 +24,7 @@ _IP6_ZEROS = re.compile('(?::|^)(0(?::0)+)(?::|$)')
 _INET6_PTON_EXC = socket.error("illegal IP address string passed to inet_pton")
 
 
-def _inet6_pton(addr):
-    # type: (str) -> bytes
+def _inet6_pton(addr: str) -> bytes:
     """Convert an IPv6 address from text representation into binary form,
 used when socket.inet_pton is not available.
 
@@ -80,8 +81,7 @@ _INET_PTON = {
 }
 
 
-def inet_pton(af, addr):
-    # type: (socket.AddressFamily, Union[bytes, str]) -> bytes
+def inet_pton(af: socket.AddressFamily, addr: Union[bytes, str]) -> bytes:
     """Convert an IP address from text representation into binary form."""
     # Will replace Net/Net6 objects
     addr = plain_str(addr)
@@ -97,8 +97,7 @@ def inet_pton(af, addr):
             raise socket.error("Address family not supported by protocol")
 
 
-def _inet6_ntop(addr):
-    # type: (bytes) -> str
+def _inet6_ntop(addr: bytes) -> str:
     """Convert an IPv6 address from binary form into text representation,
 used when socket.inet_pton is not available.
 
@@ -130,8 +129,7 @@ _INET_NTOP = {
 }
 
 
-def inet_ntop(af, addr):
-    # type: (socket.AddressFamily, bytes) -> str
+def inet_ntop(af: socket.AddressFamily, addr: bytes) -> str:
     """Convert an IP address from binary form into text representation."""
     # Use inet_ntop if available
     addr = bytes_encode(addr)

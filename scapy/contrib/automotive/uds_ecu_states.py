@@ -5,6 +5,7 @@
 
 # scapy.contrib.description = UDS EcuState modifications
 # scapy.contrib.status = library
+from __future__ import annotations
 from scapy.contrib.automotive.uds import UDS_DSCPR, UDS_ERPR, UDS_SAPR, \
     UDS_RDBPIPR, UDS_CCPR, UDS_TPPR, UDS_RDPR, UDS
 from scapy.packet import Packet
@@ -18,8 +19,7 @@ __all__ = ["UDS_DSCPR_modify_ecu_state", "UDS_CCPR_modify_ecu_state",
 
 
 @EcuState.extend_pkt_with_modifier(UDS_DSCPR)
-def UDS_DSCPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_DSCPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     state.session = self.diagnosticSessionType  # type: ignore
     try:
         del state.security_level  # type: ignore
@@ -28,15 +28,13 @@ def UDS_DSCPR_modify_ecu_state(self, req, state):
 
 
 @EcuState.extend_pkt_with_modifier(UDS_ERPR)
-def UDS_ERPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_ERPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     state.reset()
     state.session = 1  # type: ignore
 
 
 @EcuState.extend_pkt_with_modifier(UDS_SAPR)
-def UDS_SAPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_SAPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     if self.securityAccessType % 2 == 0 and \
             self.securityAccessType > 0 and len(req) >= 3:
         state.security_level = self.securityAccessType  # type: ignore
@@ -47,34 +45,29 @@ def UDS_SAPR_modify_ecu_state(self, req, state):
 
 
 @EcuState.extend_pkt_with_modifier(UDS_CCPR)
-def UDS_CCPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_CCPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     state.communication_control = self.controlType  # type: ignore
 
 
 @EcuState.extend_pkt_with_modifier(UDS_TPPR)
-def UDS_TPPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_TPPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     state.tp = 1  # type: ignore
 
 
 @EcuState.extend_pkt_with_modifier(UDS_RDBPIPR)
-def UDS_RDBPIPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_RDBPIPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     state.pdid = self.periodicDataIdentifier  # type: ignore
 
 
 @EcuState.extend_pkt_with_modifier(UDS_RDPR)
-def UDS_RDPR_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_RDPR_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     oldstr = getattr(state, "req_download", "")
     newstr = str(req.fields)
     state.req_download = oldstr if newstr in oldstr else oldstr + newstr  # type: ignore  # noqa: E501
 
 
 @EcuState.extend_pkt_with_modifier(UDS)
-def UDS_modify_ecu_state(self, req, state):
-    # type: (Packet, Packet, EcuState) -> None
+def UDS_modify_ecu_state(self: Packet, req: Packet, state: EcuState) -> None:
     if self.service == 0x77:  # UDS RequestTransferExitPositiveResponse
         try:
             state.download_complete = state.req_download  # type: ignore

@@ -13,6 +13,8 @@ Routing and network interface handling for IPv6.
 #                        Routing/Interfaces stuff                           #
 #############################################################################
 
+from __future__ import annotations
+
 import socket
 from scapy.config import conf
 from scapy.interfaces import resolve_iface, NetworkInterface
@@ -38,26 +40,22 @@ from typing import (
 
 class Route6:
 
-    def __init__(self):
-        # type: () -> None
-        self.routes = []  # type: List[Tuple[str, int, str, str, List[str], int]]  # noqa: E501
-        self.ipv6_ifaces = set()  # type: Set[Union[str, NetworkInterface]]
+    def __init__(self) -> None:
+        self.routes: List[Tuple[str, int, str, str, List[str], int]] = []  # noqa: E501
+        self.ipv6_ifaces: Set[Union[str, NetworkInterface]] = set()
         self.invalidate_cache()
         if conf.route6_autoload:
             self.resync()
 
-    def invalidate_cache(self):
-        # type: () -> None
-        self.cache = {}  # type: Dict[str, Tuple[str, str, str]]
+    def invalidate_cache(self) -> None:
+        self.cache: Dict[str, Tuple[str, str, str]] = {}
 
-    def flush(self):
-        # type: () -> None
+    def flush(self) -> None:
         self.invalidate_cache()
         self.routes.clear()
         self.ipv6_ifaces.clear()
 
-    def resync(self):
-        # type: () -> None
+    def resync(self) -> None:
         # TODO : At the moment, resync will drop existing Teredo routes
         #        if any. Change that ...
         self.invalidate_cache()
@@ -68,9 +66,8 @@ class Route6:
         if self.routes == []:
             log_loading.info("No IPv6 support in kernel")
 
-    def __repr__(self):
-        # type: () -> str
-        rtlst = []  # type: List[Tuple[Union[str, List[str]], ...]]
+    def __repr__(self) -> str:
+        rtlst: List[Tuple[Union[str, List[str]], ...]] = []
 
         for net, msk, gw, iface, cset, metric in self.routes:
             if_repr = resolve_iface(iface).description
@@ -88,11 +85,10 @@ class Route6:
     # parameters. We only have a 'dst' parameter that accepts 'prefix' and
     # 'prefix/prefixlen' values.
     def make_route(self,
-                   dst,  # type: str
-                   gw=None,  # type: Optional[str]
-                   dev=None,  # type: Optional[str]
-                   ):
-        # type: (...) -> Tuple[str, int, str, str, List[str], int]
+                   dst: str,
+                   gw: Optional[str] = None,
+                   dev: Optional[str] = None,
+                   ) -> Tuple[str, int, str, str, List[str], int]:
         """Internal function : create a route for 'dst' via 'gw'.
         """
         prefix, plen_b = (dst.split("/") + ["128"])[:2]
@@ -112,8 +108,7 @@ class Route6:
 
         return (prefix, plen, gw, dev, ifaddr, 1)
 
-    def add(self, *args, **kargs):
-        # type: (*Any, **Any) -> None
+    def add(self, *args: Any, **kargs: Any) -> None:
         """Ex:
         add(dst="2001:db8:cafe:f000::/56")
         add(dst="2001:db8:cafe:f000::/56", gw="2001:db8:cafe::1")
@@ -122,8 +117,7 @@ class Route6:
         self.invalidate_cache()
         self.routes.append(self.make_route(*args, **kargs))
 
-    def remove_ipv6_iface(self, iface):
-        # type: (str) -> None
+    def remove_ipv6_iface(self, iface: str) -> None:
         """
         Remove the network interface 'iface' from the list of interfaces
         supporting IPv6.
@@ -135,8 +129,7 @@ class Route6:
             except KeyError:
                 pass
 
-    def delt(self, dst, gw=None):
-        # type: (str, Optional[str]) -> None
+    def delt(self, dst: str, gw: Optional[str] = None) -> None:
         """ Ex:
         delt(dst="::/0")
         delt(dst="2001:db8:cafe:f000::/56")
@@ -161,8 +154,7 @@ class Route6:
             self.remove_ipv6_iface(self.routes[i][3])
             del self.routes[i]
 
-    def ifchange(self, iff, addr):
-        # type: (str, str) -> None
+    def ifchange(self, iff: str, addr: str) -> None:
         the_addr, the_plen_b = (addr.split("/") + ["128"])[:2]
         the_plen = int(the_plen_b)
 
@@ -184,8 +176,7 @@ class Route6:
         self.invalidate_cache()
         conf.netcache.in6_neighbor.flush()  # type: ignore
 
-    def ifdel(self, iff):
-        # type: (str) -> None
+    def ifdel(self, iff: str) -> None:
         """ removes all route entries that uses 'iff' interface. """
         new_routes = []
         for rt in self.routes:
@@ -195,8 +186,7 @@ class Route6:
         self.routes = new_routes
         self.remove_ipv6_iface(iff)
 
-    def ifadd(self, iff, addr):
-        # type: (str, str) -> None
+    def ifadd(self, iff: str, addr: str) -> None:
         """
         Add an interface 'iff' with provided address into routing table.
 
@@ -219,8 +209,7 @@ class Route6:
         self.routes.append((prefix, plen, '::', iff, [addr], 1))
         self.ipv6_ifaces.add(iff)
 
-    def route(self, dst="", dev=None, verbose=conf.verb):
-        # type: (str, Optional[str], int) -> Tuple[str, str, str]
+    def route(self, dst: str = "", dev: Optional[str] = None, verbose: int = conf.verb) -> Tuple[str, str, str]:
         """
         Provide best route to IPv6 destination address, based on Scapy
         internal routing table content.
@@ -259,7 +248,7 @@ class Route6:
         if k in self.cache:
             return self.cache[k]
 
-        paths = []  # type: List[Tuple[int, int, Tuple[str, List[str], str]]]
+        paths: List[Tuple[int, int, Tuple[str, List[str], str]]] = []
 
         # TODO : review all kinds of addresses (scope and *cast) to see
         #        if we are able to cope with everything possible. I'm convinced
@@ -288,7 +277,7 @@ class Route6:
         best_plen = (paths[0][0], paths[0][1])
         paths = [x for x in paths if (x[0], x[1]) == best_plen]
 
-        res = []  # type: List[Tuple[int, int, Tuple[str, str, str]]]
+        res: List[Tuple[int, int, Tuple[str, str, str]]] = []
         for path in paths:  # we select best source address for every route
             tmp_c = path[2]
             srcaddr = get_source_addr_from_candidate_set(dst, tmp_c[1])
@@ -309,7 +298,7 @@ class Route6:
         #    first one
 
         if len(res) > 1:
-            tmp = []  # type: List[Tuple[int, int, Tuple[str, str, str]]]
+            tmp: List[Tuple[int, int, Tuple[str, str, str]]] = []
             if in6_isgladdr(dst) and in6_isaddr6to4(dst):
                 # TODO : see if taking the longest match between dst and
                 #        every source addresses would provide better results

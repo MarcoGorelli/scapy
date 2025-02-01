@@ -8,6 +8,8 @@ This file implements the PF_ROUTE API that is used to read the network
 configuration of the machine.
 """
 
+from __future__ import annotations
+
 import ctypes
 import ctypes.util
 import socket
@@ -1167,8 +1169,7 @@ def read_routes6():
     return routes
 
 
-def _get_if_list():
-    # type: () -> Dict[int, Dict[str, Any]]
+def _get_if_list() -> Dict[int, Dict[str, Any]]:
     """
     Read the interfaces list using a PF_ROUTE socket.
     """

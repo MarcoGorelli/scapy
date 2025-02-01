@@ -6,6 +6,7 @@
 Sessions: decode flow of packets when sniffing
 """
 
+from __future__ import annotations
 from collections import defaultdict
 import socket
 import struct
@@ -70,10 +71,9 @@ class IPSession(DefaultSession):
     >>> sniff(session=IPSession)
     """
 
-    def __init__(self, *args, **kwargs):
-        # type: (*Any, **Any) -> None
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         DefaultSession.__init__(self, *args, **kwargs)
-        self.fragments = defaultdict(list)  # type: DefaultDict[Tuple[Any, ...], List[Packet]]  # noqa: E501
+        self.fragments: DefaultDict[Tuple[Any, ...], List[Packet]] = defaultdict(list)  # noqa: E501
 
     def process(self, packet: Packet) -> Optional[Packet]:
         from scapy.layers.inet import IP, _defrag_ip_pkt
@@ -96,12 +96,11 @@ class StringBuffer(object):
     zeros.
     """
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         self.content = bytearray(b"")
         self.content_len = 0
         self.noff = 0  # negative offset
-        self.incomplete = []  # type: List[Tuple[int, int]]
+        self.incomplete: List[Tuple[int, int]] = []
 
     def append(self, data: bytes, seq: Optional[int] = None) -> None:
         if not data:
@@ -134,31 +133,25 @@ class StringBuffer(object):
         self.content = self.content[i:]
         self.content_len -= i
 
-    def full(self):
-        # type: () -> bool
+    def full(self) -> bool:
         # Should only be true when all missing data was filled up,
         # (or there never was missing data)
         return bool(self)
 
-    def clear(self):
-        # type: () -> None
+    def clear(self) -> None:
         self.__init__()  # type: ignore
 
-    def __bool__(self):
-        # type: () -> bool
+    def __bool__(self) -> bool:
         return bool(self.content_len)
     __nonzero__ = __bool__
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return self.content_len
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         return bytes(self.content)
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return cast(str, self.__bytes__())
 
 
@@ -210,37 +203,34 @@ class TCPSession(IPSession):
                 underlying source of data isn't a socket.socket.
     """
 
-    def __init__(self, app=False, *args, **kwargs):
-        # type: (bool, *Any, **Any) -> None
+    def __init__(self, app: bool = False, *args: Any, **kwargs: Any) -> None:
         super(TCPSession, self).__init__(*args, **kwargs)
         self.app = app
         if app:
             self.data = StringBuffer()
-            self.metadata = {}  # type: Dict[str, Any]
-            self.session = {}  # type: Dict[str, Any]
+            self.metadata: Dict[str, Any] = {}
+            self.session: Dict[str, Any] = {}
         else:
             # The StringBuffer() is used to build a global
             # string from fragments and their seq nulber
-            self.tcp_frags = defaultdict(
+            self.tcp_frags: DefaultDict[bytes, Tuple[StringBuffer, Dict[str, Any]]] = defaultdict(
                 lambda: (StringBuffer(), {})
-            )  # type: DefaultDict[bytes, Tuple[StringBuffer, Dict[str, Any]]]
-            self.tcp_sessions = defaultdict(
+            )
+            self.tcp_sessions: DefaultDict[bytes, Dict[str, Any]] = defaultdict(
                 dict
-            )  # type: DefaultDict[bytes, Dict[str, Any]]
+            )
         # Setup stopping dissection condition
         from scapy.layers.inet import TCP
         self.stop_dissection_after = TCP
 
-    def _get_ident(self, pkt, session=False):
-        # type: (Packet, bool) -> bytes
+    def _get_ident(self, pkt: Packet, session: bool = False) -> bytes:
         underlayer = pkt["TCP"].underlayer
         af = socket.AF_INET6 if "IPv6" in pkt else socket.AF_INET
         src = underlayer and inet_pton(af, underlayer.src) or b""
         dst = underlayer and inet_pton(af, underlayer.dst) or b""
         if session:
             # Bidirectional
-            def xor(x, y):
-                # type: (bytes, bytes) -> bytes
+            def xor(x: bytes, y: bytes) -> bytes:
                 return bytes(orb(a) ^ orb(b) for a, b in zip(x, y))
             return struct.pack("!4sH", xor(src, dst), pkt.dport ^ pkt.sport)
         else:
@@ -265,7 +255,7 @@ class TCPSession(IPSession):
         """Process each packet: matches the TCP seq/ack numbers
         to follow the TCP streams, and orders the fragments.
         """
-        packet = None  # type: Optional[Packet]
+        packet: Optional[Packet] = None
         if self.app:
             # Special mode: Application layer. Use on top of TCP
             self.data.append(bytes(pkt))

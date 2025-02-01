@@ -9,6 +9,7 @@ ASN.1 Packet
 Packet holding data in Abstract Syntax Notation (ASN.1).
 """
 
+from __future__ import annotations
 from scapy.base_classes import Packet_metaclass
 from scapy.packet import Packet
 
@@ -27,11 +28,10 @@ if TYPE_CHECKING:
 
 class ASN1Packet_metaclass(Packet_metaclass):
     def __new__(cls,
-                name,  # type: str
-                bases,  # type: Tuple[type, ...]
-                dct  # type: Dict[str, Any]
-                ):
-        # type: (...) -> Type[ASN1_Packet]
+                name: str,
+                bases: Tuple[type, ...],
+                dct: Dict[str, Any]
+                ) -> Type[ASN1_Packet]:
         if dct["ASN1_root"] is not None:
             dct["fields_desc"] = dct["ASN1_root"].get_fields_list()
         return cast(
@@ -44,12 +44,10 @@ class ASN1_Packet(Packet, metaclass=ASN1Packet_metaclass):
     ASN1_root = cast('ASN1F_field[Any, Any]', None)
     ASN1_codec = None
 
-    def self_build(self):
-        # type: () -> bytes
+    def self_build(self) -> bytes:
         if self.raw_packet_cache is not None:
             return self.raw_packet_cache
         return self.ASN1_root.build(self)
 
-    def do_dissect(self, x):
-        # type: (bytes) -> bytes
+    def do_dissect(self, x: bytes) -> bytes:
         return self.ASN1_root.dissect(self, x)

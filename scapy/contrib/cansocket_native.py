@@ -10,6 +10,8 @@
 NativeCANSocket.
 """
 
+from __future__ import annotations
+
 import struct
 import socket
 import time
@@ -52,14 +54,13 @@ class NativeCANSocket(SuperSocket):
     desc = "read/write packets at a given CAN interface using PF_CAN sockets"
 
     def __init__(self,
-                 channel=None,  # type: Optional[str]
-                 receive_own_messages=False,  # type: bool
-                 can_filters=None,  # type: Optional[List[Dict[str, int]]]
-                 fd=False,  # type: bool
-                 basecls=CAN,  # type: Type[Packet]
-                 **kwargs  # type: Dict[str, Any]
-                 ):
-        # type: (...) -> None
+                 channel: Optional[str] = None,
+                 receive_own_messages: bool = False,
+                 can_filters: Optional[List[Dict[str, int]]] = None,
+                 fd: bool = False,
+                 basecls: Type[Packet] = CAN,
+                 **kwargs: Dict[str, Any]
+                 ) -> None:
         bustype = cast(Optional[str], kwargs.pop("bustype", None))
         if bustype and bustype != "socketcan":
             warning("You created a NativeCANSocket. "
@@ -128,8 +129,8 @@ class NativeCANSocket(SuperSocket):
         self.ins.bind((self.channel,))
         self.outs = self.ins
 
-    def recv_raw(self, x=CAN_MTU):
-        # type: (int) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]  # noqa: E501
+    def recv_raw(self, x: int = CAN_MTU) -> Tuple[Optional[Type[Packet]], Optional[bytes], Optional[float]]:
+        # noqa: E501
         """Returns a tuple containing (cls, pkt_data, time)"""
         pkt = None
         ts = None
@@ -156,8 +157,7 @@ class NativeCANSocket(SuperSocket):
 
         return self.basecls, pkt, ts
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         if x is None:
             return 0
 

@@ -11,6 +11,8 @@ These allow Scapy to act as the remote side of a virtual network interface.
 """
 
 
+from __future__ import annotations
+
 import socket
 import time
 from fcntl import ioctl
@@ -219,8 +221,7 @@ class TunTapInterface(SimpleSocket):
         else:
             return r
 
-    def send(self, x):
-        # type: (Packet) -> int
+    def send(self, x: Packet) -> int:
         if hasattr(x, "sent_time"):
             x.sent_time = time.time()
 

@@ -10,6 +10,8 @@
 UDS
 """
 
+from __future__ import annotations
+
 import struct
 from collections import defaultdict
 
@@ -47,7 +49,7 @@ conf.debug_dissector = True
 
 
 class UDS(ISOTP):
-    services = ObservableDict(
+    services: Dict[int, str] = ObservableDict(
         {0x10: 'DiagnosticSessionControl',
          0x11: 'ECUReset',
          0x14: 'ClearDiagnosticInformation',
@@ -102,14 +104,13 @@ class UDS(ISOTP):
          0xC5: 'ControlDTCSettingPositiveResponse',
          0xC6: 'ResponseOnEventPositiveResponse',
          0xC7: 'LinkControlPositiveResponse',
-         0x7f: 'NegativeResponse'})  # type: Dict[int, str]
+         0x7f: 'NegativeResponse'})
     name = 'UDS'
     fields_desc = [
         XByteEnumField('service', 0, services)
     ]
 
-    def answers(self, other):
-        # type: (Union[UDS, Packet]) -> bool
+    def answers(self, other: Union[UDS, Packet]) -> bool:
         if other.__class__ != self.__class__:
             return False
         if self.service == 0x7f:
@@ -122,8 +123,7 @@ class UDS(ISOTP):
                 return self.payload.answers(other.payload)
         return False
 
-    def hashret(self):
-        # type: () -> bytes
+    def hashret(self) -> bytes:
         if self.service == 0x7f and len(self) >= 3:
             return struct.pack('B', bytes(self)[1] & ~0x40)
         return struct.pack('B', self.service & ~0x40)

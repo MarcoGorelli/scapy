@@ -7,6 +7,7 @@
 # scapy.contrib.status = loads
 
 
+from __future__ import annotations
 from scapy.packet import Packet
 from scapy.contrib.automotive.scanner.enumerator import _AutomotiveTestCaseScanResult  # noqa: E501
 from scapy.contrib.automotive.uds import UDS
@@ -23,12 +24,10 @@ class BMW_DevJobEnumerator(UDS_Enumerator):
     _description = "Available DevelopmentJobs by Identifier " \
                    "and negative response per state"
 
-    def _get_initial_requests(self, **kwargs):
-        # type: (Any) -> Iterable[Packet]
+    def _get_initial_requests(self, **kwargs: Any) -> Iterable[Packet]:
         scan_range = kwargs.pop("scan_range", range(0x10000))
         return (UDS() / DEV_JOB(identifier=x) for x in scan_range)
 
-    def _get_table_entry_y(self, tup):
-        # type: (_AutomotiveTestCaseScanResult) -> str
+    def _get_table_entry_y(self, tup: _AutomotiveTestCaseScanResult) -> str:
         return "0x%04x: %s" % \
                (tup[1].identifier, tup[1].sprintf("%DEV_JOB.identifier%"))

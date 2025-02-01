@@ -10,6 +10,8 @@ https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-pac/166d8064-c86
 Up to date with version: 23.0
 """
 
+from __future__ import annotations
+
 import struct
 
 from scapy.config import conf
@@ -415,8 +417,7 @@ class UPN_DNS_INFO(_NTLMPayloadPacket):
         ),
     ]
 
-    def post_build(self, pkt, pay):
-        # type: (bytes, bytes) -> bytes
+    def post_build(self, pkt: bytes, pay: bytes) -> bytes:
         offset = 12
         fields = {
             "Upn": 0,

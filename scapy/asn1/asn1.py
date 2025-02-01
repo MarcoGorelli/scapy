@@ -8,6 +8,8 @@
 ASN.1 (Abstract Syntax Notation One)
 """
 
+from __future__ import annotations
+
 import random
 
 from datetime import datetime, timedelta, tzinfo
@@ -70,8 +72,7 @@ except ImportError:
 
 
 class RandASN1Object(RandField["ASN1_Object[Any]"]):
-    def __init__(self, objlist=None):
-        # type: (Optional[List[Type[ASN1_Object[Any]]]]) -> None
+    def __init__(self, objlist: Optional[List[Type[ASN1_Object[Any]]]] = None) -> None:
         if objlist:
             self.objlist = objlist
         else:
@@ -82,8 +83,7 @@ class RandASN1Object(RandField["ASN1_Object[Any]"]):
             ]
         self.chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"  # noqa: E501
 
-    def _fix(self, n=0):
-        # type: (int) -> ASN1_Object[Any]
+    def _fix(self, n: int = 0) -> ASN1_Object[Any]:
         o = random.choice(self.objlist)
         if issubclass(o, ASN1_INTEGER):
             return o(int(random.gauss(0, 1000)))
@@ -122,20 +122,16 @@ class ASN1_BadTag_Decoding_Error(ASN1_Decoding_Error):
 
 
 class ASN1Codec(EnumElement):
-    def register_stem(cls, stem):
-        # type: (Type[BERcodec_Object[Any]]) -> None
+    def register_stem(cls, stem: Type[BERcodec_Object[Any]]) -> None:
         cls._stem = stem
 
-    def dec(cls, s, context=None):
-        # type: (bytes, Optional[Type[ASN1_Class]]) -> ASN1_Object[Any]
+    def dec(cls, s: bytes, context: Optional[Type[ASN1_Class]] = None) -> ASN1_Object[Any]:
         return cls._stem.dec(s, context=context)  # type: ignore
 
-    def safedec(cls, s, context=None):
-        # type: (bytes, Optional[Type[ASN1_Class]]) -> ASN1_Object[Any]
+    def safedec(cls, s: bytes, context: Optional[Type[ASN1_Class]] = None) -> ASN1_Object[Any]:
         return cls._stem.safedec(s, context=context)  # type: ignore
 
-    def get_stem(cls):
-        # type: () -> type
+    def get_stem(cls) -> type:
         return cls._stem
 
 
@@ -157,39 +153,33 @@ class ASN1_Codecs(metaclass=ASN1_Codecs_metaclass):
 
 class ASN1Tag(EnumElement):
     def __init__(self,
-                 key,  # type: str
-                 value,  # type: int
-                 context=None,  # type: Optional[Type[ASN1_Class]]
-                 codec=None  # type: Optional[Dict[ASN1Codec, Type[BERcodec_Object[Any]]]]  # noqa: E501
-                 ):
-        # type: (...) -> None
+                 key: str,
+                 value: int,
+                 context: Optional[Type[ASN1_Class]] = None,
+                 codec: Optional[Dict[ASN1Codec, Type[BERcodec_Object[Any]]]] = None  # noqa: E501
+                 ) -> None:
         EnumElement.__init__(self, key, value)
         # populated by the metaclass
-        self.context = context  # type: Type[ASN1_Class]  # type: ignore
+        self.context: Type[ASN1_Class] = context  # type: ignore
         if codec is None:
             codec = {}
         self._codec = codec
 
-    def clone(self):  # not a real deep copy. self.codec is shared
-        # type: () -> ASN1Tag
+    def clone(self) -> ASN1Tag:  # not a real deep copy. self.codec is shared
         return self.__class__(self._key, self._value, self.context, self._codec)  # noqa: E501
 
-    def register_asn1_object(self, asn1obj):
-        # type: (Type[ASN1_Object[Any]]) -> None
+    def register_asn1_object(self, asn1obj: Type[ASN1_Object[Any]]) -> None:
         self._asn1_obj = asn1obj
 
-    def asn1_object(self, val):
-        # type: (Any) -> ASN1_Object[Any]
+    def asn1_object(self, val: Any) -> ASN1_Object[Any]:
         if hasattr(self, "_asn1_obj"):
             return self._asn1_obj(val)
         raise ASN1_Error("%r does not have any assigned ASN1 object" % self)
 
-    def register(self, codecnum, codec):
-        # type: (ASN1Codec, Type[BERcodec_Object[Any]]) -> None
+    def register(self, codecnum: ASN1Codec, codec: Type[BERcodec_Object[Any]]) -> None:
         self._codec[codecnum] = codec
 
-    def get_codec(self, codec):
-        # type: (Any) -> Type[BERcodec_Object[Any]]
+    def get_codec(self, codec: Any) -> Type[BERcodec_Object[Any]]:
         try:
             c = self._codec[codec]
         except KeyError:
@@ -202,11 +192,10 @@ class ASN1_Class_metaclass(Enum_metaclass):
 
     # XXX factorise a bit with Enum_metaclass.__new__()
     def __new__(cls,
-                name,  # type: str
-                bases,  # type: Tuple[type, ...]
-                dct  # type: Dict[str, Any]
-                ):
-        # type: (...) -> Type[ASN1_Class]
+                name: str,
+                bases: Tuple[type, ...],
+                dct: Dict[str, Any]
+                ) -> Type[ASN1_Class]:
         for b in bases:
             for k, v in b.__dict__.items():
                 if k not in dct and isinstance(v, ASN1Tag):
@@ -280,11 +269,10 @@ class ASN1_Class_UNIVERSAL(ASN1_Class):
 
 class ASN1_Object_metaclass(type):
     def __new__(cls,
-                name,  # type: str
-                bases,  # type: Tuple[type, ...]
-                dct  # type: Dict[str, Any]
-                ):
-        # type: (...) -> Type[ASN1_Object[Any]]
+                name: str,
+                bases: Tuple[type, ...],
+                dct: Dict[str, Any]
+                ) -> Type[ASN1_Object[Any]]:
         c = cast(
             'Type[ASN1_Object[Any]]',
             super(ASN1_Object_metaclass, cls).__new__(cls, name, bases, dct)
@@ -302,60 +290,46 @@ _K = TypeVar('_K')
 class ASN1_Object(Generic[_K], metaclass=ASN1_Object_metaclass):
     tag = ASN1_Class_UNIVERSAL.ANY
 
-    def __init__(self, val):
-        # type: (_K) -> None
+    def __init__(self, val: _K) -> None:
         self.val = val
 
-    def enc(self, codec):
-        # type: (Any) -> bytes
+    def enc(self, codec: Any) -> bytes:
         return self.tag.get_codec(codec).enc(self.val)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s[%r]>" % (self.__dict__.get("name", self.__class__.__name__), self.val)  # noqa: E501
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return plain_str(self.enc(conf.ASN1_default_codec))
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         return self.enc(conf.ASN1_default_codec)
 
-    def strshow(self, lvl=0):
-        # type: (int) -> str
+    def strshow(self, lvl: int = 0) -> str:
         return ("  " * lvl) + repr(self) + "\n"
 
-    def show(self, lvl=0):
-        # type: (int) -> None
+    def show(self, lvl: int = 0) -> None:
         print(self.strshow(lvl))
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         return bool(self.val == other)
 
-    def __lt__(self, other):
-        # type: (Any) -> bool
+    def __lt__(self, other: Any) -> bool:
         return bool(self.val < other)
 
-    def __le__(self, other):
-        # type: (Any) -> bool
+    def __le__(self, other: Any) -> bool:
         return bool(self.val <= other)
 
-    def __gt__(self, other):
-        # type: (Any) -> bool
+    def __gt__(self, other: Any) -> bool:
         return bool(self.val > other)
 
-    def __ge__(self, other):
-        # type: (Any) -> bool
+    def __ge__(self, other: Any) -> bool:
         return bool(self.val >= other)
 
-    def __ne__(self, other):
-        # type: (Any) -> bool
+    def __ne__(self, other: Any) -> bool:
         return bool(self.val != other)
 
-    def command(self, json=False):
-        # type: (bool) -> Union[Dict[str, str], str]
+    def command(self, json: bool = False) -> Union[Dict[str, str], str]:
         if json:
             if isinstance(self.val, bytes):
                 val = self.val.decode("utf-8", errors="backslashreplace")
@@ -379,21 +353,18 @@ class _ASN1_ERROR(ASN1_Object[Union[bytes, ASN1_Object[Any]]]):
 class ASN1_DECODING_ERROR(_ASN1_ERROR):
     tag = ASN1_Class_UNIVERSAL.ERROR
 
-    def __init__(self, val, exc=None):
-        # type: (Union[bytes, ASN1_Object[Any]], Optional[Exception]) -> None
+    def __init__(self, val: Union[bytes, ASN1_Object[Any]], exc: Optional[Exception] = None) -> None:
         ASN1_Object.__init__(self, val)
         self.exc = exc
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s[%r]{{%r}}>" % (
             self.__dict__.get("name", self.__class__.__name__),
             self.val,
             self.exc and self.exc.args[0] or ""
         )
 
-    def enc(self, codec):
-        # type: (Any) -> bytes
+    def enc(self, codec: Any) -> bytes:
         if isinstance(self.val, ASN1_Object):
             return self.val.enc(codec)
         return self.val
@@ -402,8 +373,7 @@ class ASN1_DECODING_ERROR(_ASN1_ERROR):
 class ASN1_force(_ASN1_ERROR):
     tag = ASN1_Class_UNIVERSAL.RAW
 
-    def enc(self, codec):
-        # type: (Any) -> bytes
+    def enc(self, codec: Any) -> bytes:
         if isinstance(self.val, ASN1_Object):
             return self.val.enc(codec)
         return self.val
@@ -416,8 +386,7 @@ class ASN1_BADTAG(ASN1_force):
 class ASN1_INTEGER(ASN1_Object[int]):
     tag = ASN1_Class_UNIVERSAL.INTEGER
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         h = hex(self.val)
         if h[-1] == "L":
             h = h[:-1]
@@ -434,8 +403,7 @@ class ASN1_BOOLEAN(ASN1_INTEGER):
     tag = ASN1_Class_UNIVERSAL.BOOLEAN
     # BER: 0 means False, anything else means True
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return '%s %s' % (not (self.val == 0), ASN1_Object.__repr__(self))
 
 
@@ -447,15 +415,13 @@ class ASN1_BIT_STRING(ASN1_Object[str]):
     """
     tag = ASN1_Class_UNIVERSAL.BIT_STRING
 
-    def __init__(self, val, readable=False):
-        # type: (AnyStr, bool) -> None
+    def __init__(self, val: AnyStr, readable: bool = False) -> None:
         if not readable:
             self.val = cast(str, val)  # type: ignore
         else:
             self.val_readable = cast(bytes, val)  # type: ignore
 
-    def __setattr__(self, name, value):
-        # type: (str, Any) -> None
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == "val_readable":
             if isinstance(value, (str, bytes)):
                 val = "".join(binrepr(orb(x)).zfill(8) for x in value)
@@ -492,8 +458,7 @@ class ASN1_BIT_STRING(ASN1_Object[str]):
         else:
             object.__setattr__(self, name, value)
 
-    def set(self, i, val):
-        # type: (int, str) -> None
+    def set(self, i: int, val: str) -> None:
         """
         Sets bit 'i' to value 'val' (starting from 0)
         """
@@ -503,8 +468,7 @@ class ASN1_BIT_STRING(ASN1_Object[str]):
             self.val += "0" * (i - len(self.val))
         self.val = self.val[:i] + val + self.val[i + 1:]
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         s = self.val_readable
         if len(s) > 16:
             s = s[:10] + b"..." + s[-10:]
@@ -527,23 +491,20 @@ class ASN1_STRING(ASN1_Object[str]):
 class ASN1_NULL(ASN1_Object[None]):
     tag = ASN1_Class_UNIVERSAL.NULL
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return ASN1_Object.__repr__(self)
 
 
 class ASN1_OID(ASN1_Object[str]):
     tag = ASN1_Class_UNIVERSAL.OID
 
-    def __init__(self, val):
-        # type: (str) -> None
+    def __init__(self, val: str) -> None:
         val = plain_str(val)
         val = conf.mib._oid(val)
         ASN1_Object.__init__(self, val)
         self.oidname = conf.mib._oidname(val)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s[%r]>" % (self.__dict__.get("name", self.__class__.__name__), self.oidname)  # noqa: E501
 
 
@@ -599,15 +560,13 @@ class ASN1_GENERALIZED_TIME(ASN1_STRING):
     tag = ASN1_Class_UNIVERSAL.GENERALIZED_TIME
     pretty_time = None
 
-    def __init__(self, val):
-        # type: (Union[str, datetime]) -> None
+    def __init__(self, val: Union[str, datetime]) -> None:
         if isinstance(val, datetime):
             self.__setattr__("datetime", val)
         else:
             super(ASN1_GENERALIZED_TIME, self).__init__(val)
 
-    def __setattr__(self, name, value):
-        # type: (str, Any) -> None
+    def __setattr__(self, name: str, value: Any) -> None:
         if isinstance(value, bytes):
             value = plain_str(value)
 
@@ -617,7 +576,7 @@ class ASN1_GENERALIZED_TIME(ASN1_STRING):
                 12: "%Y%m%d%H%M",
                 14: "%Y%m%d%H%M%S"
             }
-            dt = None  # type: Optional[datetime]
+            dt: Optional[datetime] = None
             try:
                 if value[-1] == "Z":
                     str, ofs = value[:-1], value[-1:]
@@ -687,8 +646,7 @@ class ASN1_GENERALIZED_TIME(ASN1_STRING):
         else:
             ASN1_STRING.__setattr__(self, name, value)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "%s %s" % (
             self.pretty_time,
             super(ASN1_GENERALIZED_TIME, self).__repr__()
@@ -710,8 +668,7 @@ class ASN1_UNIVERSAL_STRING(ASN1_STRING):
 class ASN1_BMP_STRING(ASN1_STRING):
     tag = ASN1_Class_UNIVERSAL.BMP_STRING
 
-    def __setattr__(self, name, value):
-        # type: (str, Any) -> None
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == "val":
             if isinstance(value, str):
                 value = value.encode("utf-16be")
@@ -719,8 +676,7 @@ class ASN1_BMP_STRING(ASN1_STRING):
         else:
             object.__setattr__(self, name, value)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<%s[%r]>" % (
             self.__dict__.get("name", self.__class__.__name__),
             self.val.decode("utf-16be"),  # type: ignore
@@ -730,8 +686,7 @@ class ASN1_BMP_STRING(ASN1_STRING):
 class ASN1_SEQUENCE(ASN1_Object[List[Any]]):
     tag = ASN1_Class_UNIVERSAL.SEQUENCE
 
-    def strshow(self, lvl=0):
-        # type: (int) -> str
+    def strshow(self, lvl: int = 0) -> str:
         s = ("  " * lvl) + ("# %s:" % self.__class__.__name__) + "\n"
         for o in self.val:
             s += o.strshow(lvl=lvl + 1)

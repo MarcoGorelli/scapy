@@ -8,6 +8,8 @@
 Management Information Base (MIB) parsing
 """
 
+from __future__ import annotations
+
 import re
 from glob import glob
 from scapy.dadict import DADict, fixname
@@ -36,8 +38,7 @@ _mib_re_comments = re.compile(r'--.*(\r|\n)')
 
 
 class MIBDict(DADict[str, str]):
-    def _findroot(self, x):
-        # type: (str) -> Tuple[str, str, str]
+    def _findroot(self, x: str) -> Tuple[str, str, str]:
         """Internal MIBDict function used to find a partial OID"""
         if x.startswith("."):
             x = x[1:]
@@ -54,14 +55,12 @@ class MIBDict(DADict[str, str]):
                     root_key = k
         return root, root_key, x[max:-1]
 
-    def _oidname(self, x):
-        # type: (str) -> str
+    def _oidname(self, x: str) -> str:
         """Deduce the OID name from its OID ID"""
         root, _, remainder = self._findroot(x)
         return root + remainder
 
-    def _oid(self, x):
-        # type: (str) -> str
+    def _oid(self, x: str) -> str:
         """Parse the OID id/OID generator, and return real OID"""
         xl = x.strip(".").split(".")
         p = len(xl) - 1
@@ -72,8 +71,7 @@ class MIBDict(DADict[str, str]):
         xl[p] = next(k for k, v in self.d.items() if v == xl[p])
         return ".".join(xl[p:])
 
-    def _make_graph(self, other_keys=None, **kargs):
-        # type: (Optional[Any], **Any) -> None
+    def _make_graph(self, other_keys: Optional[Any] = None, **kargs: Any) -> None:
         if other_keys is None:
             other_keys = []
         nodes = [(self[key], key) for key in self.iterkeys()]
@@ -95,13 +93,12 @@ class MIBDict(DADict[str, str]):
         do_graph(s, **kargs)
 
 
-def _mib_register(ident,  # type: str
-                  value,  # type: List[str]
-                  the_mib,  # type: Dict[str, List[str]]
-                  unresolved,  # type: Dict[str, List[str]]
-                  alias,  # type: Dict[str, str]
-                  ):
-    # type: (...) -> bool
+def _mib_register(ident: str,
+                  value: List[str],
+                  the_mib: Dict[str, List[str]],
+                  unresolved: Dict[str, List[str]],
+                  alias: Dict[str, str],
+                  ) -> bool:
     """
     Internal function used to register an OID and its name in a MIBDict
     """
@@ -153,14 +150,13 @@ def _mib_register(ident,  # type: str
         return True
 
 
-def load_mib(filenames):
-    # type: (str) -> None
+def load_mib(filenames: str) -> None:
     """
     Load the conf.mib dict from a list of filenames
     """
     the_mib = {'iso': ['1']}
-    unresolved = {}  # type: Dict[str, List[str]]
-    alias = {}  # type: Dict[str, str]
+    unresolved: Dict[str, List[str]] = {}
+    alias: Dict[str, str] = {}
     # Export the current MIB to a working dictionary
     for k in conf.mib:
         _mib_register(conf.mib[k], k.split("."), the_mib, unresolved, alias)

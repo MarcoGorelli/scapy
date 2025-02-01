@@ -5,6 +5,7 @@
 """
 Python 2 and 3 link classes.
 """
+from __future__ import annotations
 
 import base64
 import binascii
@@ -52,25 +53,21 @@ __all__ = [
 
 # Import or create fake types
 
-def _FakeType(name, cls=object):
-    # type: (str, Optional[type]) -> Any
+def _FakeType(name: str, cls: Optional[type] = object) -> Any:
     class _FT(object):
-        def __init__(self, name):
-            # type: (str) -> None
+        def __init__(self, name: str) -> None:
             self.name = name
 
         # make the objects subscriptable indefinitely
         def __getitem__(self, item):  # type: ignore
             return cls
 
-        def __call__(self, *args, **kargs):
-            # type: (*Any, **Any) -> Any
+        def __call__(self, *args: Any, **kargs: Any) -> Any:
             if isinstance(args[0], str):
                 self.name = args[0]
             return self
 
-        def __repr__(self):
-            # type: () -> str
+        def __repr__(self) -> str:
             return "<Fake typing.%s>" % self.name
     return _FT(name)
 
@@ -114,8 +111,7 @@ if TYPE_CHECKING:
     from scapy.packet import Packet
 
 
-def raw(x):
-    # type: (Packet) -> bytes
+def raw(x: Packet) -> bytes:
     """
     Builds a packet and returns its bytes representation.
     This function is and will always be cross-version compatible
@@ -123,8 +119,7 @@ def raw(x):
     return bytes(x)
 
 
-def bytes_encode(x):
-    # type: (Any) -> bytes
+def bytes_encode(x: Any) -> bytes:
     """Ensure that the given object is bytes. If the parameter is a
         packet, raw() should be preferred.
 
@@ -134,59 +129,50 @@ def bytes_encode(x):
     return bytes(x)
 
 
-def plain_str(x):
-    # type: (Any) -> str
+def plain_str(x: Any) -> str:
     """Convert basic byte objects to str"""
     if isinstance(x, bytes):
         return x.decode(errors="backslashreplace")
     return str(x)
 
 
-def chb(x):
-    # type: (int) -> bytes
+def chb(x: int) -> bytes:
     """Same than chr() but encode as bytes."""
     return struct.pack("!B", x)
 
 
-def orb(x):
-    # type: (Union[int, str, bytes]) -> int
+def orb(x: Union[int, str, bytes]) -> int:
     """Return ord(x) when not already an int."""
     if isinstance(x, int):
         return x
     return ord(x)
 
 
-def bytes_hex(x):
-    # type: (AnyStr) -> bytes
+def bytes_hex(x: AnyStr) -> bytes:
     """Hexify a str or a bytes object"""
     return binascii.b2a_hex(bytes_encode(x))
 
 
-def hex_bytes(x):
-    # type: (AnyStr) -> bytes
+def hex_bytes(x: AnyStr) -> bytes:
     """De-hexify a str or a byte object"""
     return binascii.a2b_hex(bytes_encode(x))
 
 
-def int_bytes(x, size):
-    # type: (int, int) -> bytes
+def int_bytes(x: int, size: int) -> bytes:
     """Convert an int to an arbitrary sized bytes string"""
     return x.to_bytes(size, byteorder='big')
 
 
-def bytes_int(x):
-    # type: (bytes) -> int
+def bytes_int(x: bytes) -> int:
     """Convert an arbitrary sized bytes string to an int"""
     return int.from_bytes(x, "big")
 
 
-def base64_bytes(x):
-    # type: (AnyStr) -> bytes
+def base64_bytes(x: AnyStr) -> bytes:
     """Turn base64 into bytes"""
     return base64.decodebytes(bytes_encode(x))
 
 
-def bytes_base64(x):
-    # type: (AnyStr) -> bytes
+def bytes_base64(x: AnyStr) -> bytes:
     """Turn bytes into base64"""
     return base64.encodebytes(bytes_encode(x)).replace(b'\n', b'')

@@ -10,7 +10,7 @@ Generators and packet meta classes.
 ################
 #  Generators  #
 ################
-
+from __future__ import annotations
 
 from functools import reduce
 import abc
@@ -54,19 +54,16 @@ _T = TypeVar("_T")
 
 
 class Gen(Generic[_T]):
-    __slots__ = []  # type: List[str]
+    __slots__: List[str] = []
 
-    def __iter__(self):
-        # type: () -> Iterator[_T]
+    def __iter__(self) -> Iterator[_T]:
         return iter([])
 
-    def __iterlen__(self):
-        # type: () -> int
+    def __iterlen__(self) -> int:
         return sum(1 for _ in iter(self))
 
 
-def _get_values(value):
-    # type: (Any) -> Any
+def _get_values(value: Any) -> Any:
     """Generate a range object from (start, stop[, step]) tuples, or
     return value.
 
@@ -81,16 +78,14 @@ def _get_values(value):
 
 
 class SetGen(Gen[_T]):
-    def __init__(self, values, _iterpacket=1):
-        # type: (Any, int) -> None
+    def __init__(self, values: Any, _iterpacket: int = 1) -> None:
         self._iterpacket = _iterpacket
         if isinstance(values, (list, BasePacketList)):
             self.values = [_get_values(val) for val in values]
         else:
             self.values = [_get_values(values)]
 
-    def __iter__(self):
-        # type: () -> Iterator[Any]
+    def __iter__(self) -> Iterator[Any]:
         for i in self.values:
             if (isinstance(i, Gen) and
                 (self._iterpacket or not isinstance(i, BasePacket))) or (
@@ -100,12 +95,10 @@ class SetGen(Gen[_T]):
             else:
                 yield i
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return self.__iterlen__()
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<SetGen %r>" % self.values
 
 
@@ -178,13 +171,12 @@ class Net(Gen[str]):
             >>> Net("224.0.0.1%lo")
             >>> Net("224.0.0.1", scope=conf.iface)
     """
-    name = "Net"  # type: str
-    family = socket.AF_INET  # type: int
-    max_mask = 32  # type: int
+    name: str = "Net"
+    family: int = socket.AF_INET
+    max_mask: int = 32
 
     @classmethod
-    def name2addr(cls, name):
-        # type: (str) -> str
+    def name2addr(cls, name: str) -> str:
         try:
             return next(
                 addr_port[0]
@@ -199,19 +191,16 @@ class Net(Gen[str]):
             raise
 
     @classmethod
-    def ip2int(cls, addr):
-        # type: (str) -> int
+    def ip2int(cls, addr: str) -> int:
         return cast(int, struct.unpack(
             "!I", socket.inet_aton(cls.name2addr(addr))
         )[0])
 
     @staticmethod
-    def int2ip(val):
-        # type: (int) -> str
+    def int2ip(val: int) -> str:
         return socket.inet_ntoa(struct.pack('!I', val))
 
-    def __init__(self, net, stop=None, scope=None):
-        # type: (str, Optional[str], Optional[str]) -> None
+    def __init__(self, net: str, stop: Optional[str] = None, scope: Optional[str] = None) -> None:
         if "*" in net:
             raise Scapy_Exception("Wildcards are no longer accepted in %s()" %
                                   self.__class__.__name__)
@@ -224,10 +213,10 @@ class Net(Gen[str]):
             try:
                 net, mask = net.split("/", 1)
             except ValueError:
-                self.mask = self.max_mask  # type: Union[None, int]
+                self.mask: Union[None, int] = self.max_mask
             else:
                 self.mask = int(mask)
-            self.net = net  # type: Union[None, str]
+            self.net: Union[None, str] = net
             inv_mask = self.max_mask - self.mask
             self.start = self.ip2int(net) >> inv_mask << inv_mask
             self.count = 1 << inv_mask
@@ -238,12 +227,10 @@ class Net(Gen[str]):
             self.count = self.stop - self.start + 1
             self.net = self.mask = None
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return next(iter(self), "")
 
-    def __iter__(self):
-        # type: () -> Iterator[str]
+    def __iter__(self) -> Iterator[str]:
         # Python 2 won't handle huge (> sys.maxint) values in range()
         for i in range(self.count):
             yield ScopedIP(
@@ -251,24 +238,20 @@ class Net(Gen[str]):
                 scope=self.scope,
             )
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return self.count
 
-    def __iterlen__(self):
-        # type: () -> int
+    def __iterlen__(self) -> int:
         # for compatibility
         return len(self)
 
-    def choice(self):
-        # type: () -> str
+    def choice(self) -> str:
         return ScopedIP(
             self.int2ip(random.randint(self.start, self.stop)),
             scope=self.scope,
         )
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         scope_id_repr = ""
         if self.scope:
             scope_id_repr = ", scope=%s" % repr(self.scope)
@@ -286,8 +269,7 @@ class Net(Gen[str]):
             scope_id_repr,
         )
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, str):
             return self == self.__class__(other)
         if not isinstance(other, Net):
@@ -296,17 +278,14 @@ class Net(Gen[str]):
             return False
         return (self.start == other.start) and (self.stop == other.stop)
 
-    def __ne__(self, other):
-        # type: (Any) -> bool
+    def __ne__(self, other: Any) -> bool:
         # Python 2.7 compat
         return not self == other
 
-    def __hash__(self):
-        # type: () -> int
+    def __hash__(self) -> int:
         return hash(("scapy.Net", self.family, self.start, self.stop, self.scope))
 
-    def __contains__(self, other):
-        # type: (Any) -> bool
+    def __contains__(self, other: Any) -> bool:
         if isinstance(other, int):
             return self.start <= other <= self.stop
         if isinstance(other, str):
@@ -319,8 +298,7 @@ class Net(Gen[str]):
 class OID(Gen[str]):
     name = "OID"
 
-    def __init__(self, oid):
-        # type: (str) -> None
+    def __init__(self, oid: str) -> None:
         self.oid = oid
         self.cmpt = []
         fmt = []
@@ -332,12 +310,10 @@ class OID(Gen[str]):
                 fmt.append(i)
         self.fmt = ".".join(fmt)
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "OID(%r)" % self.oid
 
-    def __iter__(self):
-        # type: () -> Iterator[str]
+    def __iter__(self) -> Iterator[str]:
         ii = [k[0] for k in self.cmpt]
         while True:
             yield self.fmt % tuple(ii)
@@ -352,8 +328,7 @@ class OID(Gen[str]):
                     ii[i] = self.cmpt[i][0]
                 i += 1
 
-    def __iterlen__(self):
-        # type: () -> int
+    def __iterlen__(self) -> int:
         return reduce(operator.mul, (max(y - x, 0) + 1 for (x, y) in self.cmpt), 1)  # noqa: E501
 
 
@@ -363,14 +338,13 @@ class OID(Gen[str]):
 
 class Packet_metaclass(type):
     def __new__(cls: Type[_T],
-                name,  # type: str
-                bases,  # type: Tuple[type, ...]
-                dct  # type: Dict[str, Any]
-                ):
-        # type: (...) -> Type['Packet']
+                name: str,
+                bases: Tuple[type, ...],
+                dct: Dict[str, Any]
+                ) -> Type['Packet']:
         if "fields_desc" in dct:  # perform resolution of references to other packets  # noqa: E501
-            current_fld = dct["fields_desc"]  # type: List[Union[scapy.fields.Field[Any, Any], Packet_metaclass]]  # noqa: E501
-            resolved_fld = []  # type: List[scapy.fields.Field[Any, Any]]
+            current_fld: List[Union[scapy.fields.Field[Any, Any], Packet_metaclass]] = dct["fields_desc"]  # noqa: E501
+            resolved_fld: List[scapy.fields.Field[Any, Any]] = []
             for fld_or_pkt in current_fld:
                 if isinstance(fld_or_pkt, Packet_metaclass):
                     # reference to another fields_desc
@@ -386,7 +360,7 @@ class Packet_metaclass(type):
                     break
 
         if resolved_fld:  # perform default value replacements
-            final_fld = []  # type: List[scapy.fields.Field[Any, Any]]
+            final_fld: List[scapy.fields.Field[Any, Any]] = []
             names = []
             for f in resolved_fld:
                 if f.name in names:
@@ -452,18 +426,16 @@ class Packet_metaclass(type):
             config.conf.layers.register(newcls)
         return newcls
 
-    def __getattr__(self, attr):
-        # type: (str) -> Any
+    def __getattr__(self, attr: str) -> Any:
         for k in self.fields_desc:
             if k.name == attr:
                 return k
         raise AttributeError(attr)
 
     def __call__(cls,
-                 *args,  # type: Any
-                 **kargs  # type: Any
-                 ):
-        # type: (...) -> 'Packet'
+                 *args: Any,
+                 **kargs: Any
+                 ) -> 'Packet':
         if "dispatch_hook" in cls.__dict__:
             try:
                 cls = cls.dispatch_hook(*args, **kargs)
@@ -486,11 +458,10 @@ class Packet_metaclass(type):
 
 class Field_metaclass(type):
     def __new__(cls: Type[_T],
-                name,  # type: str
-                bases,  # type: Tuple[type, ...]
-                dct  # type: Dict[str, Any]
-                ):
-        # type: (...) -> Type[_T]
+                name: str,
+                bases: Tuple[type, ...],
+                dct: Dict[str, Any]
+                ) -> Type[_T]:
         dct.setdefault("__slots__", [])
         newcls = type.__new__(cls, name, bases, dct)
         return newcls  # type: ignore
@@ -500,7 +471,7 @@ PacketList_metaclass = Field_metaclass
 
 
 class BasePacket(Gen['Packet']):
-    __slots__ = []  # type: List[str]
+    __slots__: List[str] = []
 
 
 #############################
@@ -508,17 +479,15 @@ class BasePacket(Gen['Packet']):
 #############################
 
 class BasePacketList(Gen[_T]):
-    __slots__ = []  # type: List[str]
+    __slots__: List[str] = []
 
 
 class _CanvasDumpExtended(object):
     @abc.abstractmethod
-    def canvas_dump(self, layer_shift=0, rebuild=1):
-        # type: (int, int) -> pyx.canvas.canvas
+    def canvas_dump(self, layer_shift: int = 0, rebuild: int = 1) -> pyx.canvas.canvas:
         pass
 
-    def psdump(self, filename=None, **kargs):
-        # type: (Optional[str], **Any) -> None
+    def psdump(self, filename: Optional[str] = None, **kargs: Any) -> None:
         """
         psdump(filename=None, layer_shift=0, rebuild=1)
 
@@ -542,8 +511,7 @@ class _CanvasDumpExtended(object):
             canvas.writeEPSfile(filename)
         print()
 
-    def pdfdump(self, filename=None, **kargs):
-        # type: (Optional[str], **Any) -> None
+    def pdfdump(self, filename: Optional[str] = None, **kargs: Any) -> None:
         """
         pdfdump(filename=None, layer_shift=0, rebuild=1)
 
@@ -567,8 +535,7 @@ class _CanvasDumpExtended(object):
             canvas.writePDFfile(filename)
         print()
 
-    def svgdump(self, filename=None, **kargs):
-        # type: (Optional[str], **Any) -> None
+    def svgdump(self, filename: Optional[str] = None, **kargs: Any) -> None:
         """
         svgdump(filename=None, layer_shift=0, rebuild=1)
 

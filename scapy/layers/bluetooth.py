@@ -10,6 +10,8 @@
 Bluetooth layers, sockets and send/receive functions.
 """
 
+from __future__ import annotations
+
 import ctypes
 import functools
 import socket
@@ -2939,8 +2941,7 @@ class sockaddr_hci(ctypes.Structure):
 
 
 class _BluetoothLibcSocket(SuperSocket):
-    def __init__(self, socket_domain, socket_type, socket_protocol, sock_address):
-        # type: (int, int, int, sockaddr_hci) -> None
+    def __init__(self, socket_domain: int, socket_type: int, socket_protocol: int, sock_address: sockaddr_hci) -> None:
         if WINDOWS:
             warning("Not available on Windows")
             return
