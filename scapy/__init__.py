@@ -10,8 +10,6 @@ Usable either from an interactive console or as a Python library.
 https://scapy.net
 """
 
-from __future__ import annotations
-
 import datetime
 import os
 import re

@@ -156,7 +156,13 @@ class Route:
         the_net = the_rawaddr & the_msk
         self.routes.append((the_net, the_msk, '0.0.0.0', iff, the_addr, 1))
 
-    def route(self, dst: Optional[str] = None, dev: Optional[str] = None, verbose: int = conf.verb, _internal: bool = False) -> Tuple[str, str, str]:
+    def route(
+        self,
+        dst: Optional[str] = None,
+        dev: Optional[str] = None,
+        verbose: int = conf.verb,
+        _internal: bool = False,
+    ) -> Tuple[str, str, str]:
         """Returns the IPv4 routes to a host.
 
         :param dst: the IPv4 of the destination host

@@ -178,24 +178,24 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
             return len(x)
         return self.sz
 
-    def i2count(self, pkt: Optional[Packet], x: I) -> int:
+    def i2count(self, pkt: Optional[Packet], x: I) -> int:  # noqa: E741
         """Convert internal value to a number of elements usable by a FieldLenField.
         Always 1 except for list fields"""
         return 1
 
-    def h2i(self, pkt: Optional[Packet], x: Any) -> I:
+    def h2i(self, pkt: Optional[Packet], x: Any) -> I:  # noqa: E741
         """Convert human value to internal value"""
         return cast(I, x)
 
-    def i2h(self, pkt: Optional[Packet], x: I) -> Any:
+    def i2h(self, pkt: Optional[Packet], x: I) -> Any:  # noqa: E741
         """Convert internal value to human value"""
         return x
 
-    def m2i(self, pkt: Optional[Packet], x: M) -> I:
+    def m2i(self, pkt: Optional[Packet], x: M) -> I:  # noqa: E741
         """Convert machine value to internal value"""
         return cast(I, x)
 
-    def i2m(self, pkt: Optional[Packet], x: Optional[I]) -> M:
+    def i2m(self, pkt: Optional[Packet], x: Optional[I]) -> M:  # noqa: E741
         """Convert internal value to machine value"""
         if x is None:
             return cast(M, 0)
@@ -203,11 +203,11 @@ class Field(Generic[I, M], metaclass=Field_metaclass):
             return cast(M, bytes_encode(x))
         return cast(M, x)
 
-    def any2i(self, pkt: Optional[Packet], x: Any) -> Optional[I]:
+    def any2i(self, pkt: Optional[Packet], x: Any) -> Optional[I]:  # noqa: E741
         """Try to understand the most input values possible and make an internal value from them"""  # noqa: E501
         return self.h2i(pkt, x)
 
-    def i2repr(self, pkt: Optional[Packet], x: I) -> str:
+    def i2repr(self, pkt: Optional[Packet], x: I) -> str:  # noqa: E741
         """Convert internal value to a nice representation"""
         return repr(self.i2h(pkt, x))
 
@@ -447,7 +447,12 @@ class MultipleTypeField(_FieldContainer):
                 SyntaxWarning
             )
 
-    def _iterate_fields_cond(self, pkt: Optional[Packet], val: Any, use_val: bool) -> Field[Any, Any]:
+    def _iterate_fields_cond(
+            self,
+            pkt: Optional[Packet],
+            val: Any,
+            use_val: bool,
+    ) -> Field[Any, Any]:
         """Internal function used by _find_fld_pkt & _find_fld_pkt_val"""
         # Iterate through the fields
         for fld, cond in self.flds:
@@ -572,7 +577,12 @@ class PadField(_FieldContainer):
        alignment from its beginning"""
     __slots__ = ["fld", "_align", "_padwith"]
 
-    def __init__(self, fld: AnyField, align: int, padwith: Optional[bytes] = None) -> None:
+    def __init__(
+            self,
+            fld: AnyField,
+            align: int,
+            padwith: Optional[bytes] = None,
+    ) -> None:
         self.fld = fld
         self._align = align
         self._padwith = padwith or b"\x00"
@@ -1155,7 +1165,12 @@ class YesNoByteField(ByteField):
 
         self.eval_fn = lambda x: assoc_table[x] if x in assoc_table else x
 
-    def __init__(self, name: str, default: int, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: int,
+            config: Optional[Dict[str, Any]] = None,
+    ) -> None:
 
         if not config:
             # this represents the common use case and therefore it is kept small  # noqa: E501
@@ -1271,7 +1286,12 @@ class IEEEDoubleField(Field[int, int]):
 class _StrField(Field[I, bytes]):
     __slots__ = ["remain"]
 
-    def __init__(self, name: str, default: Optional[I], fmt: str = "H", remain: int = 0) -> None:
+    def __init__(
+            self, name: str,
+            default: Optional[I],
+            fmt: str = "H",
+            remain: int = 0,
+    ) -> None:
         Field.__init__(self, name, default, fmt)
         self.remain = remain
 
@@ -2037,7 +2057,13 @@ class StrNullFieldUtf16(StrNullField, StrFieldUtf16):
 class StrStopField(StrField):
     __slots__ = ["stop", "additional"]
 
-    def __init__(self, name: str, default: str, stop: bytes, additional: int = 0) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: str,
+            stop: bytes,
+            additional: int = 0,
+    ) -> None:
         Field.__init__(self, name, default)
         self.stop = stop
         self.additional = additional
@@ -2059,7 +2085,13 @@ class LenField(Field[int, int]):
     """
     __slots__ = ["adjust"]
 
-    def __init__(self, name: str, default: Optional[Any], fmt: str = "H", adjust: Callable[[int], int] = lambda x: x) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Optional[Any],
+            fmt: str = "H",
+            adjust: Callable[[int], int] = lambda x: x,
+    ) -> None:
         Field.__init__(self, name, default, fmt)
         self.adjust = adjust
 
@@ -2376,7 +2408,10 @@ class _EnumField(Field[Union[List[I], I], I]):
         else:
             return self.any2i_one(pkt, x)
 
-    def i2repr(self, pkt: Optional[Packet], x: Any) -> Union[List[str], str]:  # type: ignore
+    def i2repr(
+            self,
+            pkt: Optional[Packet], x: Any,
+    ) -> Union[List[str], str]:  # type: ignore
         if isinstance(x, list):
             return [self.i2repr_one(pkt, z) for z in x]
         else:
@@ -2429,7 +2464,14 @@ class CharEnumField(EnumField[str]):
 class BitEnumField(_BitField[Union[List[int], int]], _EnumField[int]):
     __slots__ = EnumField.__slots__
 
-    def __init__(self, name: str, default: Optional[int], size: int, enum: Dict[int, str], **kwargs: Any) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Optional[int],
+            size: int,
+            enum: Dict[int, str],
+            **kwargs: Any,
+    ) -> None:
         _EnumField.__init__(self, name, default, enum)
         _BitField.__init__(self, name, default, size, **kwargs)
 
@@ -2478,17 +2520,32 @@ class ShortEnumField(EnumField[int]):
 
 
 class LEShortEnumField(EnumField[int]):
-    def __init__(self, name: str, default: int, enum: Union[Dict[int, str], List[str]]) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: int,
+            enum: Union[Dict[int, str], List[str]],
+    ) -> None:
         super(LEShortEnumField, self).__init__(name, default, enum, "<H")
 
 
 class LongEnumField(EnumField[int]):
-    def __init__(self, name: str, default: int, enum: Union[Dict[int, str], List[str]]) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: int,
+            enum: Union[Dict[int, str], List[str]],
+    ) -> None:
         super(LongEnumField, self).__init__(name, default, enum, "Q")
 
 
 class LELongEnumField(EnumField[int]):
-    def __init__(self, name: str, default: int, enum: Union[Dict[int, str], List[str]]) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: int,
+            enum: Union[Dict[int, str], List[str]],
+    ) -> None:
         super(LELongEnumField, self).__init__(name, default, enum, "<Q")
 
 
@@ -2542,7 +2599,10 @@ class LE3BytesEnumField(LEThreeBytesField, _EnumField[int]):
     def any2i(self, pkt: Optional[Packet], x: Any) -> int:
         return _EnumField.any2i(self, pkt, x)  # type: ignore
 
-    def i2repr(self, pkt: Optional[Packet], x: Any) -> Union[List[str], str]:  # type: ignore
+    def i2repr(
+            self,
+            pkt: Optional[Packet], x: Any,
+    ) -> Union[List[str], str]:  # type: ignore
         return _EnumField.i2repr(self, pkt, x)
 
 
@@ -2713,7 +2773,11 @@ class FlagValue(object):
             value = y
         return int(value)
 
-    def __init__(self, value: Union[List[str], int, str], names: Union[List[str], str]) -> None:
+    def __init__(
+            self,
+            value: Union[List[str], int, str],
+            names: Union[List[str], str],
+    ) -> None:
         self.multi = isinstance(names, list)
         self.names = names
         self.value = self._fixvalue(value)
@@ -3358,7 +3422,14 @@ class BitScalingField(_ScalingField, BitField):  # type: ignore
     A ScalingField that is a BitField
     """
 
-    def __init__(self, name: str, default: int, size: int, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: int,
+            size: int,
+            *args: Any,
+            **kwargs: Any,
+    ) -> None:
         _ScalingField.__init__(self, name, default, *args, **kwargs)
         BitField.__init__(self, name, default, size)  # type: ignore
 
@@ -3441,7 +3512,12 @@ class UUIDField(Field[UUID, bytes]):
     # Change this when we get new formats
     FORMATS = (FORMAT_BE, FORMAT_LE, FORMAT_REV)
 
-    def __init__(self, name: str, default: Optional[int], uuid_fmt: int = FORMAT_BE) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Optional[int],
+            uuid_fmt: int = FORMAT_BE,
+    ) -> None:
         self.uuid_fmt = uuid_fmt
         self._check_uuid_fmt()
         Field.__init__(self, name, default, "16s")
@@ -3521,7 +3597,13 @@ class UUIDField(Field[UUID, bytes]):
 class UUIDEnumField(UUIDField, _EnumField[UUID]):
     __slots__ = EnumField.__slots__
 
-    def __init__(self, name: str, default: Optional[int], enum: Any, uuid_fmt: int = 0) -> None:
+    def __init__(
+            self,
+            name: str,
+            default: Optional[int],
+            enum: Any,
+            uuid_fmt: int = 0,
+    ) -> None:
         _EnumField.__init__(self, name, default, enum, "16s")  # type: ignore
         UUIDField.__init__(self, name, default, uuid_fmt=uuid_fmt)
 
